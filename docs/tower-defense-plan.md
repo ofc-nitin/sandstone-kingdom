@@ -1,6 +1,15 @@
 # Tower Defense Game: Launch Plan
 
-_Created 2026-11-02 · Owner: Founder (decisions) + AI (build) · Status: **draft, waiting for Founder approval**_
+_Created 2026-11-02 · Owner: Founder (decisions) + AI (build) · Status: **approved direction, name pending**_
+
+**Confirmed by Founder (2026-11-02):** tower defense · AdMob first · Play developer account
+exists · domain "samvardhanstudios" owned · website lives on its own branch, separate
+from the game.
+
+**Branches:** game work on `claude/exciting-sagan-dooxr8`; website on a separate
+`website` branch (deployed from there, so website changes never touch the game).
+
+**Concept board:** [`style-boards/tower-defense-concept.png`](style-boards/tower-defense-concept.png)
 
 Who does what in the task lists below:
 - 🤖 **AI** does it, in this repo.

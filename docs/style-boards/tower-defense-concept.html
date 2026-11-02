@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Concept: Harvest Keepers</title>
+<link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Kalam:wght@400;700&display=block" rel="stylesheet">
+<style>
+  :root {
+    --geru: #9a4528; --geru-dark: #6e2c17; --mud: #4a2516; --path: #b4623b;
+    --paste: #f3e7d3; --turmeric: #e3a72f; --leaf: #5d7a3a; --char: #24140c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; width: 1400px; background: var(--mud); color: var(--paste); font-family: 'Kalam', cursive; }
+  .wall { position: relative; background: var(--geru); }
+  .wall::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.05' numOctaves='4' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.25 0 0 0 0 0.1 0 0 0 0 0.04 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: multiply;
+  }
+  .wall > * { position: relative; }
+  .sheet { display: grid; grid-template-columns: 420px 1fr; gap: 52px; padding: 44px 52px 30px; }
+  .masthead { grid-column: 1 / -1; display: flex; align-items: flex-end; gap: 28px; }
+  .masthead h1 { font-family: 'Yatra One'; font-weight: 400; font-size: 58px; margin: 0; line-height: 0.95; }
+  .masthead p { margin: 0 0 6px; font-size: 18px; max-width: 560px; line-height: 1.35; }
+  .masthead .no { margin-left: auto; font-size: 15px; text-align: right; opacity: 0.8; }
+  h2 { font-family: 'Yatra One'; font-weight: 400; font-size: 28px; margin: 0 0 10px; }
+  .note { font-size: 16px; margin: 8px 0 0; line-height: 1.35; opacity: 0.92; max-width: 820px; }
+  .block { margin-bottom: 34px; }
+
+  .phone { width: 390px; height: 844px; overflow: hidden; border-radius: 8px 12px 6px 14px; }
+  .phone svg { display: block; }
+
+  .names { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .name-card { padding: 14px 18px 12px; border-radius: 6px 10px 4px 12px; min-height: 150px; }
+  .name-card .title { font-family: 'Yatra One'; font-size: 36px; line-height: 1; display: flex; align-items: center; gap: 12px; }
+  .name-card .pkg { font-size: 14px; opacity: 0.85; margin-top: 8px; }
+  .name-card .why { font-size: 15px; margin-top: 4px; }
+  .name-card.pick { outline: 3px solid var(--turmeric); outline-offset: 3px; }
+  .badge { font-family: 'Kalam'; font-weight: 700; font-size: 14px; color: var(--char); background: var(--turmeric); padding: 0 8px; border-radius: 3px 6px 2px 5px; }
+
+  .roster { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; text-align: center; }
+  .roster figure { margin: 0; font-size: 15px; }
+  .roster figcaption b { display: block; font-size: 16px; }
+  .roster figcaption span { font-size: 13px; opacity: 0.85; }
+  .roster .cell { padding: 8px 4px 10px; border-radius: 6px 9px 4px 8px; }
+
+  .tiers { display: flex; gap: 26px; align-items: flex-end; }
+  .tiers figure { margin: 0; text-align: center; font-size: 15px; }
+
+  .strip { grid-column: 1 / -1; }
+  .strip-wrap { border-radius: 8px 4px 10px 6px; overflow: hidden; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <filter id="brush" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="2" seed="3" result="t"/>
+      <feDisplacementMap in="SourceGraphic" in2="t" scale="2.2"/>
+    </filter>
+
+    <!-- ===== Shared Warli body (no arms) ===== -->
+    <g id="body">
+      <circle cx="0" cy="-27" r="6"/>
+      <path d="M-9 -19 H9 L0 -4 Z"/>
+      <path d="M0 -4 L-9 11 H9 Z"/>
+      <path d="M-5 11 L-9 26 M5 11 L10 26" fill="none" stroke-width="2.4" stroke-linecap="round"/>
+    </g>
+
+    <!-- ===== Towers: villagers (rice-paste white) ===== -->
+    <g id="archer">
+      <use href="#body"/>
+      <path d="M-8 -17 L4 -16 M8 -17 L16 -17" fill="none" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M17 -32 Q29 -17 17 -2" fill="none" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M17 -32 L17 -2 M4 -17 H27 M23 -20 L27 -17 L23 -14" fill="none" stroke-width="1.4" stroke-linecap="round"/>
+    </g>
+    <g id="slinger">
+      <g transform="scale(.82) translate(0 6)"><use href="#body"/></g>
+      <path d="M-7 -9 L-14 -1 M7 -9 L13 -24" fill="none" stroke-width="2.2" stroke-linecap="round"/>
+      <circle cx="15" cy="-29" r="4" fill="none" stroke-width="1.8"/>
+    </g>
+    <g id="drummer">
+      <use href="#body"/>
+      <rect x="-15" y="-15" width="30" height="10" rx="4"/>
+      <path d="M-10 -15 L-5 -5 L0 -15 L5 -5 L10 -15" fill="none" stroke="#9a4528" stroke-width="1.6"/>
+      <path d="M-8 -17 L-18 -12 M8 -17 L19 -12" fill="none" stroke-width="2.4" stroke-linecap="round"/>
+    </g>
+    <g id="beekeeper">
+      <use href="#body"/>
+      <path d="M-8 -17 L-15 -6 M8 -17 L14 -9" fill="none" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M12 26 Q22 -4 32 26 Z"/>
+      <path d="M15 18 H29 M17 10 H27" stroke="#9a4528" stroke-width="1.6"/>
+      <g><circle cx="30" cy="-6" r="1.8"/><circle cx="36" cy="0" r="1.8"/><circle cx="25" cy="-12" r="1.8"/></g>
+    </g>
+    <g id="scarecrow">
+      <path d="M0 -24 V26 M-18 -14 H18" fill="none" stroke-width="2.6" stroke-linecap="round"/>
+      <circle cx="0" cy="-28" r="6"/>
+      <path d="M-10 -32 L0 -42 L10 -32 Z"/>
+      <path d="M-10 -12 H10 L0 8 Z"/>
+      <path d="M-18 -14 L-21 -6 M18 -14 L21 -6" fill="none" stroke-width="1.6"/>
+    </g>
+    <g id="tarpa">
+      <use href="#body"/>
+      <path d="M-8 -17 L2 -22 M8 -17 L12 -24" fill="none" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M4 -26 Q22 -34 30 -12" fill="none" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="30" cy="-8" r="5"/>
+    </g>
+
+    <!-- ===== Enemies: charcoal ink ===== -->
+    <g id="locust">
+      <path d="M-16 0 L4 -5 L16 0 L4 5 Z"/>
+      <circle cx="18" cy="-1" r="3.4"/>
+      <path d="M-6 -4 L-14 -14 L-2 -6 M2 -4 L-2 -15 L6 -5" fill="none" stroke-width="1.6"/>
+      <path d="M-4 4 L-10 -2 L-16 9 M4 4 L8 11 M20 -3 L26 -10 M20 -3 L28 -6" fill="none" stroke-width="1.6" stroke-linecap="round"/>
+    </g>
+    <g id="crow">
+      <path d="M-12 2 L8 -3 L10 5 Z"/>
+      <circle cx="12" cy="-3" r="4"/>
+      <path d="M15 -4 L22 -2 L15 0 Z"/>
+      <path d="M-4 0 L-10 -16 L2 -2 M2 -1 L8 -18 L6 -1" fill="none" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M-12 2 L-20 -2 M-12 2 L-20 6" fill="none" stroke-width="2" stroke-linecap="round"/>
+    </g>
+    <g id="boar">
+      <path d="M-20 -10 H14 L-2 10 Z"/>
+      <path d="M14 -10 L26 -2 L14 2 Z"/>
+      <path d="M24 -1 Q28 -6 26 -10" fill="none" stroke="#f3e7d3" stroke-width="1.6"/>
+      <path d="M-18 -10 L-14 -16 L-10 -10 L-6 -16 L-2 -10 L2 -16 L6 -10" fill="none" stroke-width="1.8"/>
+      <path d="M-14 -8 L-16 12 M-6 0 L-6 12 M4 0 L5 12 M10 -6 L12 12 M-20 -10 L-26 -6" fill="none" stroke-width="2.4" stroke-linecap="round"/>
+    </g>
+    <g id="jackal">
+      <path d="M-16 -6 H12 L-2 6 Z"/>
+      <path d="M12 -6 L22 -10 L14 -2 Z"/>
+      <path d="M15 -9 L14 -18 L19 -10" />
+      <path d="M-16 -6 L-28 -16 L-22 -4 Z"/>
+      <path d="M-12 -4 L-16 14 M-5 2 L-6 14 M4 2 L6 14 M10 -4 L13 14" fill="none" stroke-width="2.2" stroke-linecap="round"/>
+    </g>
+    <g id="porcupine">
+      <path d="M-18 6 Q0 -22 18 6 Z"/>
+      <g fill="none" stroke-width="1.8" stroke-linecap="round">
+        <path d="M-14 -2 L-22 -10 M-8 -8 L-12 -20 M0 -10 L0 -23 M8 -8 L12 -20 M14 -2 L22 -10"/>
+      </g>
+      <circle cx="20" cy="3" r="3.4"/>
+      <path d="M-10 6 L-11 13 M10 6 L11 13" fill="none" stroke-width="2.2" stroke-linecap="round"/>
+    </g>
+    <g id="storm">
+      <path d="M0 0 m-2 0 a2 2 0 1 1 4 0 a5 5 0 1 1 -10 0 a8 8 0 1 1 16 0 a11 11 0 1 1 -22 0 a14 14 0 1 1 28 0"
+            fill="none" stroke-width="3" stroke-linecap="round"/>
+      <path d="M-14 16 L-18 28 M-4 18 L-8 32 M6 18 L2 30 M16 16 L12 26" fill="none" stroke-width="2" stroke-linecap="round"/>
+    </g>
+
+    <!-- ===== Places ===== -->
+    <g id="granary">
+      <path d="M-30 -6 L0 -36 L30 -6 Z" fill="none" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M-24 -6 V18 H24 V-6 M-30 18 H30 M-20 18 V30 M0 18 V30 M20 18 V30" fill="none" stroke-width="3" stroke-linecap="round"/>
+      <g><circle cx="-12" cy="8" r="2.4"/><circle cx="-4" cy="4" r="2.4"/><circle cx="4" cy="8" r="2.4"/><circle cx="12" cy="4" r="2.4"/><circle cx="0" cy="12" r="2.4"/><circle cx="-8" cy="12" r="2.4"/><circle cx="8" cy="12" r="2.4"/></g>
+    </g>
+    <g id="spot">
+      <circle r="17" fill="none" stroke-width="2" stroke-dasharray="3 4"/>
+      <circle r="2.6"/>
+    </g>
+    <g id="sack">
+      <path d="M-5 6 Q-7 -2 -3 -5 L-4 -8 H4 L3 -5 Q7 -2 5 6 Z"/>
+    </g>
+    <g id="bowl">
+      <path d="M-9 -1 H9 Q8 9 0 9 Q-8 9 -9 -1 Z"/>
+      <g><circle cx="-4" cy="-4" r="2"/><circle cx="0" cy="-6" r="2"/><circle cx="4" cy="-4" r="2"/></g>
+    </g>
+    <pattern id="frieze" width="44" height="16" patternUnits="userSpaceOnUse">
+      <path d="M0 14 L7 2 L14 14 Z M14 2 L21 14 L28 2 Z" fill="#f3e7d3"/>
+      <circle cx="36" cy="8" r="2.4" fill="#f3e7d3"/>
+    </pattern>
+  </defs>
+</svg>
+
+<div class="sheet">
+  <header class="masthead">
+    <h1>Harvest<br>Keepers</h1>
+    <p>Concept board. A tower defense game painted in Warli: the village defends its
+      granary from pests and storms by placing villagers along painted paths.</p>
+    <p class="no">concept 01 · samvardhana studios<br>nov 2026 · not final art</p>
+  </header>
+
+  <!-- ===================== GAMEPLAY SCREEN ===================== -->
+  <div>
+    <div class="phone wall">
+      <svg width="390" height="844" viewBox="0 0 390 844" filter="url(#brush)">
+        <!-- top frieze -->
+        <path d="M0 8 H390 M0 36 H390" stroke="#f3e7d3" stroke-width="2"/>
+        <rect x="0" y="14" width="390" height="16" fill="url(#frieze)"/>
+
+        <!-- HUD: rice (money), granary sacks (lives), sun arc (waves) -->
+        <g fill="#e3a72f" stroke="#e3a72f" transform="translate(30 68)"><use href="#bowl"/></g>
+        <text x="46" y="76" font-family="Kalam" font-weight="700" font-size="22" fill="#f3e7d3">240</text>
+        <g fill="#f3e7d3" stroke="#f3e7d3">
+          <g transform="translate(118 68)"><use href="#sack"/></g><g transform="translate(132 68)"><use href="#sack"/></g>
+          <g transform="translate(146 68)"><use href="#sack"/></g><g transform="translate(160 68)"><use href="#sack"/></g>
+          <g transform="translate(174 68)"><use href="#sack"/></g><g transform="translate(188 68)"><use href="#sack"/></g>
+          <g transform="translate(202 68)"><use href="#sack"/></g>
+        </g>
+        <g fill="none" stroke="#f3e7d3" stroke-width="1.6" opacity=".45">
+          <g transform="translate(216 68)"><use href="#sack"/></g><g transform="translate(230 68)"><use href="#sack"/></g><g transform="translate(244 68)"><use href="#sack"/></g>
+        </g>
+        <!-- sun crossing the sky = wave progress -->
+        <path d="M282 84 Q 322 44 362 84" fill="none" stroke="#f3e7d3" stroke-width="1.5" stroke-dasharray="2 5"/>
+        <g transform="translate(306 62) scale(.55)" fill="#e3a72f" stroke="#e3a72f">
+          <circle r="10" fill="none" stroke-width="3"/><circle r="3.5"/>
+          <path d="M0 -15 V-23 M0 15 V23 M-15 0 H-23 M15 0 H23 M10.6 10.6 L16 16 M-10.6 -10.6 L-16 -16 M10.6 -10.6 L16 -16 M-10.6 10.6 L-16 16" stroke-width="2.4" stroke-linecap="round"/>
+        </g>
+        <text x="322" y="104" text-anchor="middle" font-family="Kalam" font-size="14" fill="#f3e7d3">wave 4 of 12</text>
+
+        <!-- the path: a lighter trodden band with paste edges and footprint dots -->
+        <path id="road" d="M60 120 V250 Q60 290 100 290 H290 Q330 290 330 330 V430 Q330 470 290 470 H110 Q70 470 70 510 V610 Q70 650 110 650 H250"
+              fill="none" stroke="#b4623b" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M60 120 V250 Q60 290 100 290 H290 Q330 290 330 330 V430 Q330 470 290 470 H110 Q70 470 70 510 V610 Q70 650 110 650 H250"
+              fill="none" stroke="#f3e7d3" stroke-width="1.6" stroke-dasharray="1 9" stroke-linecap="round"/>
+        <!-- the granary at the end of the path -->
+        <g transform="translate(300 650)" fill="#e3a72f" stroke="#e3a72f"><use href="#granary"/></g>
+
+        <!-- enemies marching (charcoal) -->
+        <g fill="#24140c" stroke="#24140c">
+          <g transform="translate(60 150) rotate(90) scale(.9)"><use href="#locust"/></g>
+          <g transform="translate(60 196) rotate(90) scale(.9)"><use href="#locust"/></g>
+          <g transform="translate(150 286) scale(.95)"><use href="#boar"/></g>
+          <g transform="translate(232 282) scale(.95)"><use href="#jackal"/></g>
+          <g transform="translate(330 380) scale(.9)"><use href="#porcupine"/></g>
+          <g transform="translate(190 420) scale(.9)"><use href="#crow"/></g>
+        </g>
+        <!-- crow health line -->
+        <path d="M178 400 H202" stroke="#24140c" stroke-width="3"/><path d="M178 400 H192" stroke="#e3a72f" stroke-width="3"/>
+
+        <!-- build spots: empty and filled -->
+        <g fill="#f3e7d3" stroke="#f3e7d3">
+          <g transform="translate(130 200)"><use href="#spot"/></g>
+          <g transform="translate(240 370)"><use href="#spot"/></g>
+          <g transform="translate(170 560)"><use href="#spot"/></g>
+          <g transform="translate(330 560)"><use href="#spot"/></g>
+        </g>
+        <!-- placed towers -->
+        <g fill="#f3e7d3" stroke="#f3e7d3">
+          <g transform="translate(118 236)"><use href="#archer"/></g>
+          <g transform="translate(250 245)"><use href="#drummer"/></g>
+          <g transform="translate(150 390)"><use href="#slinger"/></g>
+          <g transform="translate(250 530)"><use href="#beekeeper"/></g>
+          <g transform="translate(40 410)"><use href="#scarecrow"/></g>
+        </g>
+        <!-- an arrow in flight from the archer -->
+        <path d="M140 228 L165 262 M160 258 L165 262 L161 256" fill="none" stroke="#f3e7d3" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- drummer's slow ring -->
+        <circle cx="250" cy="245" r="62" fill="none" stroke="#f3e7d3" stroke-width="1.2" stroke-dasharray="1 6" opacity=".7"/>
+
+        <!-- selected tower (beekeeper): range ring + painted action panel -->
+        <circle cx="250" cy="530" r="70" fill="#f3e7d3" fill-opacity=".08" stroke="#e3a72f" stroke-width="2" stroke-dasharray="6 5"/>
+        <g transform="translate(150 708)">
+          <path d="M2 4 Q120 -2 236 3 Q240 30 235 58 Q120 62 4 59 Q-1 30 2 4Z" fill="#6e2c17" fill-opacity=".85" stroke="#f3e7d3" stroke-width="2.4"/>
+          <text x="16" y="28" font-family="Yatra One" font-size="18" fill="#f3e7d3">Beehive keeper</text>
+          <text x="16" y="49" font-family="Kalam" font-size="14" fill="#f3e7d3">stings over time · level 1</text>
+        </g>
+        <!-- upgrade / sell painted buttons -->
+        <g transform="translate(14 708)">
+          <path d="M3 4 Q60 0 120 4 Q123 30 119 58 Q60 61 4 58 Q0 30 3 4Z" fill="#f3e7d3"/>
+          <text x="61" y="28" text-anchor="middle" font-family="Kalam" font-weight="700" font-size="17" fill="#6e2c17">grow hive</text>
+          <g transform="translate(46 44) scale(.7)" fill="#9a4528" stroke="#9a4528"><use href="#bowl"/></g>
+          <text x="58" y="49" font-family="Kalam" font-weight="700" font-size="14" fill="#6e2c17">60</text>
+        </g>
+
+        <!-- bottom bar: pause + speed drawn as marks, not unicode -->
+        <g transform="translate(0 786)">
+          <path d="M0 4 H390 M0 52 H390" stroke="#f3e7d3" stroke-width="1.6" opacity=".6"/>
+          <g fill="#f3e7d3"><rect x="26" y="16" width="6" height="22" rx="2"/><rect x="38" y="16" width="6" height="22" rx="2"/></g>
+          <g fill="#f3e7d3"><path d="M78 16 L92 27 L78 38 Z M92 16 L106 27 L92 38 Z"/></g>
+          <text x="116" y="34" font-family="Kalam" font-weight="700" font-size="17" fill="#f3e7d3">2×</text>
+          <text x="364" y="34" text-anchor="end" font-family="Kalam" font-size="16" fill="#f3e7d3">next wave: crows ×6</text>
+        </g>
+      </svg>
+    </div>
+    <p class="note">Sample screen, portrait, one thumb. Our villagers are rice-paste white; every
+      threat is charcoal ink, so friend and foe read instantly. The sun crossing the sky is
+      the wave counter, rice bowls are money, sacks are lives.</p>
+  </div>
+
+  <!-- ===================== RIGHT COLUMN ===================== -->
+  <div>
+    <section class="block">
+      <h2>Name options</h2>
+      <div class="names">
+        <div class="name-card wall pick">
+          <div class="title">Harvest Keepers <span class="badge">my pick</span></div>
+          <div class="pkg">com.samvardhanastudios.harvestkeepers</div>
+          <div class="why">Says what you do (protect the harvest), easy to say in any language, no exact-name game found.</div>
+        </div>
+        <div class="name-card wall">
+          <div class="title">The Painted Village</div>
+          <div class="pkg">com.samvardhanastudios.paintedvillage</div>
+          <div class="why">Beautiful and unique, but doesn't say "tower defense".</div>
+        </div>
+        <div class="name-card wall">
+          <div class="title">Warli Watch</div>
+          <div class="pkg">com.samvardhanastudios.warliwatch</div>
+          <div class="why">Most unique, proud of its roots, but "Warli" is unknown to most players abroad.</div>
+        </div>
+        <div class="name-card wall">
+          <div class="title">Granary Guard</div>
+          <div class="pkg">com.samvardhanastudios.granaryguard</div>
+          <div class="why">Clear defense game, but plainer and harder to brand.</div>
+        </div>
+      </div>
+      <p class="note">Store title would be e.g. "Harvest Keepers: Village Defense", which carries the genre keyword for search.</p>
+    </section>
+
+    <section class="block">
+      <h2>Villagers (towers)</h2>
+      <div class="roster">
+        <figure class="cell wall"><svg width="96" height="86" viewBox="-40 -46 90 82" filter="url(#brush)"><g fill="#f3e7d3" stroke="#f3e7d3"><use href="#archer"/></g></svg><figcaption><b>Archer</b><span>one target, far</span></figcaption></figure>
+        <figure class="cell wall"><svg width="96" height="86" viewBox="-40 -46 90 82" filter="url(#brush)"><g fill="#f3e7d3" stroke="#f3e7d3"><use href="#slinger"/></g></svg><figcaption><b>Slinger kid</b><span>cheap, fast</span></figcaption></figure>
+        <figure class="cell wall"><svg width="96" height="86" viewBox="-40 -46 90 82" filter="url(#brush)"><g fill="#f3e7d3" stroke="#f3e7d3"><use href="#drummer"/></g></svg><figcaption><b>Drummer</b><span>slows nearby</span></figcaption></figure>
+        <figure class="cell wall"><svg width="96" height="86" viewBox="-40 -46 90 82" filter="url(#brush)"><g fill="#f3e7d3" stroke="#f3e7d3"><use href="#beekeeper"/></g></svg><figcaption><b>Beekeeper</b><span>damage over time</span></figcaption></figure>
+        <figure class="cell wall"><svg width="96" height="86" viewBox="-40 -46 90 82" filter="url(#brush)"><g fill="#f3e7d3" stroke="#f3e7d3"><use href="#scarecrow"/></g></svg><figcaption><b>Scarecrow</b><span>pulls flyers</span></figcaption></figure>
+        <figure class="cell wall"><svg width="96" height="86" viewBox="-40 -46 90 82" filter="url(#brush)"><g fill="#f3e7d3" stroke="#f3e7d3"><use href="#tarpa"/></g></svg><figcaption><b>Tarpa player</b><span>boosts others</span></figcaption></figure>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2>Raiders (enemies)</h2>
+      <div class="roster">
+        <figure class="cell" style="background:#f3e7d3;color:#24140c"><svg width="96" height="70" viewBox="-36 -26 72 52" filter="url(#brush)"><g fill="#24140c" stroke="#24140c"><use href="#locust"/></g></svg><figcaption><b>Locust swarm</b><span>fast, weak</span></figcaption></figure>
+        <figure class="cell" style="background:#f3e7d3;color:#24140c"><svg width="96" height="70" viewBox="-36 -26 72 52" filter="url(#brush)"><g fill="#24140c" stroke="#24140c"><use href="#crow"/></g></svg><figcaption><b>Crow</b><span>flies over walls</span></figcaption></figure>
+        <figure class="cell" style="background:#f3e7d3;color:#24140c"><svg width="96" height="70" viewBox="-36 -26 72 52" filter="url(#brush)"><g fill="#24140c" stroke="#24140c"><use href="#boar"/></g></svg><figcaption><b>Wild boar</b><span>tough</span></figcaption></figure>
+        <figure class="cell" style="background:#f3e7d3;color:#24140c"><svg width="96" height="70" viewBox="-36 -26 72 52" filter="url(#brush)"><g fill="#24140c" stroke="#24140c"><use href="#jackal"/></g></svg><figcaption><b>Jackal pack</b><span>quick, in groups</span></figcaption></figure>
+        <figure class="cell" style="background:#f3e7d3;color:#24140c"><svg width="96" height="70" viewBox="-36 -26 72 52" filter="url(#brush)"><g fill="#24140c" stroke="#24140c"><use href="#porcupine"/></g></svg><figcaption><b>Porcupine</b><span>armoured</span></figcaption></figure>
+        <figure class="cell" style="background:#f3e7d3;color:#24140c"><svg width="96" height="70" viewBox="-36 -26 72 52" filter="url(#brush)"><g fill="#24140c" stroke="#24140c"><use href="#storm"/></g></svg><figcaption><b>Storm spirit</b><span>boss, monsoon</span></figcaption></figure>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2>Upgrades show on the figure</h2>
+      <div class="tiers">
+        <figure><svg width="90" height="100" viewBox="-40 -50 90 90" filter="url(#brush)"><g fill="#f3e7d3" stroke="#f3e7d3"><use href="#archer"/></g></svg><figcaption>level 1</figcaption></figure>
+        <figure><svg width="90" height="100" viewBox="-40 -50 90 90" filter="url(#brush)"><g fill="#f3e7d3" stroke="#f3e7d3"><use href="#archer"/>
+          <path d="M-3 -33 L-6 -46 M2 -33 L4 -47" fill="none" stroke-width="2" stroke-linecap="round"/>
+          <path d="M-14 -20 L-10 -2 M-12 -24 L-17 -21 M-10 -24 L-13 -27" fill="none" stroke-width="2" stroke-linecap="round"/></g></svg><figcaption>level 2: feathers, quiver</figcaption></figure>
+        <figure><svg width="110" height="100" viewBox="-50 -64 110 100" filter="url(#brush)"><g fill="#f3e7d3" stroke="#f3e7d3">
+          <g transform="translate(0 -12)"><use href="#archer"/>
+          <path d="M-3 -33 L-6 -46 M2 -33 L4 -47" fill="none" stroke-width="2" stroke-linecap="round"/></g>
+          <path d="M-26 16 H26 M-22 16 L-26 36 M22 16 L26 36 M-24 26 H24" fill="none" stroke-width="2.6" stroke-linecap="round"/></g></svg><figcaption>level 3: on a machan tower</figcaption></figure>
+        <p class="note" style="max-width:300px">No numbers or stars on towers. You see the upgrade in the painting itself.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== LEVEL SELECT WALL ===================== -->
+  <section class="strip">
+    <h2>Level select: the village wall</h2>
+    <div class="strip-wrap wall">
+      <svg width="1296" height="190" viewBox="0 0 1296 190" filter="url(#brush)">
+        <path d="M0 8 H1296 M0 182 H1296" stroke="#f3e7d3" stroke-width="2"/>
+        <!-- scene 1: done -->
+        <g fill="#f3e7d3" stroke="#f3e7d3">
+          <g transform="translate(70 110)"><use href="#archer"/></g>
+          <g transform="translate(130 112)"><use href="#drummer"/></g>
+          <g transform="translate(200 96)" fill="#e3a72f" stroke="#e3a72f"><use href="#granary"/></g>
+          <text x="140" y="172" text-anchor="middle" font-family="Kalam" font-size="15" fill="#f3e7d3">1 · first harvest</text>
+        </g>
+        <path d="M262 30 V160" stroke="#f3e7d3" stroke-width="1.5" stroke-dasharray="2 6"/>
+        <!-- scene 2: done, dance circle -->
+        <g fill="#f3e7d3" stroke="#f3e7d3">
+          <g transform="translate(330 100) scale(.6)"><use href="#body"/></g><g transform="translate(360 84) scale(.6)"><use href="#body"/></g>
+          <g transform="translate(390 100) scale(.6)"><use href="#body"/></g><g transform="translate(360 118) scale(.6)"><use href="#body"/></g>
+          <g transform="translate(440 106)"><use href="#tarpa"/></g>
+          <text x="380" y="172" text-anchor="middle" font-family="Kalam" font-size="15" fill="#f3e7d3">2 · the locust year</text>
+        </g>
+        <path d="M502 30 V160" stroke="#f3e7d3" stroke-width="1.5" stroke-dasharray="2 6"/>
+        <!-- scene 3: done -->
+        <g fill="#f3e7d3" stroke="#f3e7d3">
+          <g transform="translate(560 108)"><use href="#beekeeper"/></g>
+          <g transform="translate(650 112)" fill="#f3e7d3"><use href="#scarecrow"/></g>
+          <g transform="translate(700 86) scale(.7)" fill="#24140c" stroke="#24140c"><use href="#crow"/></g>
+          <text x="620" y="172" text-anchor="middle" font-family="Kalam" font-size="15" fill="#f3e7d3">3 · crows at dawn</text>
+        </g>
+        <path d="M742 30 V160" stroke="#f3e7d3" stroke-width="1.5" stroke-dasharray="2 6"/>
+        <!-- scene 4: current, sketched only -->
+        <g fill="none" stroke="#f3e7d3" stroke-width="1.4" stroke-dasharray="3 4" opacity=".8">
+          <g transform="translate(820 108)"><use href="#archer"/></g>
+          <g transform="translate(900 112)"><use href="#boar"/></g>
+        </g>
+        <rect x="770" y="26" width="200" height="132" fill="none" stroke="#e3a72f" stroke-width="3" rx="6"/>
+        <text x="870" y="172" text-anchor="middle" font-family="Kalam" font-weight="700" font-size="15" fill="#e3a72f">4 · boars in the field (play)</text>
+        <path d="M992 30 V160" stroke="#f3e7d3" stroke-width="1.5" stroke-dasharray="2 6"/>
+        <!-- scenes 5+: bare wall -->
+        <text x="1140" y="100" text-anchor="middle" font-family="Kalam" font-size="17" fill="#f3e7d3" opacity=".5">the wall is still bare here</text>
+      </svg>
+    </div>
+    <p class="note">Each defended level paints its scene onto one long wall that scrolls sideways.
+      The next level is only a sketch until you win it. By the end, the player has painted a whole village.</p>
+  </section>
+</div>
+</body>
+</html>
