@@ -142,7 +142,40 @@ image generation or an illustrator, which is harder to keep consistent.
 in mobile games, both can be built entirely in code (so you really do only test), and
 both make every screen, including the menus, look like nothing else in the store.
 
-## 5. Next decisions (in order)
+## 5. Option: free pre-made assets
+
+Free asset packs are a valid shortcut. They give us real, hand-made art and sound, and
+they look more consistent than AI-generated images. The catch is that popular packs are
+used in thousands of games, so used as-is they become their own "seen it before" tell.
+
+### Where to get them (free for commercial use; check each pack's licence)
+
+| Source | What | Usual licence |
+|---|---|---|
+| [Kenney.nl](https://kenney.nl) | 2D/3D sprites, UI, icons, sounds | CC0 (no credit needed) |
+| [itch.io free game assets](https://itch.io/game-assets/free) | Huge variety of art styles | Varies per pack: read each one |
+| [OpenGameArt.org](https://opengameart.org) | Sprites, tiles, music, sounds | Mixed: CC0, CC-BY, GPL |
+| [Quaternius](https://quaternius.com) | Low-poly 3D models | CC0 |
+| [game-icons.net](https://game-icons.net) | 4,000+ game icons | CC BY 3.0 (credit needed) |
+| [Google Fonts](https://fonts.google.com) | Fonts | OFL (free for commercial use) |
+| [Freesound.org](https://freesound.org) | Sound effects | Mixed: avoid "NonCommercial" |
+| [Pixabay](https://pixabay.com/music/) | Music and sound effects | Pixabay licence (free, no credit) |
+
+**Licence rules for a Play Store game:** CC0 is safest. CC-BY is fine if we credit the
+author in the game's credits screen. **Never use "NC" (NonCommercial) or "personal use
+only" assets**, because our game makes money. We keep a `CREDITS.md` file that lists
+every asset, its source and its licence.
+
+### How to keep pre-made assets from looking generic
+- **Choose less-known packs.** Kenney's most popular packs are instantly recognisable.
+- **One style only.** Never mix packs from different artists on the same screen.
+- **Repaint with our own palette.** AI can recolour sprites in code to fit our look.
+- **Add our own layer.** Paper grain, print texture, custom borders, our own font and
+  logo on top of the pack.
+- **Use the pack for pieces, and make the UI and branding ourselves.** The icon,
+  logo, menus and win moments are what players remember, so those must be ours.
+
+## 6. Next decisions (in order)
 
 1. Pick 1–2 visual directions → I make a style board (palette, type, sample screen) for each.
 2. Pick the game mechanic, choosing one that suits the chosen look.
