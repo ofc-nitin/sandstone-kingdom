@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Style Board: Risograph</title>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Courier+Prime:wght@400;700&display=block" rel="stylesheet">
+<style>
+  /* Riso inks: each colour is one "drum". Overlaps multiply like real ink. */
+  :root {
+    --paper: #f1ebdd;
+    --pink: #ff48b0;
+    --blue: #0078bf;
+    --yellow: #ffe800;
+    --ink: #2a2a3a; /* "Federal blue"-ish dark, never pure black */
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    width: 1280px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Courier Prime', monospace;
+    position: relative;
+  }
+  /* Paper grain over everything */
+  body::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.16 0 0 0 0 0.2 0 0 0 0.22 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: multiply;
+    z-index: 50;
+  }
+  .sheet { display: grid; grid-template-columns: 420px 1fr; gap: 56px; padding: 48px 56px 56px; }
+
+  .masthead { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 24px; border-bottom: 3px solid var(--ink); padding-bottom: 12px; }
+  .masthead h1 { font-family: 'Dela Gothic One', sans-serif; font-weight: 400; font-size: 64px; margin: 0; line-height: 1; position: relative; color: var(--blue); mix-blend-mode: multiply; }
+  .masthead h1 span { position: absolute; left: 4px; top: 3px; color: var(--pink); mix-blend-mode: multiply; }
+  .masthead p { margin: 0; font-size: 15px; max-width: 520px; }
+  .masthead .no { margin-left: auto; font-size: 13px; text-align: right; }
+
+  /* ---------- Phone screen ---------- */
+  .phone {
+    width: 390px; height: 800px;
+    background: var(--paper);
+    border: 3px solid var(--ink);
+    position: relative;
+    overflow: hidden;
+    transform: rotate(-1.2deg);
+    box-shadow: 10px 12px 0 var(--blue);
+  }
+  .phone .grain { position: absolute; inset: 0; }
+  .ph-top { display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 20px 0; }
+  .issue { font-size: 12px; line-height: 1.35; text-transform: lowercase; }
+  .issue b { font-size: 15px; }
+  .stamp {
+    width: 96px; height: 96px; border-radius: 50%;
+    border: 3px solid var(--pink); color: var(--pink);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transform: rotate(12deg); mix-blend-mode: multiply;
+    font-family: 'Dela Gothic One'; font-size: 40px; line-height: 0.9;
+  }
+  .stamp small { font-family: 'Courier Prime'; font-size: 11px; font-weight: 700; letter-spacing: 0; }
+  .ph-title { font-family: 'Dela Gothic One'; font-size: 34px; line-height: 0.95; padding: 4px 20px 0; position: relative; color: var(--blue); mix-blend-mode: multiply; }
+  .ph-title i { font-style: normal; position: absolute; left: 23px; top: 6px; color: var(--yellow); z-index: -1; }
+  .ph-note { padding: 8px 20px 0; font-size: 13px; max-width: 280px; }
+
+  .board { position: absolute; left: 24px; top: 250px; }
+  .ph-bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 20px 22px; display: flex; align-items: flex-end; gap: 14px; }
+  .tally { font-size: 12px; margin-right: auto; }
+  .tally svg { display: block; margin-top: 4px; }
+
+  /* Ticket-shaped buttons: torn/perforated edge instead of pills */
+  .ticket {
+    font-family: 'Courier Prime'; font-weight: 700; font-size: 15px;
+    padding: 12px 16px 12px 22px; background: var(--yellow); color: var(--ink);
+    border: 0; position: relative; mix-blend-mode: multiply;
+    -webkit-mask: radial-gradient(circle 5px at 0 50%, transparent 98%, #000) ;
+  }
+  .ticket.blue { background: var(--blue); color: var(--paper); mix-blend-mode: normal; }
+
+  /* ---------- Specimen side ---------- */
+  .spec h2 { font-family: 'Dela Gothic One'; font-weight: 400; font-size: 22px; margin: 0 0 14px; display: flex; gap: 12px; align-items: center; }
+  .spec h2::before { content: attr(data-n); font-family: 'Courier Prime'; font-size: 13px; border: 2px solid var(--ink); padding: 1px 6px; }
+  .block { margin-bottom: 40px; }
+  .swatches { display: flex; gap: 0; }
+  .sw { width: 112px; }
+  .sw .chip { height: 84px; mix-blend-mode: multiply; margin-right: -18px; border-radius: 0 0 0 0; }
+  .sw p { font-size: 12px; margin: 8px 0 0; line-height: 1.3; }
+  .overlap-note { font-size: 13px; margin-top: 10px; }
+
+  .type-a { font-family: 'Dela Gothic One'; font-size: 52px; line-height: 1; margin: 0; }
+  .type-b { font-size: 17px; margin: 10px 0 0; max-width: 560px; }
+  .type-meta { font-size: 12px; margin-top: 8px; opacity: 0.75; }
+
+  .pieces { display: flex; gap: 22px; align-items: flex-end; }
+  .pieces figure { margin: 0; text-align: center; font-size: 12px; }
+
+  .row { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+
+  .win {
+    width: 420px; padding: 18px 20px; border: 3px dashed var(--ink); position: relative;
+    transform: rotate(0.8deg); background: var(--paper);
+  }
+  .win .big { font-family: 'Dela Gothic One'; font-size: 44px; line-height: 0.95; color: var(--pink); mix-blend-mode: multiply; }
+  .win p { font-size: 14px; margin: 8px 0 0; }
+  .win .seal { position: absolute; right: 16px; top: -26px; }
+
+  .rules { columns: 2; font-size: 13px; padding-left: 18px; margin: 0; }
+  .rules li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <!-- Halftone dot fill, like a riso screen -->
+    <pattern id="dots-blue" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(18)">
+      <circle cx="3" cy="3" r="1.7" fill="#0078bf"/>
+    </pattern>
+    <pattern id="dots-pink" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(-24)">
+      <circle cx="3" cy="3" r="1.6" fill="#ff48b0"/>
+    </pattern>
+    <!-- Slightly ragged ink edge -->
+    <filter id="ink" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="4" result="t"/>
+      <feDisplacementMap in="SourceGraphic" in2="t" scale="3.5"/>
+    </filter>
+  </defs>
+</svg>
+
+<div class="sheet">
+  <header class="masthead">
+    <h1>RISOGRAPH<span>RISOGRAPH</span></h1>
+    <p>Direction 1. The game is printed, not rendered: two or three fluorescent inks on
+      warm paper, visible grain, layers that never line up perfectly.</p>
+    <p class="no">style board 01<br>samvardhana studios<br>nov 2026</p>
+  </header>
+
+  <!-- ===== Sample game screen ===== -->
+  <div>
+    <div class="phone">
+      <div class="ph-top">
+        <div class="issue"><b>sheet no. 07</b><br>of the blue series<br>printed in 3 inks</div>
+        <div class="stamp">07<small>today</small></div>
+      </div>
+      <div class="ph-title">PRESS<br>THE PAIRS<i>PRESS<br>THE PAIRS</i></div>
+      <p class="ph-note">pieces that match, touch. drag a column to shift it.</p>
+
+      <svg class="board" width="342" height="390" viewBox="0 0 342 390">
+        <!-- Print registration marks -->
+        <g stroke="#2a2a3a" stroke-width="1.2" fill="none">
+          <circle cx="8" cy="8" r="5"/><path d="M0 8h16M8 0v16"/>
+          <circle cx="334" cy="382" r="5"/><path d="M326 382h16M334 374v16"/>
+        </g>
+        <!-- Board: hand-ruled grid, not tiles -->
+        <g transform="translate(18 18)" filter="url(#ink)">
+          <rect x="0" y="0" width="306" height="354" fill="none" stroke="#2a2a3a" stroke-width="2.5"/>
+          <g stroke="#2a2a3a" stroke-width="1" stroke-dasharray="2 4">
+            <path d="M61 0v354M122 0v354M184 0v354M245 0v354"/>
+            <path d="M0 59h306M0 118h306M0 177h306M0 236h306M0 295h306"/>
+          </g>
+        </g>
+        <!-- Pieces: two offset ink layers each -->
+        <g transform="translate(18 18)" style="mix-blend-mode:multiply">
+          <!-- row 1 -->
+          <g transform="translate(30 30)"><circle r="20" fill="#ff48b0" opacity=".9"/><circle r="20" cx="3" cy="2" fill="url(#dots-blue)"/></g>
+          <g transform="translate(152 30)"><rect x="-19" y="-19" width="38" height="38" fill="#0078bf" opacity=".9"/><rect x="-16" y="-17" width="38" height="38" fill="#ffe800" opacity=".7"/></g>
+          <g transform="translate(276 30)"><path d="M0 -22 L21 16 H-21Z" fill="#ffe800"/><path d="M3 -20 L24 18 H-18Z" fill="url(#dots-pink)"/></g>
+          <!-- row 2 -->
+          <g transform="translate(91 89)"><path d="M-21 8 A21 21 0 0 1 21 8Z" fill="#0078bf"/><path d="M-18 11 A21 21 0 0 1 24 11Z" fill="url(#dots-pink)"/></g>
+          <g transform="translate(214 89)"><circle r="20" fill="#ff48b0" opacity=".9"/><circle r="20" cx="3" cy="2" fill="url(#dots-blue)"/></g>
+          <!-- row 3 -->
+          <g transform="translate(30 148)"><rect x="-19" y="-19" width="38" height="38" fill="#0078bf" opacity=".9"/><rect x="-16" y="-17" width="38" height="38" fill="#ffe800" opacity=".7"/></g>
+          <g transform="translate(152 148)"><path d="M0 -22 L21 16 H-21Z" fill="#ffe800"/><path d="M3 -20 L24 18 H-18Z" fill="url(#dots-pink)"/></g>
+          <g transform="translate(276 148)"><circle r="20" fill="#ff48b0" opacity=".9"/><circle r="20" cx="3" cy="2" fill="url(#dots-blue)"/></g>
+          <!-- row 4: a matched pair, pressed together -->
+          <g transform="translate(91 207)"><path d="M-21 8 A21 21 0 0 1 21 8Z" fill="#0078bf"/><path d="M-18 11 A21 21 0 0 1 24 11Z" fill="url(#dots-pink)"/></g>
+          <g transform="translate(152 207)"><path d="M-21 8 A21 21 0 0 1 21 8Z" fill="#0078bf"/><path d="M-18 11 A21 21 0 0 1 24 11Z" fill="url(#dots-pink)"/></g>
+          <path d="M70 232 q 41 14 102 0" fill="none" stroke="#ff48b0" stroke-width="3" stroke-linecap="round"/>
+          <!-- row 5 -->
+          <g transform="translate(30 266)"><path d="M0 -22 L21 16 H-21Z" fill="#ffe800"/><path d="M3 -20 L24 18 H-18Z" fill="url(#dots-pink)"/></g>
+          <g transform="translate(245 266)"><rect x="-19" y="-19" width="38" height="38" fill="#0078bf" opacity=".9"/><rect x="-16" y="-17" width="38" height="38" fill="#ffe800" opacity=".7"/></g>
+          <!-- row 6 -->
+          <g transform="translate(122 325)"><circle r="20" fill="#ff48b0" opacity=".9"/><circle r="20" cx="3" cy="2" fill="url(#dots-blue)"/></g>
+          <g transform="translate(276 325)"><path d="M0 -22 L21 16 H-21Z" fill="#ffe800"/><path d="M3 -20 L24 18 H-18Z" fill="url(#dots-pink)"/></g>
+        </g>
+      </svg>
+
+      <div class="ph-bottom">
+        <div class="tally">moves so far
+          <svg width="96" height="26" viewBox="0 0 96 26" fill="none" stroke="#2a2a3a" stroke-width="2.4" stroke-linecap="round">
+            <path d="M4 3v20M12 2v21M20 3v20M28 2v21M0 18L34 6"/>
+            <path d="M46 3v20M54 2v21"/>
+          </svg>
+        </div>
+        <button class="ticket">take back</button>
+        <button class="ticket blue">peek</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Specimen ===== -->
+  <div class="spec">
+    <section class="block">
+      <h2 data-n="A">Inks</h2>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#f1ebdd;outline:2px solid #2a2a3a;outline-offset:-2px;margin-right:6px"></div><p>paper<br>#f1ebdd</p></div>
+        <div class="sw"><div class="chip" style="background:#ff48b0"></div><p>fluor. pink<br>#ff48b0</p></div>
+        <div class="sw"><div class="chip" style="background:#0078bf"></div><p>riso blue<br>#0078bf</p></div>
+        <div class="sw"><div class="chip" style="background:#ffe800"></div><p>yellow<br>#ffe800</p></div>
+        <div class="sw"><div class="chip" style="background:#2a2a3a;margin-left:24px"></div><p style="margin-left:24px">federal ink<br>#2a2a3a</p></div>
+      </div>
+      <p class="overlap-note">Overlaps print for free: pink × blue = violet, blue × yellow = green. No other colours exist.</p>
+    </section>
+
+    <section class="block">
+      <h2 data-n="B">Type</h2>
+      <p class="type-a">Dela Gothic One</p>
+      <p class="type-b">Courier Prime for everything you read: rules, counters, buttons. lowercase, like notes typed on the back of a print.</p>
+      <p class="type-meta">both free (SIL Open Font License) · no gradient text, ever</p>
+    </section>
+
+    <section class="block">
+      <h2 data-n="C">Pieces</h2>
+      <div class="pieces">
+        <figure><svg width="64" height="64" viewBox="-32 -32 64 64" style="mix-blend-mode:multiply"><circle r="24" fill="#ff48b0" opacity=".9"/><circle r="24" cx="4" cy="3" fill="url(#dots-blue)"/></svg><figcaption>dot</figcaption></figure>
+        <figure><svg width="64" height="64" viewBox="-32 -32 64 64" style="mix-blend-mode:multiply"><rect x="-22" y="-22" width="44" height="44" fill="#0078bf" opacity=".9"/><rect x="-18" y="-20" width="44" height="44" fill="#ffe800" opacity=".7"/></svg><figcaption>block</figcaption></figure>
+        <figure><svg width="64" height="64" viewBox="-32 -32 64 64" style="mix-blend-mode:multiply"><path d="M0 -26 L25 19 H-25Z" fill="#ffe800"/><path d="M4 -24 L29 21 H-21Z" fill="url(#dots-pink)"/></svg><figcaption>peak</figcaption></figure>
+        <figure><svg width="64" height="64" viewBox="-32 -32 64 64" style="mix-blend-mode:multiply"><path d="M-25 10 A25 25 0 0 1 25 10Z" fill="#0078bf"/><path d="M-21 13 A25 25 0 0 1 29 13Z" fill="url(#dots-pink)"/></svg><figcaption>dome</figcaption></figure>
+        <figure><svg width="96" height="64" viewBox="0 0 96 64" style="mix-blend-mode:multiply"><circle cx="48" cy="32" r="24" fill="#ff48b0" opacity=".25"/><circle cx="48" cy="32" r="24" fill="none" stroke="#ff48b0" stroke-width="2" stroke-dasharray="3 4"/></svg><figcaption>empty slot</figcaption></figure>
+      </div>
+      <p class="overlap-note">Every piece = one flat ink + one halftone layer, nudged a few pixels off. No gloss, no drop shadows.</p>
+    </section>
+
+    <section class="block">
+      <h2 data-n="D">Controls</h2>
+      <div class="row">
+        <button class="ticket">take back</button>
+        <button class="ticket blue">peek</button>
+        <span style="font-size:13px">tickets with a punched notch replace pill buttons.<br>score is a tally, not "Moves: 12".</span>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2 data-n="E">The win moment</h2>
+      <div class="win">
+        <svg class="seal" width="84" height="84" viewBox="-42 -42 84 84" style="mix-blend-mode:multiply">
+          <g fill="#ffe800"><circle r="36"/></g>
+          <g fill="none" stroke="#0078bf" stroke-width="2.5"><circle r="30" stroke-dasharray="4 3"/></g>
+          <text text-anchor="middle" y="6" font-family="Dela Gothic One" font-size="15" fill="#0078bf">done</text>
+        </svg>
+        <div class="big">sheet 07,<br>pulled.</div>
+        <p>printed in 14 moves. it goes on the wall with the others.</p>
+      </div>
+      <p class="overlap-note">Finished levels become prints pinned to a wall, which is the level select. No stars, no "Awesome!".</p>
+    </section>
+  </div>
+</div>
+</body>
+</html>
