@@ -9,7 +9,10 @@ from the game.
 **Branches:** game work on `claude/exciting-sagan-dooxr8`; website on a separate
 `website` branch (deployed from there, so website changes never touch the game).
 
-**Concept board:** [`style-boards/tower-defense-concept.png`](style-boards/tower-defense-concept.png)
+**Art direction changed (2026-11-02):** Indian medieval, in the style of Rajasthani Phad scroll
+painting, replacing Warli. Working name **Garh Rakshak** (fort protector). Concept board:
+[`style-boards/indian-medieval-concept.png`](style-boards/indian-medieval-concept.png).
+Sections below still describe the Warli version and will be rewritten once the name is confirmed.
 
 Who does what in the task lists below:
 - 🤖 **AI** does it, in this repo.
