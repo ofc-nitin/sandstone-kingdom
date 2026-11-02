@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Concept: Garh Rakshak 3D</title>
+<link href="https://fonts.googleapis.com/css2?family=Rozha+One&family=Martel:wght@400;700&display=block" rel="stylesheet">
+<style>
+  :root {
+    --bg: #2b1a12; --text: #f5ead2; --muted: #d9c4a0;
+    --vermilion: #c8361d; --saffron: #ee8a22; --leaf: #2e6a3a; --indigo: #22315f;
+    --wood: #d9b27c; --wood-dark: #8a5a2f; --lime: #f6efdc; --ink: #1d1712; --gold: #d8a32a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; width: 1400px; background: var(--bg); color: var(--text); font-family: 'Martel', serif; }
+  .sheet { display: grid; grid-template-columns: 420px 1fr; gap: 52px; padding: 44px 52px 40px; }
+  .masthead { grid-column: 1 / -1; display: flex; align-items: flex-end; gap: 28px; }
+  .masthead h1 { font-family: 'Rozha One'; font-weight: 400; font-size: 60px; margin: 0; line-height: .95; color: var(--saffron); }
+  .masthead h1 small { display: block; font-size: 30px; color: var(--text); }
+  .masthead p { margin: 0 0 6px; font-size: 16px; max-width: 620px; line-height: 1.5; }
+  .masthead .no { margin-left: auto; font-size: 13px; text-align: right; color: var(--muted); }
+  h2 { font-family: 'Rozha One'; font-weight: 400; font-size: 28px; margin: 0 0 10px; color: var(--saffron); }
+  .note { font-size: 14px; margin: 8px 0 0; line-height: 1.55; color: var(--muted); max-width: 880px; }
+  .block { margin-bottom: 30px; }
+
+  /* ---------- Phone with live 3D scene ---------- */
+  .phone { position: relative; width: 390px; height: 844px; overflow: hidden; border-radius: 10px; background: #3a2416; }
+  .phone canvas { display: block; }
+  /* Turned-wood stripe band: the lacquer rings painted on Channapatna toys */
+  .stripes { background: repeating-linear-gradient(90deg, var(--vermilion) 0 14px, var(--saffron) 14px 20px, var(--leaf) 20px 26px, var(--saffron) 26px 32px); }
+  .hud { position: absolute; left: 0; right: 0; top: 0; padding: 10px 14px 8px; display: flex; align-items: center; gap: 14px;
+         background: rgba(43, 26, 18, .82); border-bottom: 4px solid var(--vermilion); }
+  .coin { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 50% 50%, var(--gold) 0 45%, #a87a17 46% 55%, var(--gold) 56%); box-shadow: inset 0 -2px 0 rgba(0,0,0,.25); }
+  .hud .num { font-weight: 700; font-size: 18px; margin-right: 6px; }
+  .lamps { display: flex; gap: 3px; }
+  .lamp { width: 13px; height: 16px; position: relative; }
+  .lamp::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 6px; border-radius: 0 0 8px 8px; background: #b5652d; }
+  .lamp::after { content: ''; position: absolute; left: 4px; bottom: 6px; width: 5px; height: 9px; border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%; background: var(--saffron); }
+  .lamp.out::after { display: none; }
+  .wave { margin-left: auto; text-align: right; font-size: 12px; line-height: 1.2; color: var(--muted); }
+  .wave b { display: block; font-size: 15px; color: var(--text); }
+
+  .panel { position: absolute; left: 12px; right: 12px; bottom: 64px; background: var(--lime); color: var(--ink);
+           border-radius: 6px; overflow: hidden; display: flex; align-items: stretch; }
+  .panel .band { height: 8px; }
+  .panel .info { padding: 8px 12px; flex: 1; }
+  .panel .info b { font-family: 'Rozha One'; font-weight: 400; font-size: 18px; color: var(--vermilion); display: block; line-height: 1.2; }
+  .panel .info span { font-size: 11px; }
+  .panel .act { background: var(--leaf); color: var(--lime); font-weight: 700; font-size: 13px; padding: 0 14px; display: flex; align-items: center; gap: 8px; }
+  .panel .act .coin { width: 16px; height: 16px; }
+  .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 52px; background: var(--vermilion); display: flex; align-items: center; padding: 0 18px; gap: 18px; color: var(--lime); font-size: 13px; }
+  .bar .pause { display: flex; gap: 5px; } .bar .pause i { width: 6px; height: 20px; background: var(--lime); border-radius: 2px; }
+  .bar .fast { display: flex; align-items: center; gap: 4px; font-weight: 700; }
+  .bar .fast i { width: 0; height: 0; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-left: 12px solid var(--lime); }
+  .bar .next { margin-left: auto; }
+
+  /* ---------- Roster shelf ---------- */
+  .shelf { position: relative; width: 880px; height: 470px; border-radius: 8px; overflow: hidden; background: #3a2416; }
+  .shelf canvas { display: block; }
+  .label { position: absolute; transform: translateX(-50%); text-align: center; font-size: 12px; line-height: 1.25; width: 110px; color: var(--text); }
+  .label b { display: block; font-size: 13px; }
+  .label span { color: var(--muted); }
+
+  .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .pillar { background: rgba(255,255,255,.04); border-top: 4px solid var(--saffron); padding: 12px 14px; font-size: 14px; line-height: 1.5; }
+  .pillar b { font-family: 'Rozha One'; font-weight: 400; font-size: 18px; color: var(--text); display: block; }
+  .swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+  .sw { width: 96px; font-size: 12px; color: var(--muted); }
+  .sw .chip { height: 42px; border-radius: 50% 50% 8px 8px / 30% 30% 8px 8px; margin-bottom: 4px; box-shadow: inset 0 -6px 0 rgba(0,0,0,.18), inset 0 4px 0 rgba(255,255,255,.18); }
+</style>
+<script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.179.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<div class="sheet">
+  <header class="masthead">
+    <h1>Garh Rakshak<small>गढ़ रक्षक · Fort Defense</small></h1>
+    <p>Concept board 03, <b>3D</b>. Same theme (an Indian medieval hill fort defended against
+      the Shadow Raja's raiders), new art: a living <b>diorama of lacquered wooden toys</b>,
+      inspired by Channapatna and Kondapalli toys and Rajasthani kathputli puppets.
+      Everything below is real-time 3D built in code.</p>
+    <p class="no">samvardhana studios · nov 2026<br>concept only · not final art</p>
+  </header>
+
+  <!-- ===================== LIVE GAMEPLAY SCENE ===================== -->
+  <div>
+    <div class="phone" id="phone">
+      <div class="hud">
+        <div class="coin"></div><span class="num">320</span>
+        <div class="lamps">
+          <i class="lamp"></i><i class="lamp"></i><i class="lamp"></i><i class="lamp"></i><i class="lamp"></i>
+          <i class="lamp"></i><i class="lamp"></i><i class="lamp out"></i><i class="lamp out"></i><i class="lamp out"></i>
+        </div>
+        <div class="wave"><b>wave 4 / 12</b>sun is high</div>
+      </div>
+      <div class="panel">
+        <div style="flex:1;display:flex;flex-direction:column">
+          <div class="band stripes"></div>
+          <div class="info"><b>Nagara drummer</b><span>war drums · nearby defenders fire faster</span></div>
+        </div>
+        <div class="act">beat louder <div class="coin"></div> 60</div>
+      </div>
+      <div class="bar">
+        <div class="pause"><i></i><i></i></div>
+        <div class="fast"><i></i><i></i>2×</div>
+        <div class="next">next: horse raiders ×5</div>
+      </div>
+    </div>
+    <p class="note">Live scene: the raiders really walk the road (open the HTML to see it move).
+      Camera is fixed and tilted like looking down at a toy fort on a table: easy to read and
+      cheap to render on low-end phones.</p>
+  </div>
+
+  <!-- ===================== RIGHT COLUMN ===================== -->
+  <div>
+    <section class="block">
+      <h2>Why wooden toys</h2>
+      <div class="pillars">
+        <div class="pillar"><b>Truly 3D, truly Indian</b>Turned-wood lacquer toys from Channapatna (Karnataka) and Kondapalli (Andhra), and Rajasthan's kathputli puppets, are already "3D Indian art". No other tower defense game looks like this.</div>
+        <div class="pillar"><b>Easy for code to build</b>Every toy is made of turned shapes (cylinders, spheres, flared skirts) plus painted lacquer rings. Code can generate the whole cast in one consistent style, no 3D artist needed.</div>
+        <div class="pillar"><b>Readable and fast</b>Few polygons, simple materials and one light: runs at 60 fps on cheap phones. Toys on round bases read like game pieces, so players instantly see what's a tower.</div>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2>The cast: defenders (left) and raiders (right)</h2>
+      <div class="shelf" id="shelf"></div>
+      <p class="note">Defenders wear lime-white jamas with saffron or red turbans and stand on
+        light wood bases. Raiders are dark indigo lacquer with silver rings on dark bases.
+        Upgrades add rings, plumes and gold.</p>
+    </section>
+
+    <section class="block">
+      <h2>Lacquer colours</h2>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#c8361d"></div>vermilion</div>
+        <div class="sw"><div class="chip" style="background:#ee8a22"></div>saffron</div>
+        <div class="sw"><div class="chip" style="background:#2e6a3a"></div>leaf green</div>
+        <div class="sw"><div class="chip" style="background:#22315f"></div>indigo</div>
+        <div class="sw"><div class="chip" style="background:#f6efdc"></div>lime white</div>
+        <div class="sw"><div class="chip" style="background:#d9b27c"></div>raw wood</div>
+        <div class="sw"><div class="chip" style="background:#d8a32a"></div>gold leaf</div>
+      </div>
+      <p class="note">Lacquer has a soft sheen, never plastic gloss. Raw wood stays matte. No
+        gradients in the UI; the HUD reuses the toy stripes.</p>
+    </section>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ---------------------------------------------------------------- materials
+const lacquer = (color, rough = 0.38) =>
+  new THREE.MeshPhysicalMaterial({ color, roughness: rough, clearcoat: 0.55, clearcoatRoughness: 0.35 });
+const matte = (color, rough = 0.85) => new THREE.MeshStandardMaterial({ color, roughness: rough });
+const M = {
+  vermilion: lacquer('#c8361d'), saffron: lacquer('#ee8a22'), leaf: lacquer('#2e6a3a'),
+  indigo: lacquer('#22315f'), black: lacquer('#1d1712', 0.45), lime: lacquer('#f6efdc', 0.5),
+  gold: lacquer('#d8a32a', 0.3), silver: lacquer('#b9b6ae', 0.3), skin: lacquer('#e2a873', 0.5),
+  copper: lacquer('#b5652d', 0.35), grey: lacquer('#9a948b', 0.5), iron: lacquer('#4a4752', 0.45),
+  wood: matte('#d9b27c', 0.7), woodDark: matte('#8a5a2f', 0.75), white: lacquer('#ffffff', 0.4),
+  ground: matte('#cfa964', 0.95), road: matte('#b8763f', 0.95), lake: lacquer('#2a4f8a', 0.2),
+  plateau: matte('#bf9853', 0.95),
+};
+const mesh = (geo, mat, x = 0, y = 0, z = 0) => {
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(x, y, z);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  return m;
+};
+const ring = (r, y, mat, tube = 0.035) => {
+  const m = mesh(new THREE.TorusGeometry(r, tube, 8, 32), mat, 0, y, 0);
+  m.rotation.x = Math.PI / 2;
+  return m;
+};
+
+// ---------------------------------------------------------------- toy figures
+// A turned-wood figure: flared jama, head, turban, painted rings. Faces +z.
+function figure({ turban, jama, trim, base, face = 'plain', scale = 1 }) {
+  const g = new THREE.Group();
+  g.add(mesh(new THREE.CylinderGeometry(0.42, 0.46, 0.12, 32), base, 0, 0.06, 0));
+  const profile = [[0, 0], [0.37, 0.02], [0.35, 0.12], [0.23, 0.52], [0.19, 0.72], [0.23, 0.8], [0.1, 0.86], [0, 0.86]]
+    .map(([x, y]) => new THREE.Vector2(x, y));
+  const body = mesh(new THREE.LatheGeometry(profile, 32), jama, 0, 0.12, 0);
+  g.add(body);
+  [ring(0.355, 0.17, trim, 0.03), ring(0.33, 0.24, trim, 0.02), ring(0.215, 0.66, trim, 0.035)].forEach((r) => g.add(r));
+  g.add(mesh(new THREE.SphereGeometry(0.2, 24, 16), M.skin, 0, 1.12, 0));
+  const tb = mesh(new THREE.SphereGeometry(0.24, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), turban, 0, 1.2, -0.01);
+  tb.scale.set(1, 0.75, 1);
+  g.add(tb);
+  const band = ring(0.215, 1.21, turban === M.black ? M.silver : M.gold, 0.03);
+  g.add(band);
+  const plume = mesh(new THREE.ConeGeometry(0.035, 0.22, 8), M.gold, -0.06, 1.46, -0.05);
+  plume.rotation.z = 0.35;
+  g.add(plume);
+  // painted face: dot eyes and a curled moustache, like real toys
+  for (const s of [-1, 1]) g.add(mesh(new THREE.SphereGeometry(0.028, 8, 6), M.black, 0.075 * s, 1.15, 0.18));
+  const mo = mesh(new THREE.TorusGeometry(0.07, 0.016, 6, 16, Math.PI), M.black, 0, 1.06, 0.185);
+  mo.rotation.z = Math.PI;
+  g.add(mo);
+  if (face === 'masked') g.add(mesh(new THREE.BoxGeometry(0.3, 0.1, 0.12), M.black, 0, 1.05, 0.13));
+  g.scale.setScalar(scale);
+  return g;
+}
+const arm = (mat, x, y, z, rx, rz, len = 0.34) => {
+  const a = mesh(new THREE.CapsuleGeometry(0.055, len, 4, 8), mat, x, y, z);
+  a.rotation.set(rx, 0, rz);
+  return a;
+};
+
+const DEF = { base: M.wood };
+const FOE = { base: M.woodDark, jama: M.indigo, turban: M.black, trim: M.silver, face: 'masked' };
+
+function archer() {
+  const g = figure({ ...DEF, turban: M.saffron, jama: M.lime, trim: M.vermilion });
+  g.add(arm(M.lime, 0.2, 0.86, 0.18, 1.35, -0.2));
+  g.add(arm(M.lime, -0.18, 0.86, 0.12, 1.1, 0.5));
+  const bow = mesh(new THREE.TorusGeometry(0.42, 0.028, 6, 24, Math.PI), M.woodDark, 0.22, 0.9, 0.42);
+  bow.rotation.set(0, Math.PI / 2, Math.PI / 2);
+  g.add(bow);
+  const arrow = mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.7, 6), M.wood, 0.05, 0.9, 0.42);
+  arrow.rotation.z = Math.PI / 2;
+  g.add(arrow);
+  return g;
+}
+function spearman() {
+  const g = figure({ ...DEF, turban: M.vermilion, jama: M.lime, trim: M.leaf });
+  g.add(mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.8, 8), M.woodDark, 0.3, 0.95, 0.1));
+  g.add(mesh(new THREE.ConeGeometry(0.06, 0.2, 8), M.silver, 0.3, 1.95, 0.1));
+  g.add(arm(M.lime, 0.24, 0.86, 0.1, 0.4, -0.4));
+  const sh = mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.05, 28), M.leaf, -0.12, 0.62, 0.3);
+  sh.rotation.x = Math.PI / 2;
+  g.add(sh);
+  for (const [dx, dy] of [[-0.08, 0.08], [0.08, 0.08], [-0.08, -0.08], [0.08, -0.08]]) {
+    g.add(mesh(new THREE.SphereGeometry(0.035, 8, 6), M.gold, -0.12 + dx, 0.62 + dy, 0.34));
+  }
+  return g;
+}
+function toradar() {
+  const g = figure({ ...DEF, turban: M.leaf, jama: M.lime, trim: M.saffron });
+  const gun = mesh(new THREE.CylinderGeometry(0.03, 0.04, 1.2, 10), M.woodDark, 0.12, 0.92, 0.35);
+  gun.rotation.x = Math.PI / 2 - 0.15;
+  g.add(gun);
+  g.add(mesh(new THREE.CylinderGeometry(0.033, 0.033, 0.18, 8), M.gold, 0.12, 0.99, 0.82).rotateX(Math.PI / 2));
+  g.add(arm(M.lime, 0.18, 0.86, 0.2, 1.3, -0.2));
+  g.add(arm(M.lime, -0.12, 0.86, 0.22, 1.4, 0.4));
+  return g;
+}
+function nagara() {
+  const g = figure({ ...DEF, turban: M.vermilion, jama: M.lime, trim: M.indigo });
+  const drum = mesh(new THREE.SphereGeometry(0.34, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), M.copper, 0, 0.38, 0.52);
+  drum.rotation.x = Math.PI;
+  g.add(drum);
+  g.add(mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.03, 28), M.lime, 0, 0.39, 0.52));
+  g.add(ring(0.34, 0.4, M.gold, 0.025).translateY(0).translateZ(0));
+  g.children[g.children.length - 1].position.set(0, 0.4, 0.52);
+  g.add(arm(M.lime, 0.2, 0.78, 0.25, 1.0, -0.3, 0.4));
+  g.add(arm(M.lime, -0.2, 0.78, 0.25, 1.0, 0.3, 0.4));
+  return g;
+}
+function elephant({ body = M.grey, cloth = M.vermilion, trimMat = M.gold, rider = true, base = M.wood } = {}) {
+  const g = new THREE.Group();
+  g.add(mesh(new THREE.CylinderGeometry(0.85, 0.9, 0.12, 36), base, 0, 0.06, 0));
+  const torso = mesh(new THREE.SphereGeometry(0.6, 28, 20), body, 0, 0.95, 0);
+  torso.scale.set(0.85, 0.75, 1.15);
+  g.add(torso);
+  for (const [x, z] of [[-0.28, -0.42], [0.28, -0.42], [-0.28, 0.42], [0.28, 0.42]]) {
+    g.add(mesh(new THREE.CylinderGeometry(0.15, 0.17, 0.62, 14), body, x, 0.42, z));
+    g.add(ring(0.16, 0.16, trimMat, 0.03).translateX(0)).position.set(x, 0.18, z);
+  }
+  g.add(mesh(new THREE.SphereGeometry(0.36, 22, 16), body, 0, 1.12, 0.72));
+  const trunk = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 1.0, 0.98), new THREE.Vector3(0, 0.7, 1.12), new THREE.Vector3(0, 0.38, 1.08), new THREE.Vector3(0, 0.26, 1.24),
+  ]);
+  g.add(mesh(new THREE.TubeGeometry(trunk, 16, 0.09, 10), body));
+  for (const s of [-1, 1]) {
+    const ear = mesh(new THREE.SphereGeometry(0.3, 16, 12), body, 0.36 * s, 1.12, 0.6);
+    ear.scale.set(0.25, 1, 0.9);
+    g.add(ear);
+    const tusk = mesh(new THREE.ConeGeometry(0.045, 0.35, 8), M.white, 0.13 * s, 0.86, 1.0);
+    tusk.rotation.x = 1.9;
+    g.add(tusk);
+    g.add(mesh(new THREE.SphereGeometry(0.035, 8, 6), M.black, 0.2 * s, 1.2, 0.98));
+  }
+  const cloth3 = mesh(new THREE.BoxGeometry(1.06, 0.62, 1.0), cloth, 0, 1.05, -0.05);
+  g.add(cloth3);
+  g.add(mesh(new THREE.BoxGeometry(1.08, 0.07, 1.02), trimMat, 0, 0.77, -0.05));
+  const howdah = mesh(new THREE.CylinderGeometry(0.34, 0.3, 0.3, 6), trimMat, 0, 1.52, -0.08);
+  g.add(howdah);
+  if (rider) {
+    const r = figure({ base: M.gold, turban: M.saffron, jama: M.lime, trim: M.vermilion, scale: 0.5 });
+    r.position.set(0, 1.62, 0.02);
+    g.add(r);
+  } else {
+    for (const [x, z] of [[-0.3, -0.2], [0.3, -0.2], [0, 0.3]]) g.add(mesh(new THREE.BoxGeometry(0.22, 0.18, 0.04), M.silver, x, 1.1, z + 0.32));
+  }
+  return g;
+}
+function cannon() {
+  const g = new THREE.Group();
+  g.add(mesh(new THREE.CylinderGeometry(0.55, 0.6, 0.12, 32), M.wood, 0, 0.06, 0));
+  const barrel = mesh(new THREE.CylinderGeometry(0.11, 0.17, 1.15, 18), M.gold, 0, 0.62, 0.12);
+  barrel.rotation.x = Math.PI / 2 - 0.25;
+  g.add(barrel);
+  for (const zz of [-0.12, 0.12, 0.36]) {
+    const b = mesh(new THREE.TorusGeometry(0.15, 0.025, 6, 18), M.copper, 0, 0.62 + zz * 0.25, 0.12 + zz);
+    g.add(b);
+  }
+  for (const s of [-1, 1]) {
+    const w = mesh(new THREE.TorusGeometry(0.24, 0.05, 8, 20), M.woodDark, 0.24 * s, 0.36, -0.05);
+    w.rotation.y = Math.PI / 2;
+    g.add(w);
+    g.add(mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.06, 8), M.gold, 0.26 * s, 0.36, -0.05).rotateZ(Math.PI / 2));
+  }
+  g.add(mesh(new THREE.BoxGeometry(0.34, 0.12, 0.7), M.woodDark, 0, 0.3, -0.1));
+  return g;
+}
+
+function dacoit() {
+  const g = figure({ ...FOE });
+  const sword = mesh(new THREE.BoxGeometry(0.04, 0.7, 0.08), M.silver, 0.28, 1.05, 0.2);
+  sword.rotation.z = -0.35;
+  g.add(sword);
+  g.add(arm(M.indigo, 0.22, 0.84, 0.12, 0.3, -0.6));
+  return g;
+}
+function shieldman() {
+  const g = figure({ ...FOE });
+  g.add(mesh(new THREE.BoxGeometry(0.5, 0.95, 0.08), M.woodDark, 0, 0.66, 0.36));
+  for (const y of [0.4, 0.66, 0.92]) g.add(mesh(new THREE.SphereGeometry(0.04, 8, 6), M.silver, 0, y, 0.41));
+  return g;
+}
+function rider() {
+  const g = new THREE.Group();
+  g.add(mesh(new THREE.CylinderGeometry(0.6, 0.64, 0.12, 32), M.woodDark, 0, 0.06, 0));
+  const horse = mesh(new THREE.CapsuleGeometry(0.22, 0.6, 6, 14), M.black, 0, 0.75, 0);
+  horse.rotation.x = Math.PI / 2;
+  g.add(horse);
+  for (const [x, z] of [[-0.13, -0.28], [0.13, -0.28], [-0.13, 0.28], [0.13, 0.28]]) g.add(mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.6, 8), M.black, x, 0.4, z));
+  const neck = mesh(new THREE.CapsuleGeometry(0.11, 0.32, 4, 10), M.black, 0, 1.0, 0.46);
+  neck.rotation.x = 0.5;
+  g.add(neck);
+  g.add(mesh(new THREE.BoxGeometry(0.16, 0.16, 0.34), M.black, 0, 1.18, 0.66));
+  g.add(mesh(new THREE.BoxGeometry(0.42, 0.06, 0.5), M.vermilion, 0, 0.98, -0.02));
+  g.add(ring(0.22, 0.75, M.silver, 0.03)).position.set(0, 0.75, 0.2);
+  const r = figure({ ...FOE, base: M.black, scale: 0.55 });
+  r.position.set(0, 0.95, -0.05);
+  g.add(r);
+  return g;
+}
+function vulture() {
+  const g = new THREE.Group();
+  g.add(mesh(new THREE.CylinderGeometry(0.3, 0.34, 0.1, 24), M.woodDark, 0, 0.05, 0));
+  g.add(mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.1, 6), M.silver, 0, 0.6, 0));
+  const body = mesh(new THREE.SphereGeometry(0.22, 18, 12), M.black, 0, 1.2, 0);
+  body.scale.set(0.8, 0.7, 1.4);
+  g.add(body);
+  g.add(mesh(new THREE.SphereGeometry(0.1, 12, 10), M.skin, 0, 1.28, 0.32));
+  g.add(mesh(new THREE.ConeGeometry(0.04, 0.12, 8), M.gold, 0, 1.26, 0.44).rotateX(Math.PI / 2));
+  for (const s of [-1, 1]) {
+    const w = mesh(new THREE.BoxGeometry(0.75, 0.04, 0.38), M.black, 0.45 * s, 1.3, -0.02);
+    w.rotation.z = 0.35 * s;
+    g.add(w);
+  }
+  return g;
+}
+function ram() {
+  const g = new THREE.Group();
+  g.add(mesh(new THREE.BoxGeometry(1.0, 0.1, 1.4), M.woodDark, 0, 0.3, 0));
+  const roof = mesh(new THREE.CylinderGeometry(0.01, 0.75, 0.55, 4), M.black, 0, 0.62, 0);
+  roof.rotation.y = Math.PI / 4;
+  roof.scale.set(1, 1, 1.35);
+  g.add(roof);
+  const log = mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.7, 14), M.woodDark, 0, 0.5, 0.2);
+  log.rotation.x = Math.PI / 2;
+  g.add(log);
+  g.add(mesh(new THREE.ConeGeometry(0.16, 0.25, 12), M.silver, 0, 0.5, 1.15).rotateX(Math.PI / 2));
+  for (const [x, z] of [[-0.5, -0.45], [0.5, -0.45], [-0.5, 0.45], [0.5, 0.45]]) {
+    const w = mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.08, 18), M.indigo, x, 0.18, z);
+    w.rotation.z = Math.PI / 2;
+    g.add(w);
+  }
+  return g;
+}
+const ironElephant = () => elephant({ body: M.iron, cloth: M.indigo, trimMat: M.silver, rider: false, base: M.woodDark });
+
+function tree(h = 1) {
+  const g = new THREE.Group();
+  g.add(mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.7 * h, 8), M.woodDark, 0, 0.35 * h, 0));
+  const s1 = mesh(new THREE.SphereGeometry(0.42 * h, 20, 14), M.leaf, 0, 0.95 * h, 0);
+  g.add(s1);
+  g.add(ring(0.4 * h, 0.95 * h, M.saffron, 0.025));
+  g.add(mesh(new THREE.SphereGeometry(0.28 * h, 18, 12), M.leaf, 0, 1.38 * h, 0));
+  return g;
+}
+
+function fort() {
+  const g = new THREE.Group();
+  const wallMat = lacquer('#f1e7cf', 0.6);
+  g.add(mesh(new THREE.BoxGeometry(6.4, 1.1, 0.7), wallMat, 0, 0.55, 0));
+  for (let x = -3.0; x <= 3.01; x += 0.4) {
+    const m = mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.22, 10), wallMat, x, 1.2, 0);
+    g.add(m);
+    g.add(mesh(new THREE.SphereGeometry(0.12, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), M.vermilion, x, 1.31, 0));
+  }
+  g.add(mesh(new THREE.BoxGeometry(6.44, 0.08, 0.74), M.vermilion, 0, 1.02, 0));
+  // gate
+  const gate = mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.12, 20, 1, false, 0, Math.PI), M.woodDark, 0, 0.45, 0.36);
+  gate.rotation.set(Math.PI / 2, 0, 0);
+  g.add(mesh(new THREE.BoxGeometry(1.1, 0.5, 0.12), M.woodDark, 0, 0.25, 0.36));
+  g.add(gate);
+  for (const x of [-0.3, 0, 0.3]) g.add(mesh(new THREE.SphereGeometry(0.04, 8, 6), M.gold, x, 0.4, 0.43));
+  // towers with chhatri domes
+  for (const s of [-1, 1]) {
+    const tx = 2.9 * s;
+    g.add(mesh(new THREE.CylinderGeometry(0.6, 0.7, 2.0, 24), wallMat, tx, 1.0, 0));
+    g.add(ring(0.62, 1.7, M.vermilion, 0.05).translateX(0)).position.set(tx, 1.7, 0);
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      g.add(mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.5, 8), wallMat, tx + Math.cos(a) * 0.35, 2.25, Math.sin(a) * 0.35));
+    }
+    g.add(mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.06, 20), wallMat, tx, 2.52, 0));
+    g.add(mesh(new THREE.SphereGeometry(0.42, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), M.saffron, tx, 2.55, 0));
+    g.add(mesh(new THREE.ConeGeometry(0.06, 0.25, 8), M.gold, tx, 3.08, 0));
+    // dark arched windows
+    const w = mesh(new THREE.BoxGeometry(0.22, 0.32, 0.05), M.indigo, tx, 1.1, 0.66);
+    g.add(w);
+  }
+  // flag
+  g.add(mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.1, 6), M.woodDark, 2.9, 3.6, 0));
+  const flag = mesh(new THREE.PlaneGeometry(0.6, 0.36), new THREE.MeshStandardMaterial({ color: '#ee8a22', roughness: 0.8, side: THREE.DoubleSide }), 3.2, 3.95, 0);
+  g.add(flag);
+  return g;
+}
+
+function lights(scene) {
+  scene.add(new THREE.HemisphereLight('#fff1d6', '#6b3f1f', 1.35));
+  const key = new THREE.DirectionalLight('#ffe0b0', 2.4);
+  key.position.set(-6, 12, 6);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  Object.assign(key.shadow.camera, { left: -12, right: 12, top: 14, bottom: -14, near: 1, far: 40 });
+  key.shadow.bias = -0.0006;
+  key.shadow.radius = 4;
+  scene.add(key);
+  const rim = new THREE.DirectionalLight('#9fb4ff', 0.35);
+  rim.position.set(6, 5, -8);
+  scene.add(rim);
+}
+function renderer(w, h, host) {
+  const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  r.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  r.setSize(w, h);
+  r.shadowMap.enabled = true;
+  r.shadowMap.type = THREE.PCFSoftShadowMap;
+  r.toneMapping = THREE.ACESFilmicToneMapping;
+  r.toneMappingExposure = 1.05;
+  host.prepend(r.domElement);
+  return r;
+}
+
+// ---------------------------------------------------------------- gameplay scene
+const phone = document.getElementById('phone');
+const W = 390, H = 844;
+const rA = renderer(W, H, phone);
+const sA = new THREE.Scene();
+sA.background = new THREE.Color('#3a2416');
+lights(sA);
+
+// table tray with lacquered rim
+sA.add(mesh(new THREE.BoxGeometry(10.6, 0.6, 16.4), M.ground, 0, -0.3, 0));
+for (const [x, z, w, d] of [[0, -8.4, 11, 0.4], [0, 8.4, 11, 0.4], [-5.5, 0, 0.4, 17.2], [5.5, 0, 0.4, 17.2]]) {
+  sA.add(mesh(new THREE.BoxGeometry(w, 0.9, d), M.vermilion, x, -0.15, z));
+  sA.add(mesh(new THREE.BoxGeometry(w + 0.02, 0.1, d + 0.02), M.saffron, x, 0.25, z));
+}
+// a low hill where the raiders come from
+const plat = mesh(new THREE.CylinderGeometry(1.5, 1.9, 0.45, 40), M.plateau, -3.0, 0.0, -7.0);
+sA.add(plat);
+
+// road: raised strips along a polyline
+const ROAD = [[-3.0, -7.0], [-3.0, -3.6], [3.0, -3.6], [3.0, 0], [-2.6, 0], [-2.6, 3.2], [0, 3.2], [0, 5.2]];
+const roadMat = M.road;
+for (let i = 0; i < ROAD.length - 1; i++) {
+  const [x1, z1] = ROAD[i];
+  const [x2, z2] = ROAD[i + 1];
+  const len = Math.hypot(x2 - x1, z2 - z1) + 1.3;
+  const seg = mesh(new THREE.BoxGeometry(x1 === x2 ? 1.3 : len, 0.08, x1 === x2 ? len : 1.3), roadMat, (x1 + x2) / 2, 0.04, (z1 + z2) / 2);
+  seg.castShadow = false;
+  sA.add(seg);
+}
+// footprint dots along the road centre
+for (let i = 0; i < ROAD.length - 1; i++) {
+  const [x1, z1] = ROAD[i];
+  const [x2, z2] = ROAD[i + 1];
+  const n = Math.floor(Math.hypot(x2 - x1, z2 - z1) / 0.6);
+  for (let k = 0; k <= n; k++) {
+    const t = k / n;
+    const d = mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.02, 8), M.lime, x1 + (x2 - x1) * t, 0.09, z1 + (z2 - z1) * t);
+    d.castShadow = false;
+    sA.add(d);
+  }
+}
+
+const f = fort();
+f.position.set(0, 0, 6.2);
+sA.add(f);
+const lake = mesh(new THREE.CylinderGeometry(1.3, 1.3, 0.06, 40), M.lake, 3.2, 0.03, 2.2);
+lake.scale.set(1.2, 1, 0.7);
+sA.add(lake);
+for (const [x, z, h] of [[4.3, -6.8, 1.1], [0.2, -7.2, 0.9], [4.5, -2.0, 0.8], [-4.5, 1.8, 0.9], [4.6, 5.4, 0.8], [-4.6, 5.8, 1.0]]) {
+  const t = tree(h);
+  t.position.set(x, 0, z);
+  sA.add(t);
+}
+// build spots: empty wooden rings
+for (const [x, z] of [[-0.6, -5.4], [-1.2, 1.6], [1.4, 1.7]]) {
+  const r = mesh(new THREE.TorusGeometry(0.45, 0.05, 8, 28), M.wood, x, 0.06, z);
+  r.rotation.x = Math.PI / 2;
+  sA.add(r);
+  const c = mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.04, 10), M.vermilion, x, 0.06, z);
+  sA.add(c);
+}
+// defenders
+const defenders = [];
+for (const [fn, x, z] of [[archer, -4.4, -4.6], [spearman, 1.2, -5.2], [toradar, 1.4, -1.7], [nagara, -0.6, -1.8], [cannon, -1.7, 4.4], [archer, 1.7, 4.4]]) {
+  const d = fn();
+  d.position.set(x, 0, z);
+  d.scale.multiplyScalar(1.25);
+  sA.add(d);
+  defenders.push(d);
+}
+const ele = elephant();
+ele.scale.setScalar(0.95);
+ele.position.set(-4.3, 0, -1.4);
+sA.add(ele);
+defenders.push(ele);
+
+// raiders walking the road
+const pts = ROAD.map(([x, z]) => new THREE.Vector3(x, 0.08, z));
+const segLen = pts.slice(1).map((p, i) => p.distanceTo(pts[i]));
+const total = segLen.reduce((a, b) => a + b, 0);
+function along(s) {
+  s = ((s % total) + total) % total;
+  for (let i = 0; i < segLen.length; i++) {
+    if (s <= segLen[i]) {
+      const p = pts[i].clone().lerp(pts[i + 1], s / segLen[i]);
+      const dir = pts[i + 1].clone().sub(pts[i]).normalize();
+      return { p, dir };
+    }
+    s -= segLen[i];
+  }
+  return { p: pts.at(-1).clone(), dir: new THREE.Vector3(0, 0, 1) };
+}
+const raiders = [
+  [rider, 1.0, 1.0], [dacoit, 4.6, 0.95], [dacoit, 5.5, 0.95], [shieldman, 8.4, 1.0], [ram, 12.6, 0.85],
+  [dacoit, 16.2, 0.95], [ironElephant, 20.6, 0.75],
+].map(([fn, offset, sc]) => {
+  const m = fn();
+  m.scale.setScalar(sc);
+  sA.add(m);
+  return { m, offset };
+});
+const flyer = vulture();
+flyer.scale.setScalar(1.0);
+sA.add(flyer);
+
+// selected tower range ring (nagara drummer)
+const range = mesh(new THREE.RingGeometry(2.3, 2.4, 64), new THREE.MeshBasicMaterial({ color: '#ee8a22', transparent: true, opacity: 0.9 }), -0.6, 0.1, -1.8);
+range.rotation.x = -Math.PI / 2;
+range.castShadow = false;
+sA.add(range);
+const rangeFill = mesh(new THREE.CircleGeometry(2.3, 64), new THREE.MeshBasicMaterial({ color: '#ee8a22', transparent: true, opacity: 0.12 }), -0.6, 0.09, -1.8);
+rangeFill.rotation.x = -Math.PI / 2;
+sA.add(rangeFill);
+
+// camera: orthographic, tilted down at the toy table
+const camA = new THREE.PerspectiveCamera(46, W / H, 0.1, 100);
+camA.position.set(0, 24, 18.5);
+camA.lookAt(0, 0, 1.2);
+// lift the board so it sits between the HUD and the info panel
+camA.setViewOffset(W, H, 0, 34, W, H);
+
+const SPEED = 1.1;
+function tick(t) {
+  const time = t / 1000;
+  raiders.forEach(({ m, offset }) => {
+    const { p, dir } = along(time * SPEED + offset);
+    m.position.copy(p);
+    m.position.y = Math.abs(Math.sin((time * SPEED + offset) * 5)) * 0.12; // toy hop
+    m.rotation.y = Math.atan2(dir.x, dir.z);
+  });
+  const fp = along(time * SPEED * 1.5 + 10).p;
+  flyer.position.set(fp.x + 1.2, 0.9, fp.z);
+  // defenders turn to face the nearest raider
+  defenders.forEach((d) => {
+    let best = null, bd = 1e9;
+    raiders.forEach(({ m }) => { const dd = m.position.distanceTo(d.position); if (dd < bd) { bd = dd; best = m; } });
+    if (best) d.rotation.y = Math.atan2(best.position.x - d.position.x, best.position.z - d.position.z);
+  });
+  rA.render(sA, camA);
+  renderShelf();
+  requestAnimationFrame(tick);
+}
+
+// ---------------------------------------------------------------- roster shelf
+const shelf = document.getElementById('shelf');
+const SW = 880, SH = 470;
+const rB = renderer(SW, SH, shelf);
+const sB = new THREE.Scene();
+sB.background = new THREE.Color('#3a2416');
+lights(sB);
+for (const y of [0, -4.2]) {
+  sB.add(mesh(new THREE.BoxGeometry(17, 0.4, 2.6), M.woodDark, 0, y - 0.2, 0));
+  sB.add(mesh(new THREE.BoxGeometry(17, 0.08, 2.62), y === 0 ? M.saffron : M.indigo, 0, y, 0));
+}
+const cast = [
+  [archer, 'Dhanurdhar', 'archer'], [spearman, 'Bhaala wall', 'blocks road'], [toradar, 'Toradar', 'matchlock'],
+  [nagara, 'Nagara', 'drum boost'], [elephant, 'War elephant', 'stomp'], [cannon, 'Top', 'cannon'],
+  [dacoit, 'Dacoit', 'basic'], [rider, 'Horse raider', 'fast'], [vulture, 'Vulture', 'flies'],
+  [shieldman, 'Shield bearer', 'armoured'], [ram, 'Ram', 'hits gate'], [ironElephant, 'Iron elephant', 'boss'],
+];
+const shelfItems = [];
+const SPACING = 2.7;
+cast.forEach(([fn, name, role], i) => {
+  const m = fn();
+  const big = fn === elephant || fn === ironElephant;
+  m.scale.setScalar(big ? 0.85 : fn === ram || fn === cannon ? 1.0 : 1.25);
+  const x = ((i % 6) - 2.5) * SPACING;
+  const y = i < 6 ? 0.04 : -4.16;
+  m.position.set(x, y, 0);
+  m.rotation.y = i < 6 ? 0.45 : -0.45;
+  sB.add(m);
+  shelfItems.push({ m, name, role, x, y });
+});
+const camB = new THREE.OrthographicCamera(-8.6, 8.6, 8.6 * SH / SW, -8.6 * SH / SW, 0.1, 100);
+camB.position.set(0, 1.0, 14);
+camB.lookAt(0, -0.9, 0);
+camB.updateProjectionMatrix();
+camB.updateMatrixWorld();
+shelfItems.forEach(({ name, role, x, y }) => {
+  const v = new THREE.Vector3(x, y - 0.25, 1.3).project(camB);
+  const el = document.createElement('div');
+  el.className = 'label';
+  el.style.left = `${(v.x + 1) / 2 * SW}px`;
+  el.style.top = `${(1 - v.y) / 2 * SH + 6}px`;
+  el.innerHTML = `<b>${name}</b><span>${role}</span>`;
+  shelf.appendChild(el);
+});
+function renderShelf() { rB.render(sB, camB); }
+
+requestAnimationFrame(tick);
+window.__ready = true;
+</script>
+</body>
+</html>

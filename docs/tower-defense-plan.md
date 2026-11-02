@@ -9,7 +9,12 @@ from the game.
 **Branches:** game work on `claude/exciting-sagan-dooxr8`; website on a separate
 `website` branch (deployed from there, so website changes never touch the game).
 
-**Art direction changed (2026-11-02):** Indian medieval, in the style of Rajasthani Phad scroll
+**Art direction changed again (2026-11-02):** same Indian medieval theme, now **3D**: a real-time
+diorama of lacquered wooden toys (Channapatna / Kondapalli / kathputli inspired), built with
+three.js (WebGL). Concept: [`style-boards/toy-diorama-3d.png`](style-boards/toy-diorama-3d.png).
+Earlier 2D Phad version kept for reference below.
+
+**Previous direction:** Indian medieval, in the style of Rajasthani Phad scroll
 painting, replacing Warli. Working name **Garh Rakshak** (fort protector). Concept board:
 [`style-boards/indian-medieval-concept.png`](style-boards/indian-medieval-concept.png).
 Sections below still describe the Warli version and will be rewritten once the name is confirmed.
