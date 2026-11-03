@@ -1,7 +1,9 @@
 # Sandstone Kingdom: Game Design Document
 
-_Version 0.1 · 2026-11-03 · Owner: Founder (decisions) + AI (design and build)_
-_Working title: **Sandstone Kingdom: Tower Defense**. Package: `com.samvardhanstudios.sandstonekingdom` (name not final)._
+_Version 0.2 · 2026-11-03 · Owner: Founder (decisions) + AI (design and build)_
+_Name: **Sandstone Kingdom: Tower Defense** (confirmed). Package: `com.samvardhanstudios.sandstonekingdom`._
+
+**Founder decisions (2026-11-03):** name confirmed · art made only in code or with free tools · music must be free of copyright (CC0 / royalty-free) · prices affordable in India and worldwide · challenges pay rubies only · a dedicated tutorial level · privacy, age rating, `ads.txt` and `app-ads.txt` live on the website · live events and the updates roadmap come in later versions.
 
 ---
 
@@ -64,11 +66,18 @@ also gets a 3-second **intro card**: name, title, a one-line taunt, and a camera
 Every region has 4 normal levels and **1 boss level (level 5)**. Beating a region's boss
 **unlocks that region's Endless mode**.
 
+**Level 0, Training Grounds (tutorial):** before Region 1, a short level in the fort
+courtyard. The Royal Sage teaches by doing: build a tower, upgrade it, move the hero,
+cast a spell, and call a wave early. It takes about 3 minutes, can be skipped, and can be
+replayed from Settings.
+
+Enemy art for every region: [`style-boards/enemies.png`](style-boards/enemies.png).
+
 | # | Region (inspired by) | Season | Weather mechanic | New enemies | Boss (level 5) | Hero unlocked |
 |---|---|---|---|---|---|---|
 | 1 | **Aravalli Hills** (Rajasthan) | **Vasant**, spring | None. Teaching region: learn towers, hero, spells | Bandits, Wolf Riders, Barbarians | **The Bandit King**: rides a war-boar, throws fire pots, calls bandit waves | The Sun Knight (start) |
 | 2 | **Thar Desert** | **Grishma**, summer | **Sandstorms** shrink tower range for a few seconds; **mirages** show fake enemies | Scorpion Swarms, Camel Raiders, Sand Burrowers (go underground) | **The Dune Colossus**: a sand giant that splits into smaller golems when hit | The Royal Archer |
-| 3 | **Western Ghats** | **Varsha**, monsoon | **Rain** slows enemies but douses fire attacks; **floods** open a second path mid-level | Leech Swarms, River Raiders on boats, Mud Brutes | **The Storm Serpent**: flies over the map and breathes lightning at towers | The Monsoon Sage |
+| 3 | **Western Ghats** | **Varsha**, monsoon | **Rain** slows enemies but douses fire attacks; **floods** open a second path mid-level | River Raiders on boats, Mud Brutes, Storm Bats (flying) | **The Storm Serpent**: flies over the map and breathes lightning at towers | The Monsoon Sage |
 | 4 | **Deccan Ruins** (Hampi-inspired) | **Sharad**, autumn | **Harvest-moon nights**: darkness hides enemies outside lit areas; light braziers to see | Stone Golems (magic only), Night Stalkers, Shamans | **The Stone Titan**: wakes up the ruins and throws boulders | Princess Tara |
 | 5 | **Sundarbans Delta** | **Hemant**, pre-winter | **Fog** hides incoming waves; **tides** change water paths; enemies come by land *and* river | Crocodiles, River Pirates, Swamp Witches | **The Crocodile Warlord**: dives underwater, ambushes from new paths | The Mangrove Ranger |
 | 6 | **Himalayas** | **Shishir**, winter | **Frost** slows your towers' fire rate; **avalanches** block paths; snow covers build plots | Ice Wolves, Frost Mages, Yeti Brutes | **The Shadow Emperor** (final): 3 phases, steals a tower each phase, summons all past bosses as shadows | The Snow Leopard Guard |
@@ -78,8 +87,11 @@ Every region has 4 normal levels and **1 boss level (level 5)**. Beating a regio
   enemies and one new hero.
 - Each level has **3 Diya rating** (lamps instead of stars): win = 1, lose ≤ 5 lives =
   2, lose no lives = 3.
-- **Challenge modes per level** (unlocked after 3 diyas): **Heroic** (one life, extra
-  waves) and **Iron** (only one tower type). These add 60 extra challenges for replay.
+- **Map challenges pay rubies only, never coins.** Once a level is beaten, its map
+  unlocks 1–2 special challenges written for that map (for example "keep the bandits
+  away from the stepwell", "win with only Archer Towers", "win in under 4 minutes"), plus
+  the two standard modes: **Heroic** (one life, extra waves) and **Iron** (one tower
+  type only). About 90 challenges in total, each paying a one-time ruby reward.
 - **Difficulty setting:** Casual / Normal / Veteran (more enemy health, fewer coins).
 
 ### Level naming (example, Region 1)
@@ -91,7 +103,7 @@ Every region has 4 normal levels and **1 boss level (level 5)**. Beating a regio
 - Waves get harder forever. Every 10 waves brings a mini-boss and a "season shift"
   (weather changes).
 - The score is the waves survived plus bonuses. It feeds the leaderboards (section 7).
-- **Weekly Challenge** (live-ops): one endless map with special rules, the same for
+- **Weekly Challenge** (from v1.5): one endless map with special rules, the same for
   everyone that week.
 
 ---
@@ -130,21 +142,33 @@ permanent bonuses. You can reset it for free at any time.
 
 | Currency | Earned by | Used for |
 |---|---|---|
-| **Coins** (in-level only) | Defeating enemies, calling waves early | Building and upgrading towers in that level |
-| **Diyas** | Level ratings and challenges | Royal Workshop upgrades |
-| **Rubies** (premium) | Small amounts from play, daily login, achievements; or purchase | Heroes, power-ups, cosmetics, skips |
+| **Battle gold** (in-level only, resets each level) | Defeating enemies, calling waves early | Building and upgrading towers during that level |
+| **Coins** | Winning campaign levels, daily login | Hero levels, Royal Workshop upgrades, power-ups |
+| **Diyas** (rating lamps) | Level ratings (1–3 per level) | Unlocking Royal Workshop tiers |
+| **Rubies** (premium) | **Map challenges and daily quests (rubies only)**, achievements, daily login, rewarded ads; or purchase | Heroes, cosmetics, extra power-ups, skips |
 
-### Shop (prices in USD; Google Play converts to local prices)
+### Shop: affordable in India, fair worldwide
 
-| Item | Price | Notes |
-|---|---|---|
-| **Remove Ads** | $2.99 | Removes interstitials and banners. Optional rewarded ads stay. |
-| **Starter Pack** | $1.99 | Rubies + a premium hero skin + power-ups. Shown once after level 5. |
-| Ruby packs | $0.99 / $4.99 / $9.99 / $19.99 / $49.99 | Bigger packs give bonus rubies. |
-| Hero unlock (early) | 500–900 rubies | Heroes are also unlocked free by story progress. |
-| Power-ups | Rubies | Extra Lives, Gold Boost, Freeze Bomb. Limited per level. |
-| Cosmetic skins | Rubies or $1.99–3.99 | Tower skins (marble, gold), hero skins. |
-| **Royal Pass** (later) | $4.99/season | Free and paid reward tracks, cosmetics only. After launch. |
+Google Play lets us set a **separate price for each country**. India gets prices well
+below a straight dollar conversion, so a purchase costs about the same as a cup of chai
+or a snack. Other countries use Play's local pricing templates, which adjust for each
+market (for example Indonesia, Brazil and Turkey are priced lower than the US).
+
+| Item | India | USA (reference) | Contents |
+|---|---|---|---|
+| **Starter Pack** (one-time) | **₹49** | $1.99 | 150 rubies + Sun Knight skin + 3 power-ups. Offered once after Level 5. |
+| Ruby Handful | **₹29** | $0.99 | 80 rubies |
+| Ruby Pouch | **₹99** | $2.99 | 300 + 30 bonus rubies |
+| Ruby Chest | **₹199** | $5.99 | 700 + 100 bonus rubies |
+| Ruby Vault | **₹449** | $11.99 | 1,600 + 300 bonus rubies |
+| Ruby Treasury | **₹999** | $24.99 | 4,000 + 1,000 bonus rubies |
+| **Remove Ads** | **₹99** | $2.99 | Removes interstitials and banners forever. Optional rewarded ads stay. |
+| Hero Bundle | **₹149** | $3.99 | An early hero unlock + skin (heroes also unlock free through the story) |
+| Skins | **₹79** | $1.99 | One tower or hero skin (also buyable with rubies) |
+
+Power-ups (Extra Lives, Gold Boost, Freeze Bomb) are bought with coins or rubies and
+are limited per level. The final prices are set in Play Console, which shows Google's
+allowed price range for each country.
 
 **Fair-play rules:** the whole campaign is beatable without paying. There are no random
 loot boxes; all chests show their contents, which keeps us clear of loot-box rules (e.g. Belgium's ban) and
@@ -163,7 +187,7 @@ future regulation. No energy or stamina system.
 
 ### Daily login: works for everyone, no sign-in needed
 - A 7-day reward calendar: coins, rubies, power-ups, hero XP. **Day 7 is a big chest
-  with fixed contents.**
+  with fixed contents.** The calendar works fully offline for guests.
 - **Guest players (not signed in):** progress is saved on the phone. The streak breaks
   if the game is reinstalled.
 - **Signed in with Google Play Games:** the streak and all progress are cloud-saved
@@ -173,10 +197,11 @@ future regulation. No energy or stamina system.
   so moving the phone's clock forward doesn't skip days.
 
 ### Daily quests
-Three per day (e.g. "win 2 levels using only Archer Towers"), with a ruby reward.
+Three per day (e.g. "win 2 levels using only Archer Towers", "defeat 50 Wolf Riders"),
+each paying **rubies only**. A bonus chest unlocks when all three are done.
 
 ### Notifications (opt-in, never spammy)
-"Your daily reward is ready" (once a day at most) and "the Weekly Challenge has started".
+"Your daily reward is ready" (once a day at most) and, from v1.5, "the Weekly Challenge has started".
 
 ---
 
@@ -237,9 +262,19 @@ See [`style-boards/ui-kit.png`](style-boards/ui-kit.png).
   ending.
 - **Sound effects:** distinct sounds for every tower type, boss roars, the coin
   "chink", and a *dhol* drum hit when a wave starts.
-- **Source:** licensed from a royalty-free library with a commercial licence, or
-  commissioned (Founder decision, see the task list). Every track is listed in
-  `CREDITS.md`.
+- **Source: free and copyright-free only.** In order of preference:
+  1. **CC0 (public domain)**: OpenGameArt.org and Freesound.org tracks marked CC0. No
+     credit needed, no strings attached.
+  2. **Royalty-free licences that allow commercial games**: Pixabay Music and Sound
+     Effects (free, no credit required; check each track's page), and CC-BY tracks such
+     as Kevin MacLeod's (free, but the composer must be credited in-game).
+  3. **Made in code:** sound effects (arrows, coins, hits, explosions) generated with the
+     free jsfxr tool, and simple drum loops (dhol, tabla patterns) synthesised in code.
+  - Never use "NonCommercial" (CC-NC) tracks or YouTube "no copyright" music without a
+    clear licence page.
+- Every track and sound is listed in `CREDITS.md` with its source link and licence.
+- Indian-instrument music in CC0 libraries is limited, so the season themes may combine
+  free instrument samples (e.g. CC0 sitar, flute and tabla recordings) into our own loops.
 
 ---
 
@@ -248,7 +283,7 @@ See [`style-boards/ui-kit.png`](style-boards/ui-kit.png).
 | Topic | Plan |
 |---|---|
 | Engine | **PixiJS** (WebGL 2D: fast sprites, particles, effects) inside **Capacitor** for Android |
-| Art pipeline | Painted raster art as sprite sheets for characters, buildings and backgrounds; UI and effects generated in code (section 11) |
+| Art pipeline | All art drawn in code as vector (SVG), then rendered to sprite sheets at build time for speed; UI and effects stay live in code (section 11) |
 | Saving | Autosave on the phone after every level; **cloud save via Play Games Saved Games** when signed in, with conflict handling (keep the furthest progress) |
 | Offline | The whole campaign works offline. Ads, the shop, leaderboards and cloud save need a connection. |
 | Performance | 60 fps on mid-range and 30 fps on low-end (2 GB RAM, Android 8+); first download < 150 MB; regions download on demand if needed |
@@ -259,44 +294,58 @@ See [`style-boards/ui-kit.png`](style-boards/ui-kit.png).
 
 ---
 
-## 11. About "more realistic" art: an honest note
+## 11. Art: made only in code or with free tools
 
-The concept boards are **drawn entirely in code**, and that style has a ceiling. It can
-look clean and polished, but not painterly or realistic like the top games in the
-genre. Those use **painted art**: characters, buildings and backgrounds painted
-by hand (or with AI tools), then cut into sprites.
+**Founder decision:** no paid tools or artists. All art is drawn in code, the way the
+concept boards are, and pushed as far as code can go.
 
-**Recommended pipeline (hybrid):**
+**How we make code art look richer and more "painted":**
+- **Layered shading** on every shape: base colour, shadow side, light side, rim light and
+  highlights, with soft cast shadows on the ground.
+- **Textures generated in code** (SVG noise filters) for stone, sand, wood, cloth, fur and
+  water, so surfaces don't look flat.
+- **Lighting per region**: warm spring sun, harsh desert noon, grey monsoon light, blue
+  moonlit nights, misty delta mornings and cold mountain light.
+- **Effects**: bloom on magic and fire, smoke, dust, rain, snow, fog, sparks, all animated.
+- **Performance**: each character and building is drawn once, rendered to an image
+  (sprite sheet) at build time, and the game draws those images. That gives smooth
+  60 fps even on cheap phones.
 
-| Part | How it's made |
-|---|---|
-| Characters, towers, enemies, bosses, backgrounds, splash art, icon | **Painted raster art**, made with an AI image tool that can learn one consistent game style (e.g. Scenario or Leonardo, trained on our concept boards), or by a freelance illustrator for the most important pieces |
-| UI (buttons, panels, icons), particles, weather, lighting, glows | **Code**, as in the UI kit board: crisp at every screen size, small download, easy to animate |
-| Cutscene panels | Painted, re-using character art |
+**Free tools you can use if you ever want to touch up art yourself (optional):**
+Inkscape (vector editing), Krita (painting) and Blender (3D renders), all free and
+open source. Nothing in the plan depends on them.
 
-**Founder decision needed:** pick an AI art tool with a **commercial licence** (about
-$10–30/month), or set a budget for a freelance artist (roughly $500–2,000 for key art:
-icon, splash, 6 heroes, 6 bosses), or a mix of both. The AI then writes the prompts, the
-style guide, sizes, sprite-sheet layout and in-game integration.
+**Honest note:** code art will look clean, colourful and consistent, but it will not
+look like hand-painted art from a big studio. The concept boards show the real ceiling.
 
 ---
 
-## 12. Things you didn't mention but we need
+## 12. Other areas (Founder asked AI to decide)
 
-| Area | What we'll do |
+| Area | Decision |
 |---|---|
-| **Tutorial** | Levels 1–3 teach by doing: the Royal Sage points at things, and there are no walls of text. It's skippable for returning players. |
-| **Accessibility** | Colourblind mode (enemy shapes and outlines, not only colours), text size, reduced motion, everything playable with one thumb |
-| **Languages** | 12 at launch, including Hindi. Text lives in translation files from day one. |
-| **Privacy and age** | Rated for ages 13+; GDPR consent (UMP); privacy policy; data deletion page; data safety form |
-| **Cultural care** | No real gods, religions, communities or kingdoms as villains. Regions are *inspired by* real places. Names and costumes reviewed for respect. |
-| **India map law** | **We will not draw an outline of India or its borders.** Incorrect borders are a legal problem in India. The world map is an illustrated journey route, not a political map. |
-| **Live events** | Seasonal festival events with special levels and cosmetics: **Holi** (colour splash spells, March), **Diwali** (lamp-lighting level, Oct/Nov), Monsoon Week, New Year. They bring players back and suit a global audience. |
-| **Rate the game** | Google's in-app review prompt after the first boss win, never during play |
-| **Support** | FAQ, contact email and "restore purchases" in Settings |
-| **Store assets** | Icon 512×512, feature graphic 1024×500, 8 screenshots, a 30-second trailer, all translated |
-| **Updates roadmap** | v1.1: Weekly Challenge · v1.2: Royal Pass · v2: a new region (Northeast India, hill tea gardens), more heroes |
-| **Quality checks** | Automated bots play every level after each change; test devices (cheap and mid-range); crash reporting with Firebase Crashlytics |
+| **Tutorial** | Level 0 "Training Grounds" plus short tips in levels 1–3 (section 3). No walls of text. |
+| **Accessibility** | Colourblind mode (enemy shapes and outlines, not only colour), 3 text sizes, reduced motion, haptics on/off, everything playable with one thumb, pause anywhere. |
+| **Languages** | **Launch with 8:** English, Hindi, Spanish, Portuguese (Brazil), Indonesian, French, German, Russian. **Next:** Bengali, Tamil, Telugu, Marathi, Turkish, Japanese, Korean, Vietnamese. All text lives in translation files from day one; machine translation reviewed by native speakers where possible. |
+| **Privacy, age rating, ads.txt** | Handled on the **website** (separate branch): privacy policy, terms, data deletion page, `app-ads.txt` and `ads.txt`. In the game: Google's consent screen (UMP) for EU/UK, target age 13+, and a "Privacy" link in Settings. |
+| **Cultural care** | No real gods, religions, communities or kingdoms as villains. Regions are *inspired by* real places. Names, costumes and symbols reviewed for respect before each region ships. |
+| **India map law** | **We will not draw an outline of India or its borders.** The world map is an illustrated journey route, not a political map. |
+| **Rate the game** | Google's in-app review prompt after the first boss win, never during play. |
+| **Support** | FAQ, contact email and "Restore purchases" in Settings. |
+| **Store assets** | Icon 512×512, feature graphic 1024×500 (the splash art), 8 screenshots, a 30-second trailer recorded from the game; store text in all launch languages. |
+| **Quality checks** | Bots auto-play every level after each change, unit tests for game rules, a crash and slow-frame check on a cheap and a mid-range phone, and Firebase Crashlytics after launch. |
+
+---
+
+## 12b. Later versions (after launch)
+
+| Version | Content |
+|---|---|
+| v1.1 – v1.3 | Regions 4–6, one per month, ending with the Shadow Emperor |
+| v1.4 | **Live events**: Holi (colour spells, March), Monsoon Week, Diwali (lamp-lighting level, Oct/Nov), New Year; each with special levels and cosmetics |
+| v1.5 | Weekly Challenge (endless map with special rules) |
+| v1.6 | Royal Pass (free and paid reward tracks, cosmetics only) |
+| v2.0 | New region (Northeast India: hill tea gardens and misty forests), new heroes and towers |
 
 ---
 
@@ -308,7 +357,7 @@ Building all 30 levels before launch delays any income and feedback. Instead:
 |---|---|---|
 | **Closed test** (12 testers × 14 days) | Regions 1–2 (10 levels, 2 bosses) | Google Play requirement and early feedback |
 | **v1.0 global launch** | Regions 1–3 (15 levels, 3 bosses, 3 endless), shop, daily login, achievements, leaderboards | Enough for days of play; start earning and learning |
-| v1.1 – v1.3 | +1 region per month, then the finale | Regular updates keep players and improve store ranking |
+| v1.1 and later | +1 region per month, then live events and new features (section 12b) | Regular updates keep players and improve store ranking |
 
 **Rough timeline:** v1.0 in about 10–14 weeks; the full 30 levels about 3 months after
-that. These are estimates and depend on how the art pipeline is set up.
+that. These are estimates.

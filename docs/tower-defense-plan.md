@@ -298,7 +298,16 @@ Full design: [`game-design.md`](game-design.md). UI target look: [`style-boards/
 6 regions × 5 levels (boss every 5th) = 30 levels; bosses unlock Endless; shop, daily
 login, achievements, leaderboards, story and cutscenes. Release in stages (v1.0 = Regions 1–3).
 
-### New decisions for you (👤)
+### Decisions made (2026-11-03)
+| # | Decision | Answer |
+|---|---|---|
+| D1 | Game name | **Sandstone Kingdom** (`com.samvardhanstudios.sandstonekingdom`) |
+| D2 | Art | **Code-generated only, or free tools** (no paid AI tools or artists) |
+| D3 | Music | **Free and copyright-free** (CC0 first, then royalty-free with commercial use) |
+| D4 | Prices | India-friendly prices (₹29–₹999) with separate prices per country; see game-design.md §5 |
+| D5 | Website | Privacy, age rating, `ads.txt` and `app-ads.txt` are part of the website |
+
+### Earlier open decisions (now answered above)
 | # | Decision | Options |
 |---|---|---|
 | D1 | Confirm the game name | Sandstone Kingdom (recommended) / Monsoon Kingdom / Kingdom of Forts |
@@ -313,7 +322,7 @@ login, achievements, leaderboards, story and cutscenes. Release in stages (v1.0 
 | S2 | Create 32 achievements and 8 leaderboards in Play Games Services from the list I prepare (CSV with names, descriptions, icons) | 🤝 |
 | S3 | Create a free **Firebase** project (analytics, crash reports, remote tuning, public leaderboard copy) and send me the config file | 👤 |
 | S4 | Create in-app products in Play Console (ruby packs, Remove Ads, Starter Pack, skins) from my list | 👤 |
-| S5 | Sign up for the chosen AI art tool (or brief the illustrator using my style guide) | 👤 |
+| S5 | ~~Sign up for an AI art tool~~ Not needed: art is made in code | n/a |
 | S6 | Approve each region's art and story before it ships | 👤 |
 
 ### Build phases (all 🤖 unless marked)

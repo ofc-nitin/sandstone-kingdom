@@ -54,6 +54,7 @@
 </div>
 
 <script>
+/* ART-START: generated from art.js by build.py, edit art.js instead */
 // Shared drawing library for Sandstone Kingdom concept boards.
 // Every function draws into an SVG parent with the game's outline, lighting and palette.
 const NS = 'http://www.w3.org/2000/svg';
@@ -351,11 +352,18 @@ function butterfly(p, x, y, c) {
 }
 
 // ============================================================ characters
-function limb(t, x1, y1, x2, y2, color, w = 3.4) {
-  el('path', { d: `M${x1} ${y1} L${x2} ${y2}`, stroke: OUT, 'stroke-width': w + 2, 'stroke-linecap': 'round' }, t);
-  el('path', { d: `M${x1} ${y1} L${x2} ${y2}`, stroke: color, 'stroke-width': w, 'stroke-linecap': 'round' }, t);
+// An arm with a bent elbow: shoulder -> elbow -> hand, outlined like everything else.
+function arm(t, [sx, sy], [ex, ey], [hx, hy], color, w = 3) {
+  const d = `M${sx} ${sy} L${ex} ${ey} L${hx} ${hy}`;
+  el('path', { d, stroke: OUT, 'stroke-width': w + 2, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, t);
+  el('path', { d, stroke: color, 'stroke-width': w, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, t);
+  el('path', { d: `M${sx} ${sy - w * 0.25} L${ex} ${ey - w * 0.25}`, stroke: '#ffffff', 'stroke-width': w * 0.3, opacity: 0.3, 'stroke-linecap': 'round' }, t);
 }
-const hand = (t, x, y, skin) => outlined(t, 'circle', { cx: x, cy: y, r: 2, fill: skin }, 0.8);
+// A fist: knuckles toward the viewer, thumb wrapped over the grip.
+function hand(t, x, y, skin) {
+  outlined(t, 'ellipse', { cx: x, cy: y, rx: 2.1, ry: 1.8, fill: skin }, 0.8);
+  el('path', { d: `M${x - 1.2} ${y - 0.9} q1.2 0.7 2.4 0`, stroke: OUT, 'stroke-width': 0.45, fill: 'none', opacity: 0.6 }, t);
+}
 function shade(hex, f) {
   if (!hex.startsWith('#')) return hex;
   const n = parseInt(hex.slice(1), 16);
@@ -377,9 +385,13 @@ function person(p, x, y, o = {}) {
     outlined(t, 'path', { d: 'M-7 -22 L-3 -24 L1 -10 L-3 -8 Z', fill: 'url(#wood)' }, 0.9);
     [[-6, -25], [-4.6, -26], [-3.2, -25.4]].forEach(([a, b]) => el('path', { d: `M${a} ${b} l1 -3`, stroke: '#f3ead6', 'stroke-width': 1.2 }, t));
   }
-  const sleeve = shade(tunic, 0.82);
-  limb(t, -3.5 * big, -16, -6.5 * big, -9, sleeve, 3.2 * big);
-  hand(t, -6.8 * big, -8.4, skin);
+  // far arm (hangs, or holds the shield); the archer's far arm draws the string later
+  const sleeve = shade(o.armor ? '#c3c8d1' : tunic, 0.8);
+  const front = o.armor ? '#c3c8d1' : tunic;
+  if (weapon !== 'bow') {
+    arm(t, [-4.6 * big, -16.4], [-6.6 * big, -12.2], [-6.2 * big, -8.6], sleeve, 2.8 * big);
+    hand(t, -6.2 * big, -8.4, shade(skin, 0.92));
+  }
   outlined(t, 'rect', { x: -4.5 * big, y: -6, width: 3.6 * big, height: 7, rx: 1.4, fill: o.legs || '#5a3a22' }, 1.1);
   outlined(t, 'rect', { x: 0.9 * big, y: -6, width: 3.6 * big, height: 7, rx: 1.4, fill: o.legs || '#5a3a22' }, 1.1);
   el('path', { d: `M${-5 * big} 0.6 h${4.6 * big} M${0.6 * big} 0.6 h${4.6 * big}`, stroke: '#2a1a10', 'stroke-width': 2.4, 'stroke-linecap': 'round' }, t);
@@ -398,6 +410,8 @@ function person(p, x, y, o = {}) {
   el('rect', { x: -5 * big, y: -12, width: 10 * big, height: 2, fill: shade(trim, 0.8) }, t);
   el('rect', { x: -1.2, y: -12.4, width: 2.4, height: 2.8, rx: 0.6, fill: '#ffd66b', stroke: OUT, 'stroke-width': 0.4 }, t);
   outlined(t, 'rect', { x: 2.6 * big, y: -11, width: 2.6, height: 3, rx: 0.8, fill: '#8a5a32' }, 0.5);
+  // the archer's drawing arm passes behind the head; only the hand shows at the chin
+  if (weapon === 'bow') arm(t, [-4.4 * big, -16.8], [-6.6, -20.4], [7.4, -19.4], sleeve, 2.8);
   // head
   outlined(t, 'circle', { cx: -4.6, cy: -22.6, r: 1.7, fill: shade(skin, 0.9) }, 0.7);
   outlined(t, 'circle', { cx: 0, cy: -23, r: 6.5, fill: skin }, 1.3);
@@ -439,51 +453,63 @@ function person(p, x, y, o = {}) {
     outlined(t, 'path', { d: 'M-6 -21 Q-12 -20 -14 -16 Q-10 -18 -6 -19 Z', fill: '#2d2a33' }, 0.6);
   }
   // weapon, then the front arm so the hand grips it
+  const S = [4.6 * big, -16.4]; // front shoulder
   if (weapon === 'bow') {
-    el('path', { d: 'M9.5 -32 Q19 -20 9.5 -6', stroke: OUT, 'stroke-width': 3.4, fill: 'none', 'stroke-linecap': 'round' }, t);
-    el('path', { d: 'M9.5 -32 Q19 -20 9.5 -6', stroke: '#9a5e2a', 'stroke-width': 2, fill: 'none', 'stroke-linecap': 'round' }, t);
-    el('path', { d: 'M9.5 -32 L3.5 -19 L9.5 -6', stroke: '#f3ead6', 'stroke-width': 0.6, fill: 'none' }, t);
-    el('path', { d: 'M3.5 -19 H20', stroke: '#c9a070', 'stroke-width': 1 }, t);
-    outlined(t, 'path', { d: 'M20 -19 l-2.4 -1.4 v2.8 Z', fill: '#dfe3ea' }, 0.4);
-    el('path', { d: 'M3.5 -19 l-1.6 -1.2 M3.5 -19 l-1.6 1.2', stroke: '#e2461d', 'stroke-width': 0.9 }, t);
-    limb(t, 3.5 * big, -16, 3.4, -19, tunic, 3.2);
-    limb(t, 3.5 * big, -16, 13, -19, tunic, 3.2);
-    hand(t, 13.4, -19, skin); hand(t, 3.4, -19, skin);
+    // bow held out at arm's length, string drawn back to the cheek
+    const G = [13.6, -19.4], D = [7.4, -19.4];
+    el('path', { d: `M12.4 -33 Q23.5 -19.4 12.4 -5.8`, stroke: OUT, 'stroke-width': 3.6, fill: 'none', 'stroke-linecap': 'round' }, t);
+    el('path', { d: `M12.4 -33 Q23.5 -19.4 12.4 -5.8`, stroke: '#9a5e2a', 'stroke-width': 2.1, fill: 'none', 'stroke-linecap': 'round' }, t);
+    el('path', { d: `M14.6 -27 Q17.4 -19.4 14.6 -12`, stroke: '#e8b878', 'stroke-width': 0.6, fill: 'none' }, t);
+    el('path', { d: `M12.4 -33 L${D[0]} ${D[1]} L12.4 -5.8`, stroke: '#f3ead6', 'stroke-width': 0.6, fill: 'none' }, t);
+    el('path', { d: `M${D[0]} ${D[1]} L23.6 -19.6`, stroke: '#c9a070', 'stroke-width': 1.1 }, t);
+    outlined(t, 'path', { d: 'M24.6 -19.6 l-3 -1.6 v3.2 Z', fill: 'url(#steel)' }, 0.4);
+    el('path', { d: `M${D[0] + 0.4} ${D[1]} l-2.2 -1.4 M${D[0] + 0.4} ${D[1]} l-2.2 1.4`, stroke: '#e2461d', 'stroke-width': 1 }, t);
+    arm(t, S, [9.4, -18.6], G, front, 2.8);
+    hand(t, G[0], G[1], skin);
+    hand(t, D[0], D[1], skin);
   } else if (weapon === 'spear') {
-    el('path', { d: 'M9 3 L9 -44', stroke: OUT, 'stroke-width': 3 }, t);
-    el('path', { d: 'M9 3 L9 -44', stroke: '#8a5a2e', 'stroke-width': 1.6 }, t);
-    outlined(t, 'path', { d: 'M9 -52 L12 -44 L9 -42 L6 -44 Z', fill: 'url(#steel)' }, 0.9);
-    el('path', { d: 'M8 -42 q-2 3 -1 6 M10 -42 q2 3 1 6', stroke: '#e2342a', 'stroke-width': 1.4, fill: 'none' }, t);
-    limb(t, 3.5 * big, -16, 9, -14, tunic, 3.2);
-    hand(t, 9, -14, skin);
+    const H = [9.2, -15];
+    el('path', { d: 'M9.2 3 L9.2 -44', stroke: OUT, 'stroke-width': 3 }, t);
+    el('path', { d: 'M9.2 3 L9.2 -44', stroke: '#8a5a2e', 'stroke-width': 1.6 }, t);
+    el('path', { d: 'M8.6 0 L8.6 -42', stroke: '#c08a52', 'stroke-width': 0.5 }, t);
+    outlined(t, 'path', { d: 'M9.2 -52 L12.2 -44 L9.2 -42 L6.2 -44 Z', fill: 'url(#steel)' }, 0.9);
+    el('path', { d: 'M8.2 -42 q-2 3 -1 6 M10.2 -42 q2 3 1 6', stroke: '#e2342a', 'stroke-width': 1.4, fill: 'none' }, t);
+    arm(t, S, [7.4, -11.4], H, front, 2.8);
+    hand(t, H[0], H[1], skin);
   } else if (weapon === 'sword') {
-    outlined(t, 'path', { d: 'M9 -15 L19 -34 L20.4 -33 L11 -14 Z', fill: 'url(#steel)' }, 0.8);
-    el('path', { d: 'M10.4 -16 L19.4 -33.4', stroke: '#ffffff', 'stroke-width': 0.6, opacity: 0.9 }, t);
-    outlined(t, 'path', { d: 'M6.4 -16.6 L13.4 -12.6', fill: 'none' }, 2.2);
-    el('path', { d: 'M6.4 -16.6 L13.4 -12.6', stroke: '#e0a21c', 'stroke-width': 1.4 }, t);
-    outlined(t, 'circle', { cx: 8, cy: -11.6, r: 1.3, fill: '#e0a21c' }, 0.5);
-    limb(t, 3.5 * big, -16, 9.6, -13.6, o.armor ? '#c3c8d1' : tunic, 3.2);
-    hand(t, 9.6, -13.6, skin);
+    // blade rises up and forward from the fist; guard above the fist, pommel below
+    const H = [10.6, -13.2], dx = 0.47, dy = -0.88, nx = 0.88, ny = 0.47;
+    const at = (k, m = 0) => `${H[0] + dx * k + nx * m} ${H[1] + dy * k + ny * m}`;
+    outlined(t, 'path', { d: `M${at(2.6, -1.1)} L${at(22.6, -0.9)} L${at(24.6)} L${at(22.6, 0.9)} L${at(2.6, 1.1)} Z`, fill: 'url(#steel)' }, 0.8);
+    el('path', { d: `M${at(3, 0)} L${at(22.6, 0)}`, stroke: '#ffffff', 'stroke-width': 0.5, opacity: 0.9 }, t);
+    el('path', { d: `M${at(2.2, -3.4)} L${at(2.2, 3.4)}`, stroke: OUT, 'stroke-width': 2.6, 'stroke-linecap': 'round' }, t);
+    el('path', { d: `M${at(2.2, -3.4)} L${at(2.2, 3.4)}`, stroke: '#e0a21c', 'stroke-width': 1.4, 'stroke-linecap': 'round' }, t);
+    el('path', { d: `M${at(-2.4)} L${at(1.6)}`, stroke: '#5a3a22', 'stroke-width': 1.8 }, t);
+    outlined(t, 'circle', { cx: H[0] - dx * 3, cy: H[1] - dy * 3, r: 1.2, fill: '#e0a21c' }, 0.5);
+    arm(t, S, [8, -10.8], H, front, 2.8);
+    hand(t, H[0], H[1], skin);
   } else if (weapon === 'axe') {
-    el('path', { d: 'M9 2 L11 -32', stroke: OUT, 'stroke-width': 3.4 }, t);
-    el('path', { d: 'M9 2 L11 -32', stroke: '#8a5a2e', 'stroke-width': 2 }, t);
-    outlined(t, 'path', { d: 'M10.4 -33 Q22 -36 21 -22 Q16 -27 10.8 -25.6 Z', fill: 'url(#steel)' }, 1);
-    el('path', { d: 'M12 -31.6 Q19 -33 19.6 -25', stroke: '#ffffff', 'stroke-width': 0.8, fill: 'none', opacity: 0.8 }, t);
-    outlined(t, 'path', { d: 'M10.6 -33 Q6 -34 5 -29 Q8 -30 10.6 -28 Z', fill: 'url(#steel)' }, 0.8);
-    limb(t, 3.5 * big, -16, 10, -15, skin, 3.4 * big);
-    hand(t, 10, -15, skin);
+    const H = [10.3, -15.4];
+    el('path', { d: 'M9.2 2 L11.2 -32', stroke: OUT, 'stroke-width': 3.4 }, t);
+    el('path', { d: 'M9.2 2 L11.2 -32', stroke: '#8a5a2e', 'stroke-width': 2 }, t);
+    outlined(t, 'path', { d: 'M10.6 -33 Q22.2 -36 21.2 -22 Q16.2 -27 11 -25.6 Z', fill: 'url(#steel)' }, 1);
+    el('path', { d: 'M12.2 -31.6 Q19.2 -33 19.8 -25', stroke: '#ffffff', 'stroke-width': 0.8, fill: 'none', opacity: 0.8 }, t);
+    outlined(t, 'path', { d: 'M10.8 -33 Q6.2 -34 5.2 -29 Q8.2 -30 10.8 -28 Z', fill: 'url(#steel)' }, 0.8);
+    arm(t, S, [8.4 * Math.min(big, 1.15), -11], H, o.fur ? skin : front, 3 * big);
+    hand(t, H[0], H[1], skin);
   } else if (weapon === 'staff') {
+    const H = [10, -17];
     el('path', { d: 'M10 3 L10 -38', stroke: OUT, 'stroke-width': 3 }, t);
     el('path', { d: 'M10 3 L10 -38', stroke: '#6e4524', 'stroke-width': 1.7 }, t);
     outlined(t, 'path', { d: 'M5 -40 Q10 -50 15 -40 Q12 -44 10 -38 Q8 -44 5 -40 Z', fill: 'url(#gold)' }, 0.7);
     const orb = el('circle', { cx: 10, cy: -45, r: 8, fill: o.orb || 'url(#glow)', filter: 'url(#bloom)' }, t);
     anim(orb, { attributeName: 'r', values: '7;9;7', dur: '1.6s' });
     outlined(t, 'circle', { cx: 10, cy: -45, r: 2.8, fill: '#ffffff' }, 0.5);
-    limb(t, 3.5 * big, -16, 10, -15, tunic, 3.2);
-    hand(t, 10, -15, skin);
+    arm(t, S, [8.2, -11.6], H, front, 2.8);
+    hand(t, H[0], H[1], skin);
   } else {
-    limb(t, 3.5 * big, -16, 5.5 * big, -9, tunic, 3.2 * big);
-    hand(t, 5.8 * big, -8.4, skin);
+    arm(t, S, [6.4 * big, -12], [6 * big, -8.4], front, 2.8 * big);
+    hand(t, 6 * big, -8.2, skin);
   }
   if (shield) {
     outlined(t, 'circle', { cx: -6.5, cy: -11, r: 6.6, fill: 'url(#steel)' }, 1.3);
@@ -491,7 +517,13 @@ function person(p, x, y, o = {}) {
     emblemAt(t, -6.5, -11, 2.4, o.emblem || 'sun');
     el('path', { d: 'M-11 -13 Q-10 -16 -7 -16.6', stroke: '#ffffff', 'stroke-width': 0.9, opacity: 0.6, fill: 'none' }, t);
   }
-  if (o.hp !== undefined) hpBar(t, 0, -44, o.hp, 14);
+  if (o.crown) {
+    outlined(t, 'path', { d: 'M-6.4 -31 L-6.4 -37 L-3.4 -34 L0 -39 L3.4 -34 L6.4 -37 L6.4 -31 Z', fill: 'url(#gold)' }, 0.9);
+    [[-6.4, -37.4], [0, -39.4], [6.4, -37.4]].forEach(([a, b]) => outlined(t, 'circle', { cx: a, cy: b, r: 1.1, fill: '#e2342a' }, 0.4));
+    el('path', { d: 'M-5.6 -32.6 H5.6', stroke: '#fff2b0', 'stroke-width': 0.6 }, t);
+  }
+  if (o.glowEyes) el('ellipse', { cx: 2.6, cy: -23.6, rx: 1.4, ry: 1.2, fill: o.glowEyes, filter: 'url(#bloom)' }, t);
+  if (o.hp !== undefined) hpBar(t, 0, o.crown ? -48 : -44, o.hp, 14);
   return t;
 }
 const ARCHER = { tunic: '#f4efe2', trim: '#2f7a3d', headColor: '#2f7a3d', weapon: 'bow', moustache: true, quiver: true, legs: '#6b4a2e' };
@@ -735,6 +767,261 @@ function fortGate(p, x, y, s = 1) {
   }
   flag(t, 48, -95, 20, 'url(#saffron)', 18);
 }
+
+// ============================================================ currency icons
+function coinIcon(p, x, y, r = 8) {
+  const t = g(p);
+  outlined(t, 'ellipse', { cx: x, cy: y + r * 0.16, rx: r, ry: r * 0.98, fill: '#8a5a0c' }, 1.1);
+  for (let i = 0; i < 12; i++) { const a = Math.PI * (0.1 + i * 0.07); el('path', { d: `M${x + Math.cos(a) * r * 0.98} ${y + r * 0.16 + Math.sin(a) * r * 0.96} v${-r * 0.16}`, stroke: '#5a3a08', 'stroke-width': 0.5 }, t); }
+  outlined(t, 'circle', { cx: x, cy: y, r, fill: 'url(#gold)' }, 1.1);
+  for (let i = 0; i < 24; i++) { const a = (i / 24) * Math.PI * 2; el('path', { d: `M${x + Math.cos(a) * r * 0.78} ${y + Math.sin(a) * r * 0.78} L${x + Math.cos(a) * r * 0.92} ${y + Math.sin(a) * r * 0.92}`, stroke: '#a46b1d', 'stroke-width': Math.max(0.4, r * 0.05) }, t); }
+  el('circle', { cx: x, cy: y, r: r * 0.7, fill: 'none', stroke: '#a46b1d', 'stroke-width': Math.max(0.5, r * 0.07) }, t);
+  // embossed sun: dark copy offset down-right, light copy on top
+  for (const [off, col] of [[r * 0.06, '#9a6410'], [0, '#ffe9a0']]) {
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; el('path', { d: `M${x + off + Math.cos(a) * r * 0.3} ${y + off + Math.sin(a) * r * 0.3} L${x + off + Math.cos(a) * r * 0.55} ${y + off + Math.sin(a) * r * 0.55}`, stroke: col, 'stroke-width': Math.max(0.5, r * 0.09), 'stroke-linecap': 'round' }, t); }
+    el('circle', { cx: x + off, cy: y + off, r: r * 0.22, fill: col }, t);
+  }
+  el('path', { d: `M${x - r * 0.62} ${y - r * 0.2} A${r * 0.66} ${r * 0.66} 0 0 1 ${x + r * 0.1} ${y - r * 0.64}`, stroke: '#fffbe6', 'stroke-width': Math.max(0.7, r * 0.12), fill: 'none', 'stroke-linecap': 'round', opacity: 0.9 }, t);
+  sparkle(t, x + r * 0.62, y - r * 0.62, r * 0.38);
+  return t;
+}
+function rubyIcon(p, x, y, r = 8) {
+  const t = g(p);
+  el('circle', { cx: x, cy: y, r: r * 1.15, fill: 'url(#holy)', opacity: 0.35 }, t);
+  const P = (dx, dy) => `${x + dx * r} ${y + dy * r}`;
+  // outline of a cushion-cut gem: crown above the girdle, pavilion below
+  outlined(t, 'path', { d: `M${P(-1, -0.25)} L${P(-0.58, -0.82)} L${P(0.58, -0.82)} L${P(1, -0.25)} L${P(0, 1)} Z`, fill: '#a8101a' }, Math.max(0.8, r * 0.12));
+  const face = (pts, fill, op = 1) => el('path', { d: 'M' + pts.map(([a, b]) => P(a, b)).join(' L') + ' Z', fill, opacity: op }, t);
+  face([[-0.58, -0.82], [0.58, -0.82], [0.34, -0.42], [-0.34, -0.42]], '#ff6a58');
+  face([[-1, -0.25], [-0.58, -0.82], [-0.34, -0.42]], '#ff8a78');
+  face([[1, -0.25], [0.58, -0.82], [0.34, -0.42]], '#d82a2a');
+  face([[-1, -0.25], [-0.34, -0.42], [0.34, -0.42], [1, -0.25]], '#e83a36');
+  face([[-1, -0.25], [-0.34, -0.25], [0, 1]], '#c41a22');
+  face([[-0.34, -0.25], [0.34, -0.25], [0, 1]], '#8a0a14');
+  face([[0.34, -0.25], [1, -0.25], [0, 1]], '#6a0610');
+  el('path', { d: `M${P(-1, -0.25)} L${P(1, -0.25)}`, stroke: '#ffb0a0', 'stroke-width': Math.max(0.4, r * 0.06) }, t);
+  face([[-0.46, -0.72], [-0.12, -0.72], [-0.3, -0.5]], '#ffffff', 0.85);
+  face([[-0.7, -0.16], [-0.44, -0.16], [-0.16, 0.36]], '#ffffff', 0.35);
+  sparkle(t, x + r * 0.62, y - r * 0.7, r * 0.42);
+  return t;
+}
+function sparkle(p, x, y, r) {
+  el('path', { d: `M${x} ${y - r} Q${x + r * 0.12} ${y - r * 0.12} ${x + r} ${y} Q${x + r * 0.12} ${y + r * 0.12} ${x} ${y + r} Q${x - r * 0.12} ${y + r * 0.12} ${x - r} ${y} Q${x - r * 0.12} ${y - r * 0.12} ${x} ${y - r} Z`, fill: '#ffffff' }, p);
+}
+
+// ============================================================ region enemies
+function bumpy(cx, cy, rx, ry, n = 14, amp = 0.12, a0 = 0, a1 = Math.PI * 2) {
+  let d = '';
+  for (let i = 0; i <= n; i++) {
+    const a = a0 + ((a1 - a0) * i) / n, rr = 1 + (i % 2 ? amp : -amp * 0.3);
+    d += `${i ? 'L' : 'M'}${cx + Math.cos(a) * rx * rr} ${cy + Math.sin(a) * ry * rr} `;
+  }
+  return d + (a1 - a0 >= Math.PI * 2 - 0.01 ? 'Z' : '');
+}
+const facing = (p, x, y, s, flip) => g(p, { transform: `translate(${x} ${y}) scale(${flip ? -s : s} ${s})` });
+const BANDIT_KING = { tunic: '#3a2f4a', trim: '#e0a21c', head: 'mask', headColor: '#2d2a33', weapon: 'axe', skin: '#c98758', angry: true, big: 1.4, cape: '#7a1f1f', crown: true, armor: 'url(#darksteel)', legs: '#2d2a33' };
+const CAMEL_RIDER = { tunic: '#c9a06a', trim: '#7a1f1f', head: 'mask', headColor: '#e8d2a6', weapon: 'spear', skin: '#c98758', angry: true };
+const RIVER_RAIDER = { tunic: '#3d5a6b', trim: '#c8361d', head: 'mask', headColor: '#2a4a5a', weapon: 'sword', skin: '#b87848', angry: true };
+const MUD_BRUTE = { tunic: '#6b4a2e', trim: '#3a2414', head: 'horns', weapon: 'axe', skin: '#9a6a4a', big: 1.5, beard: '#4a3020', fur: '#8a6a4a', angry: true };
+const NIGHT_STALKER = { tunic: '#1f1a2e', trim: '#6a3fc0', head: 'hood', headColor: '#16121f', weapon: 'sword', skin: '#6a5a78', cape: '#2a1f3e', angry: true, glowEyes: '#c9a0ff' };
+const RIVER_PIRATE = { tunic: '#e9dcc0', trim: '#c8361d', head: 'turban', headColor: '#c8361d', weapon: 'sword', skin: '#b87848', angry: true, moustache: true, legs: '#2a4a5a' };
+const SWAMP_WITCH = { tunic: '#2f4a2a', trim: '#9be35a', head: 'hood', headColor: '#203a1c', weapon: 'staff', orb: 'url(#glowG)', skin: '#9aae7a', angry: true, glowEyes: '#c6ff8a' };
+const FROST_MAGE = { tunic: '#9ec4e8', trim: '#ffffff', head: 'hood', headColor: '#5f8fc8', weapon: 'staff', beard: '#ffffff', skin: '#c8b8b0', angry: true, glowEyes: '#bfe8ff' };
+const SHADOW_EMPEROR = { tunic: '#1f1630', trim: '#a070ff', head: 'helmet', headColor: '#6a3fc0', weapon: 'staff', orb: 'url(#gemPurple)', skin: '#5a4a6a', big: 1.6, cape: '#3a1f5a', crown: true, armor: 'url(#darksteel)', angry: true, glowEyes: '#e0c0ff', visor: true, legs: '#1f1630' };
+
+function warBoar(p, x, y, s = 1, flip = false, hp) {
+  const t = facing(p, x, y, s, flip);
+  cast(t, 0, 0, 22, 5, 0.2); shadow(t, 0, 2, 24, 5.5);
+  outlined(t, 'path', { d: 'M-24 -10 Q-26 -28 -4 -30 Q16 -32 22 -20 L30 -16 L28 -8 L20 -6 Q16 0 10 0 L8 4 L4 4 L4 -2 L-12 -2 L-13 4 L-17 4 L-18 -3 Q-24 -4 -24 -10 Z', fill: '#5a3a28' }, 1.6);
+  el('path', { d: 'M-22 -8 Q0 -2 22 -8 L20 -6 Q16 0 10 0 L4 -2 L-12 -2 L-18 -3 Z', fill: '#000', opacity: 0.18 }, t);
+  el('path', { d: bumpy(-4, -28, 16, 4, 16, 0.5, Math.PI, Math.PI * 2), stroke: '#2a1a10', 'stroke-width': 1.6, fill: 'none' }, t);
+  outlined(t, 'path', { d: 'M24 -12 Q34 -14 34 -22 Q30 -16 24 -16 Z', fill: '#fff3dc' }, 0.9);
+  el('circle', { cx: 22, cy: -22, r: 1.6, fill: '#ff4a2a', filter: 'url(#bloom)' }, t);
+  outlined(t, 'path', { d: 'M-16 -30 H8 V-14 Q-4 -10 -16 -14 Z', fill: 'url(#darksteel)' }, 1.2);
+  [[-12, -26], [-4, -27], [4, -26]].forEach(([a, b]) => outlined(t, 'path', { d: `M${a - 2} ${b} l2 -6 l2 6 Z`, fill: 'url(#steel)' }, 0.6));
+  if (hp !== undefined) hpBar(t, 0, -40, hp, 26);
+  return t;
+}
+function banditKing(p, x, y, s = 1, flip = false, hp) {
+  const t = facing(p, x, y, s, flip);
+  warBoar(t, 0, 0, 1);
+  person(t, -2, -24, { ...BANDIT_KING, s: 0.85 });
+  if (hp !== undefined) hpBar(t, 0, -70, hp, 30);
+  return t;
+}
+function scorpion(p, x, y, s = 1, flip = false) {
+  const t = facing(p, x, y, s, flip);
+  cast(t, 0, 0, 14, 3, 0.18); shadow(t, 0, 1, 15, 3.5);
+  for (const k of [-1, 1]) for (let i = 0; i < 3; i++) el('path', { d: `M${-4 + i * 4} -4 l${-3 + i} 5`, stroke: OUT, 'stroke-width': 1.2 }, t);
+  [[-10, -6, 5], [-3, -7, 6], [5, -6, 5]].forEach(([a, b, r]) => { outlined(t, 'ellipse', { cx: a, cy: b, rx: r, ry: r * 0.65, fill: '#c07a2a' }, 1); el('ellipse', { cx: a - 1, cy: b - 1.4, rx: r * 0.5, ry: r * 0.22, fill: '#f0b860', opacity: 0.8 }, t); });
+  let d = 'M-14 -6';
+  [[-18, -10], [-20, -16], [-18, -22], [-12, -25]].forEach(([a, b]) => { d += ` L${a} ${b}`; });
+  el('path', { d, stroke: OUT, 'stroke-width': 5, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, t);
+  el('path', { d, stroke: '#a8621e', 'stroke-width': 3.4, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, t);
+  outlined(t, 'path', { d: 'M-12 -25 Q-6 -26 -7 -21 Q-9 -23 -12 -22 Z', fill: '#3a2414' }, 0.6);
+  el('circle', { cx: -7.4, cy: -21.8, r: 1.6, fill: '#c6ff8a', filter: 'url(#bloom)' }, t);
+  for (const yy of [-9, -3]) { el('path', { d: `M9 -6 Q13 ${yy - 2} 16 ${yy}`, stroke: OUT, 'stroke-width': 2.6, fill: 'none' }, t); outlined(t, 'path', { d: `M15 ${yy - 2} Q20 ${yy - 3} 20 ${yy} Q18 ${yy - 1} 16 ${yy + 1} Z`, fill: '#c07a2a' }, 0.7); }
+  el('circle', { cx: 9.4, cy: -8, r: 0.9, fill: '#1d1208' }, t);
+  return t;
+}
+function camel(p, x, y, s = 1, flip = false, rider = true, hp) {
+  const t = facing(p, x, y, s, flip);
+  cast(t, 0, 0, 20, 4, 0.18); shadow(t, 0, 2, 20, 4.5);
+  for (const [a, b] of [[-12, -14], [-8, -14], [8, -14], [12, -14]]) { el('path', { d: `M${a} ${b} L${a - 1} 1`, stroke: OUT, 'stroke-width': 3.6, 'stroke-linecap': 'round' }, t); el('path', { d: `M${a} ${b} L${a - 1} 1`, stroke: '#c9955e', 'stroke-width': 2.2, 'stroke-linecap': 'round' }, t); }
+  outlined(t, 'path', { d: 'M-18 -14 Q-18 -24 -10 -24 Q-6 -36 2 -26 Q8 -28 14 -20 L22 -34 L28 -34 L28 -30 L24 -28 L18 -14 Q0 -8 -18 -14 Z', fill: '#d9a86a' }, 1.4);
+  el('path', { d: 'M-16 -14 Q0 -9 16 -14', stroke: '#a8783e', 'stroke-width': 1.4, fill: 'none' }, t);
+  el('circle', { cx: 25.6, cy: -32, r: 0.8, fill: OUT }, t);
+  outlined(t, 'path', { d: 'M-10 -24 H8 L6 -16 H-8 Z', fill: 'url(#red)' }, 1);
+  for (let i = 0; i < 5; i++) el('circle', { cx: -8 + i * 3.6, cy: -15.4, r: 0.9, fill: '#ffd66b' }, t);
+  if (rider) person(t, -1, -24, { ...CAMEL_RIDER, s: 0.75 });
+  if (hp !== undefined) hpBar(t, 0, -60, hp, 20);
+  return t;
+}
+function burrower(p, x, y, s = 1, flip = false) {
+  const t = facing(p, x, y, s, flip);
+  shadow(t, 0, 1, 18, 4);
+  outlined(t, 'path', { d: 'M-18 0 Q-14 -10 0 -10 Q14 -10 18 0 Z', fill: '#e0b070' }, 1.2);
+  for (let i = 0; i < 6; i++) el('circle', { cx: -14 + i * 6, cy: -2 - (i % 2) * 2, r: 1.2, fill: '#c9955e' }, t);
+  outlined(t, 'path', { d: 'M-8 -8 Q-10 -22 0 -24 Q10 -22 8 -8 Z', fill: '#4a2e1e' }, 1.3);
+  el('path', { d: 'M-6 -16 Q0 -19 6 -16 M-6 -12 Q0 -15 6 -12', stroke: '#7a5a3a', 'stroke-width': 0.9, fill: 'none' }, t);
+  el('path', { d: 'M-4 -22 Q-2 -26 0 -24', stroke: '#ffffff', 'stroke-width': 0.8, opacity: 0.5, fill: 'none' }, t);
+  outlined(t, 'path', { d: 'M4 -20 Q12 -24 13 -16 Q10 -19 6 -17 Z M4 -14 Q12 -14 12 -8 Q9 -11 5 -11 Z', fill: '#2a1a10' }, 0.6);
+  [[2, -20], [-2, -20]].forEach(([a, b]) => el('circle', { cx: a, cy: b, r: 1.2, fill: '#ffb03a', filter: 'url(#bloom)' }, t));
+  for (let i = 0; i < 4; i++) el('circle', { cx: -12 + i * 8, cy: -10 - (i % 2) * 4, r: 2.4, fill: 'url(#dust)' }, t);
+  return t;
+}
+function golem(p, x, y, s = 1, flip = false, o = {}) {
+  const { body = '#c9a07a', dark = '#8a6a4a', eyes = '#8fd8ff', moss: mossy = true, hp } = o;
+  const t = facing(p, x, y, s, flip);
+  cast(t, 0, 0, 16, 4, 0.2); shadow(t, 0, 2, 18, 4.5);
+  outlined(t, 'path', { d: 'M-10 0 L-9 -10 H-3 L-3 0 Z M3 0 L3 -10 H9 L10 0 Z', fill: dark }, 1.2);
+  outlined(t, 'path', { d: 'M-14 -10 L-12 -30 L-4 -34 L8 -33 L14 -26 L13 -10 Z', fill: body }, 1.6);
+  el('path', { d: 'M8 -33 L14 -26 L13 -10 L6 -10 Z', fill: '#000', opacity: 0.18 }, t);
+  el('path', { d: 'M-12 -30 L-4 -34 L2 -33 L-4 -28 Z', fill: '#fff', opacity: 0.22 }, t);
+  el('path', { d: 'M-6 -24 L-2 -18 L-6 -14 M4 -28 L6 -20', stroke: OUT, 'stroke-width': 0.9, fill: 'none', opacity: 0.7 }, t);
+  el('path', { d: 'M-2 -22 l2 -3 l2 3 l-2 3 Z', fill: eyes, filter: 'url(#bloom)' }, t);
+  outlined(t, 'path', { d: 'M-8 -34 L-6 -42 L4 -43 L8 -36 Z', fill: body }, 1.3);
+  [[-3, -38.6], [3, -38.6]].forEach(([a, b]) => el('rect', { x: a - 1.4, y: b - 0.8, width: 2.8, height: 1.6, fill: eyes, filter: 'url(#bloom)' }, t));
+  outlined(t, 'path', { d: 'M-14 -28 L-20 -20 L-19 -10 L-14 -11 L-15 -18 Z', fill: dark }, 1.2);
+  outlined(t, 'path', { d: 'M14 -26 L21 -18 L20 -8 L15 -9 L15 -18 Z', fill: dark }, 1.2);
+  if (mossy) moss(t, [[-10, -30, 2.4], [6, -34, 2], [12, -14, 1.8]]);
+  if (hp !== undefined) hpBar(t, 0, -50, hp, 20);
+  return t;
+}
+function stoneTitan(p, x, y, s = 1, flip = false, hp) {
+  const t = facing(p, x, y, s, flip);
+  golem(t, 0, 0, 1.6, false, { body: '#b89070', dark: '#7a5a42', eyes: '#ffb03a' });
+  // carved temple-style crown and a boulder overhead
+  [[-10, -72], [-4, -76], [2, -76], [8, -72]].forEach(([a, b]) => outlined(t, 'rect', { x: a - 1.8, y: b, width: 3.6, height: 8, fill: '#d9b48a' }, 0.8));
+  outlined(t, 'circle', { cx: 18, cy: -78, r: 12, fill: '#a8804e' }, 1.6);
+  el('path', { d: 'M10 -82 L16 -76 M20 -86 L24 -80', stroke: OUT, 'stroke-width': 0.8 }, t);
+  moss(t, [[12, -86, 2.6]]);
+  if (hp !== undefined) hpBar(t, 0, -96, hp, 34);
+  return t;
+}
+function colossus(p, x, y, s = 1, flip = false, hp) {
+  const t = facing(p, x, y, s, flip);
+  golem(t, 0, 0, 1.7, false, { body: '#e8b870', dark: '#b8803e', eyes: '#ff7a2a', moss: false });
+  for (let i = 0; i < 9; i++) { const c = el('circle', { cx: -26 + rnd() * 52, cy: -60 + rnd() * 60, r: 1 + rnd() * 1.6, fill: '#f0c888', opacity: 0.8 }, t); anim(c, { attributeName: 'cy', values: `${-60 + i * 6};${-54 + i * 6};${-60 + i * 6}`, dur: `${1.2 + i * 0.2}s` }); }
+  el('path', { d: 'M-30 0 Q-18 -10 0 -6 Q18 -10 30 0 Z', fill: '#e0b070', stroke: OUT, 'stroke-width': 1.2 }, t);
+  if (hp !== undefined) hpBar(t, 0, -86, hp, 34);
+  return t;
+}
+function boat(p, x, y, s = 1, flip = false, crew = RIVER_RAIDER, hp) {
+  const t = facing(p, x, y, s, flip);
+  el('ellipse', { cx: 0, cy: 2, rx: 24, ry: 4, fill: '#4f8faa', opacity: 0.8 }, t);
+  el('path', { d: 'M-22 2 q3 -2 6 0 M10 3 q3 -2 6 0', stroke: '#d8f2fa', 'stroke-width': 0.9, fill: 'none' }, t);
+  person(t, -4, -3, { ...crew, s: 0.8 });
+  outlined(t, 'path', { d: 'M-22 -6 Q-20 2 0 2 Q20 2 22 -8 L18 -5 H-18 Z', fill: 'url(#wood)' }, 1.4);
+  el('path', { d: 'M-18 -4 H18', stroke: '#5a3a22', 'stroke-width': 0.8 }, t);
+  el('path', { d: 'M10 -16 L20 6', stroke: '#7a4a22', 'stroke-width': 1.6 }, t);
+  outlined(t, 'path', { d: 'M18 2 l4 6 l3 -2 Z', fill: '#a8794a' }, 0.6);
+  if (hp !== undefined) hpBar(t, 0, -48, hp, 18);
+  return t;
+}
+function bat(p, x, y, s = 1, flip = false, col = '#3a3560') {
+  const t = facing(p, x, y, s, flip);
+  shadow(t, 0, 18, 10, 2.4, 0.18);
+  const a = 'M0 -4 Q-8 -16 -20 -10 Q-16 -6 -18 -1 Q-12 -4 -10 0 Q-6 -4 0 -1 Q6 -4 10 0 Q12 -4 18 -1 Q16 -6 20 -10 Q8 -16 0 -4 Z';
+  const b = 'M0 -4 Q-8 -8 -18 -2 Q-14 0 -15 4 Q-10 1 -9 4 Q-5 0 0 -1 Q5 0 9 4 Q10 1 15 4 Q14 0 18 -2 Q8 -8 0 -4 Z';
+  const w = outlined(t, 'path', { d: a, fill: col }, 1.2);
+  anim(w, { attributeName: 'd', values: [a, b, a].join(';'), dur: '0.5s' });
+  outlined(t, 'ellipse', { cx: 0, cy: -3, rx: 4, ry: 5, fill: shade(col, 0.8) }, 1);
+  outlined(t, 'path', { d: 'M-3 -7 L-2.4 -11 L-1 -7.4 Z M3 -7 L2.4 -11 L1 -7.4 Z', fill: col }, 0.6);
+  [[-1.4, -4], [1.4, -4]].forEach(([a, b]) => el('circle', { cx: a, cy: b, r: 0.9, fill: '#ffe066', filter: 'url(#bloom)' }, t));
+  el('path', { d: 'M14 -14 l2 3 l-2 1 l3 4', stroke: '#bfe8ff', 'stroke-width': 0.9, fill: 'none', filter: 'url(#bloom)' }, t);
+  return t;
+}
+function serpent(p, x, y, s = 1, flip = false, hp) {
+  const t = facing(p, x, y, s, flip);
+  shadow(t, 0, 10, 40, 6, 0.2);
+  const path = 'M-44 -6 C-30 -30 -14 6 0 -16 C12 -34 24 -10 34 -26';
+  el('path', { d: path, stroke: OUT, 'stroke-width': 14, fill: 'none', 'stroke-linecap': 'round' }, t);
+  el('path', { d: path, stroke: '#2f7a8a', 'stroke-width': 11, fill: 'none', 'stroke-linecap': 'round' }, t);
+  el('path', { d: path, stroke: '#9fe0d8', 'stroke-width': 3, fill: 'none', 'stroke-linecap': 'round', 'stroke-dasharray': '2 4', transform: 'translate(0 3)' }, t);
+  el('path', { d: path, stroke: '#1f4f5a', 'stroke-width': 1, fill: 'none', 'stroke-dasharray': '3 3', transform: 'translate(0 -3)' }, t);
+  for (const k of [-1, 1]) outlined(t, 'path', { d: `M-4 -18 Q${-14 + k * 4} -46 ${-30 + k * 6} -40 Q-22 -34 ${-24 + k * 4} -28 Q-14 -28 -8 -20 Z`, fill: '#3f5f9a', opacity: 0.95 }, 1.1);
+  outlined(t, 'path', { d: 'M30 -24 Q36 -36 46 -32 Q50 -28 44 -24 L50 -20 Q40 -18 34 -20 Z', fill: '#2f7a8a' }, 1.4);
+  outlined(t, 'path', { d: 'M38 -34 L36 -42 L41 -35 Z M42 -33 L44 -41 L45 -32 Z', fill: '#f2e6c8' }, 0.6);
+  el('circle', { cx: 42, cy: -29, r: 1.6, fill: '#ffe066', filter: 'url(#bloom)' }, t);
+  const bolt = el('path', { d: 'M50 -22 l8 2 l-4 3 l9 3', stroke: '#e6f8ff', 'stroke-width': 1.6, fill: 'none', filter: 'url(#bloom)' }, t);
+  anim(bolt, { attributeName: 'opacity', values: '1;0.2;1', dur: '0.4s' });
+  if (hp !== undefined) hpBar(t, 0, -58, hp, 36);
+  return t;
+}
+function crocodile(p, x, y, s = 1, flip = false, o = {}) {
+  const t = facing(p, x, y, s, flip);
+  const col = o.color || '#4f7a3a';
+  cast(t, 0, 0, 24, 3, 0.18); shadow(t, 0, 1, 26, 3.6);
+  outlined(t, 'path', { d: 'M-34 -2 Q-24 -8 -12 -9 L14 -10 Q20 -12 30 -10 L36 -8 L30 -5 L36 -4 L28 -1 Q10 0 -12 -2 Q-24 0 -34 -2 Z', fill: col }, 1.4);
+  el('path', { d: 'M-30 -3 Q0 1 28 -2', stroke: '#c9d48a', 'stroke-width': 1.6, fill: 'none' }, t);
+  for (let i = 0; i < 9; i++) outlined(t, 'path', { d: `M${-24 + i * 4.4} -8.6 l1.8 -2.6 l1.8 2.6 Z`, fill: shade(col, 0.75) }, 0.4);
+  for (const a of [-16, -4, 8]) el('path', { d: `M${a} -2 l-2 4 M${a + 3} -2 l1 4`, stroke: OUT, 'stroke-width': 1.4 }, t);
+  el('path', { d: 'M28 -7 l1 1.4 l1 -1.4 l1 1.4 l1 -1.4', stroke: '#ffffff', 'stroke-width': 0.7, fill: 'none' }, t);
+  el('circle', { cx: 20, cy: -11, r: 1.4, fill: o.eyes || '#ffd23a', filter: o.eyes ? 'url(#bloom)' : '' }, t);
+  if (o.armor) { outlined(t, 'path', { d: 'M-14 -9 Q0 -14 12 -10 L10 -4 Q0 -6 -12 -4 Z', fill: 'url(#darksteel)' }, 0.9); [-8, 0, 8].forEach((a) => outlined(t, 'path', { d: `M${a - 1.6} -11.6 l1.6 -4 l1.6 4 Z`, fill: 'url(#steel)' }, 0.4)); }
+  if (o.crown) { outlined(t, 'path', { d: 'M16 -12 L16 -17 L18 -15 L20 -18 L22 -15 L24 -17 L24 -11 Z', fill: 'url(#gold)' }, 0.6); }
+  if (o.hp !== undefined) hpBar(t, 0, -24, o.hp, 28);
+  return t;
+}
+function iceWolf(p, x, y, s = 1, flip = false) {
+  const t = facing(p, x, y, s, flip);
+  cast(t, 0, 0, 14, 3.5, 0.16); shadow(t, 0, 1, 16, 4);
+  el('circle', { cx: 0, cy: -10, r: 18, fill: 'url(#glow)', opacity: 0.35 }, t);
+  outlined(t, 'path', { d: 'M-16 -6 Q-22 -12 -30 -8 Q-24 -14 -17 -13 Z', fill: '#cfe2f2' }, 1);
+  outlined(t, 'path', { d: 'M-16 -6 Q-14 -16 0 -15 Q10 -15 14 -18 L22 -22 L25 -16 L18 -12 Q16 -4 10 -4 L8 0 L4 0 L4 -5 L-8 -5 L-9 0 L-13 0 L-13 -5 Q-20 -2 -22 -10 Z', fill: '#e8f2fc' }, 1.4);
+  el('path', { d: 'M-12 -6 Q0 -3 10 -5', stroke: '#a8c8e8', 'stroke-width': 2.2, fill: 'none' }, t);
+  el('path', { d: 'M-14 -14 l2 -3 l2 3 l2 -3 l2 3 l2 -3 l2 3', stroke: '#8fb8e0', 'stroke-width': 1, fill: 'none' }, t);
+  outlined(t, 'path', { d: 'M19 -22 L18 -28 L22 -23 Z', fill: '#e8f2fc' }, 0.8);
+  el('circle', { cx: 20.6, cy: -18.4, r: 1.2, fill: '#7fd0ff', filter: 'url(#bloom)' }, t);
+  el('path', { d: 'M22 -15 l1 2 l1 -2 l1 2', stroke: '#ffffff', 'stroke-width': 0.8, fill: 'none' }, t);
+  return t;
+}
+function yeti(p, x, y, s = 1, flip = false) {
+  const t = facing(p, x, y, s, flip);
+  cast(t, 0, 0, 16, 4, 0.2); shadow(t, 0, 2, 18, 4.5);
+  outlined(t, 'path', { d: 'M-9 0 L-8 -8 H-2 L-2 0 Z M2 0 L2 -8 H8 L9 0 Z', fill: '#dfe8f2' }, 1.1);
+  outlined(t, 'path', { d: bumpy(0, -22, 15, 17, 22, 0.1), fill: '#f2f6fa' }, 1.6);
+  el('path', { d: bumpy(4, -18, 9, 11, 14, 0.12, -1.2, 1.4), stroke: '#c8d8e8', 'stroke-width': 1, fill: 'none' }, t);
+  outlined(t, 'path', { d: 'M-14 -26 Q-24 -18 -20 -4 L-15 -6 Q-16 -16 -10 -20 Z', fill: '#e8eef6' }, 1.2);
+  outlined(t, 'path', { d: 'M12 -26 Q24 -20 20 -6 L15 -8 Q16 -16 9 -20 Z', fill: '#e8eef6' }, 1.2);
+  outlined(t, 'ellipse', { cx: 3, cy: -30, rx: 6.4, ry: 5.6, fill: '#7a9ac8' }, 1.1);
+  [[1, -31.4], [5.6, -31.4]].forEach(([a, b]) => el('circle', { cx: a, cy: b, r: 1, fill: '#ffe066', filter: 'url(#bloom)' }, t));
+  el('path', { d: 'M0 -27 h6', stroke: OUT, 'stroke-width': 0.9 }, t);
+  el('path', { d: 'M1 -27 l1 1.6 l1 -1.6 M4 -27 l1 1.6 l1 -1.6', stroke: '#ffffff', 'stroke-width': 0.6, fill: 'none' }, t);
+  outlined(t, 'path', { d: 'M-4 -36 Q-10 -40 -8 -46 Q-6 -40 -2 -38 Z M8 -36 Q14 -40 12 -46 Q10 -40 6 -38 Z', fill: '#c9b8a0' }, 0.8);
+  return t;
+}
+function shadowEmperor(p, x, y, s = 1, flip = false, hp) {
+  const t = facing(p, x, y, s, flip);
+  const aura = el('circle', { cx: 0, cy: -30, r: 40, fill: 'url(#gemPurple)', opacity: 0.3, filter: 'url(#cloud)' }, t);
+  anim(aura, { attributeName: 'r', values: '36;44;36', dur: '2.4s' });
+  person(t, 0, 0, { ...SHADOW_EMPEROR, s: 1.4 });
+  for (let i = 0; i < 6; i++) { const c = el('circle', { cx: -20 + i * 8, cy: -10 - (i % 3) * 14, r: 1.6, fill: '#c9a0ff', filter: 'url(#bloom)' }, t); anim(c, { attributeName: 'opacity', values: '0.2;1;0.2', dur: `${1 + i * 0.3}s` }); }
+  if (hp !== undefined) hpBar(t, 0, -78, hp, 34);
+  return t;
+}
+/* ART-END */
 </script>
 <script>
 // ============================================================ UI defs
@@ -775,15 +1062,22 @@ function uiDefs(svg) {
   el('feDropShadow', { dx: 0, dy: 2.4, stdDeviation: 1.6, 'flood-color': '#120804', 'flood-opacity': 0.55 }, ds);
 }
 const T = (p, x, y, s, size, o = {}) => {
-  const e = el('text', { x, y, 'font-family': o.font || 'Martel', 'font-weight': o.weight || 900, 'font-size': size, fill: o.fill || '#fff8e6', stroke: o.stroke || OUT, 'stroke-width': o.sw ?? 3.2, 'paint-order': 'stroke', 'text-anchor': o.anchor || 'middle', 'letter-spacing': o.ls || 0 }, p);
+  const e = el('text', { x, y, 'font-family': o.font || 'Martel', 'font-weight': o.weight || 900, 'font-size': size, fill: o.fill || '#fff8e6', stroke: o.stroke || OUT, 'stroke-width': o.sw ?? Math.min(3.2, size * 0.2), 'paint-order': 'stroke', 'text-anchor': o.anchor || 'middle', 'letter-spacing': o.ls || 0 }, p);
   e.textContent = s;
   return e;
 };
+// width of a piece of text once fonts are loaded, used to size ribbons and buttons
+function measure(p, s, size, font = 'Martel', weight = 900) {
+  const e = T(p, 0, 0, s, size, { font, weight });
+  const w = e.getComputedTextLength();
+  e.remove();
+  return w;
+}
 
 // ============================================================ icons
 const icon = {
-  coin(p, x, y, r = 7) { outlined(p, 'circle', { cx: x, cy: y, r, fill: 'url(#gold)' }, 1.2); el('circle', { cx: x, cy: y, r: r * 0.58, fill: 'none', stroke: '#a46b1d', 'stroke-width': 1 }, p); el('path', { d: `M${x - r * 0.5} ${y - r * 0.4} q${r * 0.3} ${-r * 0.35} ${r * 0.6} ${-r * 0.2}`, stroke: '#fff', 'stroke-width': 1, fill: 'none' }, p); },
-  ruby(p, x, y, r = 7) { outlined(p, 'path', { d: `M${x - r} ${y - r * 0.3} L${x - r * 0.5} ${y - r} H${x + r * 0.5} L${x + r} ${y - r * 0.3} L${x} ${y + r} Z`, fill: 'url(#gemRed)' }, 1.1); el('path', { d: `M${x - r} ${y - r * 0.3} H${x + r} M${x - r * 0.5} ${y - r} L${x - r * 0.2} ${y - r * 0.3} L${x} ${y + r} L${x + r * 0.2} ${y - r * 0.3} L${x + r * 0.5} ${y - r}`, stroke: '#ffb0a0', 'stroke-width': 0.6, fill: 'none' }, p); },
+  coin(p, x, y, r = 7) { coinIcon(p, x, y, r); },
+  ruby(p, x, y, r = 7) { rubyIcon(p, x, y, r); },
   diya(p, x, y, r = 7, lit = true) {
     if (lit) el('circle', { cx: x, cy: y - r * 0.9, r: r * 1.3, fill: 'url(#fire)', opacity: 0.8 }, p);
     outlined(p, 'path', { d: `M${x - r} ${y} Q${x} ${y + r} ${x + r} ${y} Z`, fill: lit ? '#c0662e' : '#6b5a4a' }, 1);
@@ -824,7 +1118,10 @@ function button(p, x, y, w, h, label, color = 'red', o = {}) {
     el('circle', { cx: cx - h * 0.04, cy: h / 2 - h * 0.04, r: h * 0.035, fill: '#fff', opacity: 0.9 }, t);
   }
   if (o.icon) icon[o.icon](t, h * 0.62, h / 2 + (o.icon === 'helmet' ? 2 : 0), ['coin', 'ruby'].includes(o.icon) ? h * 0.2 : o.icon === 'infinity' ? h / 56 : o.icon === 'helmet' ? h / 30 : h / 40);
-  T(t, w / 2 + (o.icon ? h * 0.18 : 0), h / 2 + h * 0.17, label, o.size || h * 0.42, { sw: 3.6 });
+  const fs = o.size || h * 0.42;
+  const lab = T(t, w / 2 + (o.icon ? h * 0.18 : 0), h / 2 + h * 0.17, label, fs, { sw: Math.min(3.4, fs * 0.2) });
+  const maxW = w - h * (o.icon ? 1.55 : 1.15), tw = lab.getComputedTextLength();
+  if (tw > maxW) { lab.setAttribute('font-size', fs * maxW / tw); lab.setAttribute('y', h / 2 + (fs * maxW / tw) * 0.36); }
   if (o.badge) { outlined(t, 'circle', { cx: w - 4, cy: 3, r: 7, fill: 'url(#gemRed)' }, 1.2); T(t, w - 4, 6.5, o.badge, 9, { sw: 2 }); }
   if (o.locked) { el('rect', { x: 5, y: 5, width: w - 10, height: h - 10, rx: r - 3, fill: '#1d1208', opacity: 0.45 }, t); icon.lock(t, w - h * 0.42, h / 2 + 3, h / 34); }
   return t;
@@ -852,13 +1149,14 @@ function pill(p, x, y, w, kind, value) {
   roundBtn(t, x + w - 9, y + 11, 9, 'green', (q, a, b) => icon.plus(q, a, b, 0.7));
 }
 function ribbon(p, cx, y, w, label, size = 16) {
+  w = Math.max(w, measure(p, label, size, 'Rozha One', 400) + 30);
   const t = g(p, { filter: 'url(#drop)' });
   outlined(t, 'path', { d: `M${cx - w / 2 - 18} ${y + 6} L${cx - w / 2 - 6} ${y + 14} L${cx - w / 2 - 18} ${y + 24} H${cx - w / 2 + 4} V${y + 6} Z`, fill: '#7a160a' }, 1.4);
   outlined(t, 'path', { d: `M${cx + w / 2 + 18} ${y + 6} L${cx + w / 2 + 6} ${y + 14} L${cx + w / 2 + 18} ${y + 24} H${cx + w / 2 - 4} V${y + 6} Z`, fill: '#7a160a' }, 1.4);
-  outlined(t, 'path', { d: `M${cx - w / 2} ${y} Q${cx} ${y - 6} ${cx + w / 2} ${y} V${y + 20} Q${cx} ${y + 14} ${cx - w / 2} ${y + 20} Z`, fill: 'url(#ribbon)' }, 1.6);
-  el('path', { d: `M${cx - w / 2 + 3} ${y + 3} Q${cx} ${y - 2.6} ${cx + w / 2 - 3} ${y + 3}`, stroke: '#ffd66b', 'stroke-width': 1, fill: 'none' }, t);
-  el('path', { d: `M${cx - w / 2 + 3} ${y + 17} Q${cx} ${y + 11.4} ${cx + w / 2 - 3} ${y + 17}`, stroke: '#ffd66b', 'stroke-width': 1, fill: 'none' }, t);
-  T(t, cx, y + 14.6, label, size, { font: 'Rozha One', weight: 400, sw: 3 });
+  outlined(t, 'path', { d: `M${cx - w / 2} ${y} Q${cx} ${y - 3} ${cx + w / 2} ${y} V${y + 20} Q${cx} ${y + 17} ${cx - w / 2} ${y + 20} Z`, fill: 'url(#ribbon)' }, 1.6);
+  el('path', { d: `M${cx - w / 2 + 3} ${y + 3} Q${cx} ${y + 0.4} ${cx + w / 2 - 3} ${y + 3}`, stroke: '#ffd66b', 'stroke-width': 1, fill: 'none' }, t);
+  el('path', { d: `M${cx - w / 2 + 3} ${y + 17} Q${cx} ${y + 14.4} ${cx + w / 2 - 3} ${y + 17}`, stroke: '#ffd66b', 'stroke-width': 1, fill: 'none' }, t);
+  T(t, cx, y + 10 + size * 0.34, label, size, { font: 'Rozha One', weight: 400, sw: Math.min(2.6, size * 0.16) });
 }
 function filigree(t, x, y, sx, sy) {
   const q = g(t, { transform: `translate(${x} ${y}) scale(${sx} ${sy})` });
@@ -877,7 +1175,7 @@ function panel(p, x, y, w, h, title, o = {}) {
   for (let i = 0; i < 60; i++) el('circle', { cx: x + 12 + rnd() * (w - 24), cy: y + 12 + rnd() * (h - 24), r: 0.6 + rnd() * 1.6, fill: '#c9a46a', opacity: 0.18 }, t);
   el('rect', { x: x + 9.5, y: y + 9.5, width: w - 19, height: h - 19, rx: 8, fill: 'none', stroke: '#b8884a', 'stroke-width': 1, 'stroke-dasharray': '1 3', opacity: 0.6 }, t);
   filigree(t, x + 11, y + 11, 1, 1); filigree(t, x + w - 11, y + 11, -1, 1); filigree(t, x + 11, y + h - 11, 1, -1); filigree(t, x + w - 11, y + h - 11, -1, -1);
-  if (title) ribbon(t, x + w / 2, y - 8, Math.min(w - 90, title.length * 11 + 40), title);
+  if (title) ribbon(t, x + w / 2, y - 8, 60, title);
   if (o.close) roundBtn(t, x + w - 8, y + 8, 13, 'red', (q, a, b) => icon.close(q, a, b, 0.9));
   return t;
 }
@@ -1008,56 +1306,146 @@ function regionArt(t, cx, cy, kind) {
   if (kind === 'delta') { el('rect', { x: cx - 32, y: cy + 6, width: 64, height: 30, fill: '#5a9ab0' }, q); for (let i = 0; i < 4; i++) { const x = cx - 22 + i * 14; el('path', { d: `M${x} ${cy + 10} V${cy - 8} M${x} ${cy + 10} l-4 6 M${x} ${cy + 10} l4 6`, stroke: '#5a3a22', 'stroke-width': 1.4 }, q); blobCluster(q, [[x, cy - 10, 6], [x + 4, cy - 6, 4]], '#3f7a3a'); } el('rect', { x: cx - 32, y: cy - 32, width: 64, height: 64, fill: '#f4f4f0', opacity: 0.25 }, q); }
   if (kind === 'himalaya') { el('path', { d: `M${cx - 32} ${cy + 14} L${cx - 14} ${cy - 18} L${cx - 2} ${cy - 4} L${cx + 12} ${cy - 24} L${cx + 32} ${cy + 10} V${cy + 32} H${cx - 32} Z`, fill: '#7a8aa8' }, q); el('path', { d: `M${cx - 20} ${cy - 8} L${cx - 14} ${cy - 18} L${cx - 8} ${cy - 10} Z M${cx + 6} ${cy - 14} L${cx + 12} ${cy - 24} L${cx + 19} ${cy - 13} Z`, fill: '#ffffff' }, q); for (let i = 0; i < 16; i++) el('circle', { cx: cx - 30 + rnd() * 60, cy: cy - 30 + rnd() * 60, r: 0.9, fill: '#fff' }, q); }
 }
+function peak(p, x, y, w, h, snow = true, col = '#8a9ab8') {
+  outlined(p, 'path', { d: `M${x - w / 2} ${y} L${x} ${y - h} L${x + w / 2} ${y} Z`, fill: col }, 1.2);
+  el('path', { d: `M${x} ${y - h} L${x + w / 2} ${y} L${x + w * 0.1} ${y} Z`, fill: '#000', opacity: 0.16 }, p);
+  if (snow) outlined(p, 'path', { d: `M${x - w * 0.18} ${y - h * 0.64} L${x} ${y - h} L${x + w * 0.18} ${y - h * 0.64} L${x + w * 0.08} ${y - h * 0.58} L${x} ${y - h * 0.66} L${x - w * 0.08} ${y - h * 0.58} Z`, fill: '#ffffff' }, 0.8);
+}
+function seasonBadge(p, x, y, kind) {
+  const t = g(p, { filter: 'url(#drop)' });
+  outlined(t, 'circle', { cx: x, cy: y, r: 10, fill: 'url(#goldRim)' }, 1.2);
+  const col = { spring: '#5fbf4a', summer: '#ff9a2a', monsoon: '#3f7fd0', autumn: '#c8642a', prewinter: '#7aa8a8', winter: '#9ec4ff' }[kind];
+  el('circle', { cx: x, cy: y, r: 7.6, fill: col }, t);
+  if (kind === 'spring') [0, 1, 2, 3, 4].forEach((i) => { const a = (i / 5) * Math.PI * 2; el('circle', { cx: x + Math.cos(a) * 3, cy: y + Math.sin(a) * 3, r: 2.2, fill: '#ffd0e0' }, t); });
+  if (kind === 'summer') { el('circle', { cx: x, cy: y, r: 3, fill: '#fff2b0' }, t); for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; el('path', { d: `M${x + Math.cos(a) * 4} ${y + Math.sin(a) * 4} L${x + Math.cos(a) * 6} ${y + Math.sin(a) * 6}`, stroke: '#fff2b0', 'stroke-width': 1 }, t); } }
+  if (kind === 'monsoon') el('path', { d: `M${x} ${y - 5} Q${x + 4.4} ${y + 1} ${x} ${y + 4.6} Q${x - 4.4} ${y + 1} ${x} ${y - 5} Z`, fill: '#d2ecff' }, t);
+  if (kind === 'autumn') { el('circle', { cx: x, cy: y, r: 4.2, fill: '#fff0c0' }, t); el('circle', { cx: x + 2, cy: y - 1.4, r: 3.6, fill: col }, t); }
+  if (kind === 'prewinter') [-2.4, 0.6, 3.4].forEach((d) => el('path', { d: `M${x - 4.4} ${y + d} q2.2 -1.6 4.4 0 q2.2 1.6 4.4 0`, stroke: '#eef6f6', 'stroke-width': 1, fill: 'none' }, t));
+  if (kind === 'winter') for (let i = 0; i < 3; i++) { const a = (i / 3) * Math.PI; el('path', { d: `M${x + Math.cos(a) * 5} ${y + Math.sin(a) * 5} L${x - Math.cos(a) * 5} ${y - Math.sin(a) * 5}`, stroke: '#ffffff', 'stroke-width': 1.2 }, t); }
+}
 function mapScreen() {
   const svg = document.getElementById('map');
   uiDefs(svg);
   el('rect', { x: 0, y: 0, width: 844, height: 390, fill: '#3f2614' }, svg);
-  el('rect', { x: 10, y: 10, width: 824, height: 370, rx: 12, fill: 'url(#parch)' }, svg);
-  for (let i = 0; i < 200; i++) el('circle', { cx: 14 + rnd() * 816, cy: 14 + rnd() * 362, r: 0.6 + rnd() * 2, fill: '#b8884a', opacity: 0.16 }, svg);
-  // margin doodles: waves, little mountains, compass
-  for (let i = 0; i < 14; i++) el('path', { d: `M${40 + i * 56} 360 q7 -5 14 0 q7 -5 14 0`, stroke: '#7aa8b8', 'stroke-width': 1.2, fill: 'none', opacity: 0.7 }, svg);
-  const comp = g(svg, { transform: 'translate(782 312)' });
-  outlined(comp, 'circle', { cx: 0, cy: 0, r: 24, fill: 'none' }, 1);
-  el('circle', { cx: 0, cy: 0, r: 20, fill: 'none', stroke: '#b8884a', 'stroke-width': 0.8 }, comp);
-  outlined(comp, 'path', { d: 'M0 -24 L5 0 L0 24 L-5 0 Z', fill: 'url(#gold)' }, 0.8);
-  outlined(comp, 'path', { d: 'M-24 0 L0 5 L24 0 L0 -5 Z', fill: '#c9a46a' }, 0.8);
-  T(comp, 0, -28, 'N', 9, { sw: 0, fill: OUT });
-  // journey route
-  const R = [[150, 246, 'hills', 'Aravalli Hills', 'Spring', 'done'], [210, 112, 'desert', 'Thar Desert', 'Summer', 'now'], [350, 246, 'ghats', 'Western Ghats', 'Monsoon', 'locked'], [490, 112, 'ruins', 'Deccan Ruins', 'Autumn', 'locked'], [620, 246, 'delta', 'Sundarbans', 'Pre-winter', 'locked'], [740, 112, 'himalaya', 'Himalayas', 'Winter', 'locked']];
-  const route = R.map(([x, y], i) => (i ? `L${x} ${y}` : `M${x} ${y}`)).join(' ');
-  el('path', { d: route, stroke: '#8a5a2e', 'stroke-width': 3, fill: 'none', 'stroke-dasharray': '2 7', 'stroke-linecap': 'round' }, svg);
-  R.forEach(([x, y, kind, name, season, state], i) => {
-    const t = g(svg);
-    shadow(t, x + 2, y + 34, 30, 6);
-    regionArt(t, x, y, kind);
-    el('circle', { cx: x, cy: y, r: 31, fill: 'none', stroke: OUT, 'stroke-width': 5 }, t);
-    el('circle', { cx: x, cy: y, r: 31, fill: 'none', stroke: 'url(#goldRim)', 'stroke-width': 3 }, t);
-    for (let k = 0; k < 12; k++) { const a = (k / 12) * Math.PI * 2; outlined(t, 'circle', { cx: x + Math.cos(a) * 31, cy: y + Math.sin(a) * 31, r: 1.6, fill: 'url(#gold)' }, 0.4); }
-    if (state === 'locked') { el('circle', { cx: x, cy: y, r: 29, fill: '#2a1a10', opacity: 0.55 }, t); icon.lock(t, x, y + 4, 1.4); }
-    ribbon(t, x, y + 34, name.length * 7.2 + 18, name, 11);
-    T(t, x, y + 70, season, 9, { sw: 2.4, fill: '#ffe8b0' });
-    // five level nodes; the fifth is the boss
-    for (let k = 0; k < 5; k++) {
-      const nx = x - 28 + k * 14, ny = y + 82;
-      const boss = k === 4;
-      outlined(t, 'circle', { cx: nx, cy: ny, r: boss ? 6 : 4.4, fill: state === 'done' || (state === 'now' && k < 2) ? 'url(#gemGold)' : state === 'now' && k === 2 ? 'url(#gemRed)' : '#8a7a68' }, 1);
-      if (boss) el('path', { d: `M${nx - 3} ${ny - 1} l1.5 -3 l1.5 2 l1.5 -2 l1.5 3 Z`, fill: OUT }, t);
+  const clipM = el('clipPath', { id: 'mapClip' }, svg.querySelector('defs')); el('rect', { x: 10, y: 10, width: 824, height: 370, rx: 12 }, clipM);
+  const M = g(svg, { 'clip-path': 'url(#mapClip)' });
+  // sea, then the land with soft painted zones
+  el('rect', { x: 0, y: 0, width: 844, height: 390, fill: 'url(#water)' }, M);
+  for (let i = 0; i < 40; i++) {
+    const x = rnd() * 844, y = 300 + rnd() * 90;
+    const w = el('path', { d: `M${x} ${y} q4 -3 8 0 q4 -3 8 0`, stroke: '#d8f2fa', 'stroke-width': 1, fill: 'none', opacity: 0.8 }, M);
+    el('animateTransform', { attributeName: 'transform', type: 'translate', values: '0 0;6 0;0 0', dur: `${3 + (i % 4)}s`, repeatCount: 'indefinite' }, w);
+  }
+  outlined(M, 'path', { d: 'M38 10 H844 V352 Q780 340 720 356 Q640 344 560 358 Q470 346 400 360 Q300 348 210 358 Q120 350 70 362 Q40 300 44 220 Q30 140 38 10 Z', fill: '#9cc45a' }, 2.4);
+  const zones = g(M, { filter: 'url(#cloud)' });
+  [[130, 110, 170, 100, '#f0cf8a'], [290, 215, 120, 70, '#b8cf70'], [96, 268, 80, 110, '#3f8a45'], [300, 330, 190, 50, '#d2b07a'], [610, 330, 190, 50, '#5fa890'], [620, 110, 300, 120, '#e4ecf6'], [470, 210, 120, 80, '#a6d062']].forEach(([cx, cy, rx, ry, c]) => el('ellipse', { cx, cy, rx, ry, fill: c, opacity: 0.95 }, zones));
+  for (let i = 0; i < 260; i++) { const x = 50 + rnd() * 780, y = 20 + rnd() * 320; el('path', { d: `M${x} ${y} l1 -3 M${x + 2} ${y} l0 -4`, stroke: '#4f8a2c', 'stroke-width': 0.8, opacity: 0.45 }, M); }
+  // Thar: dunes, oasis, camel caravan
+  for (let i = 0; i < 9; i++) { const x = 60 + (i % 3) * 70 + rnd() * 20, y = 60 + Math.floor(i / 3) * 34; el('path', { d: `M${x - 24} ${y} Q${x} ${y - 12} ${x + 24} ${y}`, stroke: '#c9954e', 'stroke-width': 1.6, fill: 'none' }, M); el('path', { d: `M${x - 18} ${y - 2} Q${x} ${y - 10} ${x + 10} ${y - 5}`, stroke: '#fff0c8', 'stroke-width': 1, fill: 'none', opacity: 0.8 }, M); }
+  el('ellipse', { cx: 210, cy: 92, rx: 14, ry: 5, fill: 'url(#water)', stroke: OUT, 'stroke-width': 1 }, M);
+  palm(M, 200, 92, 0.42); palm(M, 222, 94, 0.36);
+  const caravan = g(M);
+  [0, 1, 2].forEach((i) => camel(caravan, 70 + i * 20, 160 - i * 2, 0.3, false, i === 0));
+  el('animateTransform', { attributeName: 'transform', type: 'translate', values: '0 0;30 -6;0 0', dur: '18s', repeatCount: 'indefinite' }, caravan);
+  // Aravalli: rolling hills, banyans and the capital
+  [[250, 196, 50, 22], [330, 190, 40, 18], [200, 214, 34, 14]].forEach(([x, y, w, h]) => outlined(M, 'path', { d: `M${x - w} ${y} Q${x} ${y - h * 2} ${x + w} ${y} Z`, fill: '#8fb44f' }, 1.2));
+  banyan(M, 340, 236, 0.38); banyan(M, 196, 200, 0.32);
+  fortGate(M, 228, 236, 0.42);
+  // Western Ghats: green peaks, waterfall, rain
+  [[60, 236, 46, 44], [100, 222, 50, 52], [70, 290, 44, 40]].forEach(([x, y, w, h]) => peak(M, x, y, w, h, false, '#3f7a3a'));
+  el('path', { d: 'M100 172 L100 230', stroke: '#e6f6ff', 'stroke-width': 4 }, M);
+  const fall = el('path', { d: 'M100 172 L100 230', stroke: '#9fd8f0', 'stroke-width': 2, 'stroke-dasharray': '3 4' }, M);
+  anim(fall, { attributeName: 'stroke-dashoffset', values: '0;-14', dur: '0.6s' });
+  el('ellipse', { cx: 100, cy: 232, rx: 8, ry: 3, fill: '#e6f6ff' }, M);
+  const rain = g(M, { opacity: 0.7 });
+  for (let i = 0; i < 30; i++) { const x = 40 + rnd() * 120, y = 160 + rnd() * 150; const r = el('path', { d: `M${x} ${y} l-2 6`, stroke: '#d2ecff', 'stroke-width': 0.9 }, rain); el('animateTransform', { attributeName: 'transform', type: 'translate', values: '0 0;-4 12;0 0', dur: `${0.6 + (i % 3) * 0.2}s`, repeatCount: 'indefinite' }, r); }
+  // Deccan: boulders and old ruins
+  rock(M, 250, 356, 0.5); rock(M, 420, 352, 0.6); rock(M, 330, 360, 0.4);
+  [[360, 300], [372, 300], [384, 300]].forEach(([x, y], i) => outlined(M, 'rect', { x: x - 2.4, y: y - 14 + (i === 1 ? -3 : 0), width: 4.8, height: 14 + (i === 1 ? 3 : 0), fill: 'url(#sandV)' }, 0.8));
+  outlined(M, 'rect', { x: 354, y: 284, width: 36, height: 4, fill: '#e8c08a' }, 0.8);
+  // the great river from the mountains to the delta
+  const RIVER = 'M560 120 C540 170 600 190 560 230 C520 270 600 300 640 340 L700 380';
+  el('path', { d: RIVER, stroke: OUT, 'stroke-width': 11, fill: 'none', 'stroke-linecap': 'round' }, M);
+  el('path', { d: RIVER, stroke: '#5fb0d0', 'stroke-width': 8, fill: 'none', 'stroke-linecap': 'round' }, M);
+  const flow = el('path', { d: RIVER, stroke: '#d8f2fa', 'stroke-width': 1.4, fill: 'none', 'stroke-dasharray': '6 10' }, M);
+  anim(flow, { attributeName: 'stroke-dashoffset', values: '0;-32', dur: '1.6s' });
+  // Sundarbans: mangroves and drifting fog
+  for (let i = 0; i < 10; i++) { const x = 520 + (i % 5) * 52 + rnd() * 10, y = 300 + Math.floor(i / 5) * 30; el('path', { d: `M${x} ${y} l-3 6 M${x} ${y} l3 6`, stroke: '#5a3a22', 'stroke-width': 1.2 }, M); blobCluster(M, [[x, y - 4, 6], [x + 5, y - 1, 4]], '#2f6a3a'); }
+  crocodile(M, 640, 352, 0.3);
+  const fog = g(M, { opacity: 0.55 });
+  [[560, 316, 60, 10], [700, 300, 70, 12]].forEach(([cx, cy, rx, ry], i) => { const f = el('ellipse', { cx, cy, rx, ry, fill: '#f4f8f8', filter: 'url(#cloud)' }, fog); anim(f, { attributeName: 'cx', values: `${cx};${cx + 30};${cx}`, dur: `${10 + i * 4}s` }); });
+  // Himalayas: snowy range and the Shadow Emperor's fortress
+  [[420, 120, 70, 60], [480, 110, 80, 76], [560, 104, 90, 86], [660, 112, 86, 80], [750, 118, 80, 70], [820, 126, 70, 60], [520, 140, 60, 40], [700, 150, 60, 42]].forEach(([x, y, w, h]) => peak(M, x, y, w, h));
+  const fort = g(M);
+  el('circle', { cx: 610, cy: 66, r: 30, fill: 'url(#gemPurple)', opacity: 0.45, filter: 'url(#cloud)' }, fort);
+  outlined(fort, 'path', { d: 'M592 80 V58 L598 50 L604 58 V54 L610 42 L616 54 V58 L622 50 L628 58 V80 Z', fill: '#2a1f3e' }, 1.2);
+  [[600, 66], [610, 62], [620, 66]].forEach(([x, y]) => el('rect', { x: x - 1.2, y, width: 2.4, height: 4, fill: '#c9a0ff', filter: 'url(#bloom)' }, fort));
+  const bolt = el('path', { d: 'M640 30 l-6 10 l5 0 l-7 12', stroke: '#e0c8ff', 'stroke-width': 1.4, fill: 'none', filter: 'url(#bloom)' }, fort);
+  anim(bolt, { attributeName: 'opacity', values: '0;1;0;0;0', dur: '2.4s' });
+  const snow = g(M);
+  for (let i = 0; i < 40; i++) { const x = 400 + rnd() * 440, y = 10 + rnd() * 140; const f = el('circle', { cx: x, cy: y, r: 0.9 + rnd() * 0.8, fill: '#ffffff', opacity: 0.9 }, snow); anim(f, { attributeName: 'cy', values: `${y};${y + 16};${y}`, dur: `${3 + (i % 5)}s` }); }
+  // the golden road through all 31 levels (0 = tutorial)
+  const N = [[262, 252], [295, 232], [318, 208], [300, 182], [268, 168], [236, 156],
+    [200, 140], [166, 124], [132, 108], [96, 98], [64, 120],
+    [70, 166], [84, 206], [100, 250], [118, 290], [150, 322],
+    [196, 334], [244, 322], [292, 332], [340, 318], [392, 328],
+    [450, 336], [506, 322], [560, 336], [616, 320], [672, 332],
+    [722, 300], [748, 256], [736, 210], [704, 168], [648, 112]];
+  let road = `M228 236 L${N[0][0]} ${N[0][1]}`;
+  for (let i = 1; i < N.length; i++) { const [x0, y0] = N[i - 1], [x1, y1] = N[i]; road += ` Q${(x0 + x1) / 2 + (y1 - y0) * 0.25} ${(y0 + y1) / 2 - (x1 - x0) * 0.25} ${x1} ${y1}`; }
+  el('path', { d: road, stroke: OUT, 'stroke-width': 9, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, M);
+  el('path', { d: road, stroke: '#e8c27a', 'stroke-width': 6.4, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, M);
+  el('path', { d: road, stroke: '#fff2c8', 'stroke-width': 1.2, fill: 'none', 'stroke-dasharray': '2 5' }, M);
+  const CURRENT = 8; // Thar level 3 (level 8)
+  N.forEach(([x, y], i) => {
+    const boss = i > 0 && i % 5 === 0, done = i < CURRENT, now = i === CURRENT;
+    const t = g(M, { filter: 'url(#drop)' });
+    if (now) { const h = el('circle', { cx: x, cy: y, r: 12, fill: 'url(#holy)' }, t); anim(h, { attributeName: 'r', values: '10;15;10', dur: '1.4s' }); }
+    if (boss) {
+      outlined(t, 'path', { d: `M${x - 8} ${y - 8} H${x + 8} V${y + 2} Q${x} ${y + 10} ${x - 8} ${y + 2} Z`, fill: done ? 'url(#btnRed)' : '#6a5a4e' }, 1.4);
+      el('path', { d: `M${x - 4} ${y - 2} l2 -4 l2 3 l2 -3 l2 4 Z`, fill: done ? '#ffd66b' : '#a89a8a' }, t);
+    } else {
+      outlined(t, 'circle', { cx: x, cy: y, r: i === 0 ? 7 : 6, fill: now ? 'url(#gemRed)' : done ? 'url(#gemGold)' : '#8a7a68' }, 1.3);
+      if (i === 0) T(t, x, y + 3, 'T', 8, { sw: 1.6 });
     }
-    if (state === 'done') roundBtn(t, x + 30, y - 26, 10, 'purple', (q, a, b) => icon.infinity(q, a, b, 0.5));
+    if (done && !boss && i > 0) [-1, 0, 1].forEach((k) => icon.diya(t, x + k * 6, y - 10, 2.6, !(i === 7 && k === 1)));
   });
-  // player token on the current region
-  const tok = g(svg);
-  el('circle', { cx: 252, cy: 96, r: 13, fill: 'url(#holy)' }, tok);
-  person(tok, 252, 106, { ...SUN, s: 0.9, weapon: null, shield: null, aura: false });
-  ribbon(svg, 422, 16, 250, 'The Journey of Six Seasons', 15);
-  button(svg, 18, 336, 98, 36, 'BACK', 'red', { size: 13 });
-  pill(svg, 610, 40, 112, 'coin', '12,480');
-  pill(svg, 730, 40, 96, 'ruby', '340');
-  // level card for the selected level
-  panel(svg, 284, 92, 132, 108, 'Level 8');
-  T(svg, 350, 128, 'Mirage Oasis', 12, { font: 'Rozha One', weight: 400, fill: '#5a2a10', stroke: 'none', sw: 0 });
-  [0, 1, 2].forEach((i) => icon.diya(svg, 332 + i * 18, 154, 7, false));
-  button(svg, 302, 162, 96, 28, 'BATTLE', 'red', { size: 12 });
+  // hero token on the current level and a mini level card
+  const [cx, cy] = N[CURRENT];
+  person(M, cx + 2, cy - 4, { ...SUN, s: 0.7, weapon: null, shield: null, aura: false });
+  el('path', { d: `M${cx + 8} ${cy - 10} Q${cx + 70} ${cy - 50} 300 96`, stroke: '#fff4dc', 'stroke-width': 1.2, 'stroke-dasharray': '2 3', fill: 'none' }, M);
+  // region labels with season badges
+  [[130, 40, 'Thar Desert', 'summer'], [352, 262, 'Aravalli Hills', 'spring'], [186, 288, 'Western Ghats', 'monsoon'], [300, 354, 'Deccan Ruins', 'autumn'], [560, 296, 'Sundarbans', 'prewinter'], [660, 200, 'Himalayas', 'winter']].forEach(([x, y, name, season]) => {
+    ribbon(M, x, y, 40, name, 10);
+  });
+  [[130, 40, 'summer'], [352, 262, 'spring'], [186, 288, 'monsoon'], [300, 354, 'autumn'], [560, 296, 'prewinter'], [660, 200, 'winter']].forEach(([x, y, k]) => seasonBadge(M, x, y - 6, k));
+  // drifting clouds and birds over the whole map
+  const sky = g(M);
+  [[180, 30, 1], [480, 200, 0.8], [760, 60, 1.1]].forEach(([x, y, s], i) => {
+    const c = g(sky, { opacity: 0.85 });
+    [[0, 0, 12], [12, -4, 10], [24, 1, 9], [-10, 2, 8]].forEach(([a, b, r]) => el('circle', { cx: x + a * s, cy: y + b * s, r: r * s, fill: '#ffffff' }, c));
+    el('animateTransform', { attributeName: 'transform', type: 'translate', values: `0 0;${40 + i * 10} 0;0 0`, dur: `${30 + i * 8}s`, repeatCount: 'indefinite' }, c);
+  });
+  const birds = g(M);
+  for (let i = 0; i < 5; i++) el('path', { d: `M${420 + i * 10} ${236 + (i % 2) * 5} q2.4 -2.4 4.8 0 q2.4 -2.4 4.8 0`, stroke: '#3a2a2a', 'stroke-width': 1, fill: 'none' }, birds);
+  el('animateTransform', { attributeName: 'transform', type: 'translate', values: '0 0;80 -30;0 0', dur: '20s', repeatCount: 'indefinite' }, birds);
+  // a sail boat on the sea
+  const boatG = g(M);
+  outlined(boatG, 'path', { d: 'M760 372 Q770 380 790 372 Z', fill: 'url(#wood)' }, 1);
+  outlined(boatG, 'path', { d: 'M774 371 V350 L788 368 Z', fill: '#fff4dc' }, 0.8);
+  el('animateTransform', { attributeName: 'transform', type: 'translate', values: '0 0;-30 2;0 0', dur: '16s', repeatCount: 'indefinite' }, boatG);
+  el('rect', { x: 10, y: 10, width: 824, height: 370, rx: 12, fill: 'url(#vignette)' }, M);
+  // frame and UI on top
+  el('rect', { x: 10, y: 10, width: 824, height: 370, rx: 12, fill: 'none', stroke: 'url(#goldRim)', 'stroke-width': 4 }, svg);
+  filigree(svg, 14, 14, 1, 1); filigree(svg, 830, 14, -1, 1); filigree(svg, 14, 376, 1, -1); filigree(svg, 830, 376, -1, -1);
+  ribbon(svg, 422, 14, 200, 'The Journey of Six Seasons', 15);
+  panel(svg, 300, 66, 132, 108, 'Level 8');
+  T(svg, 366, 102, 'Mirage Oasis', 12, { font: 'Rozha One', weight: 400, fill: '#5a2a10', stroke: 'none', sw: 0 });
+  [0, 1, 2].forEach((i) => icon.diya(svg, 348 + i * 18, 128, 7, false));
+  button(svg, 318, 136, 96, 28, 'BATTLE', 'red', { size: 12 });
+  button(svg, 22, 344, 96, 30, 'BACK', 'red', { size: 12 });
+  pill(svg, 610, 348, 112, 'coin', '12,480');
+  pill(svg, 730, 348, 96, 'ruby', '340');
 }
 
 // ============================================================ daily + shop
@@ -1095,7 +1483,7 @@ function dailyScreen() {
   // shop
   panel(svg, 440, 30, 384, 340, 'Royal Bazaar', { close: true });
   tab(svg, 466, 60, 100, 'Offers', true); tab(svg, 572, 60, 100, 'Rubies', false); tab(svg, 678, 60, 100, 'Skins', false);
-  const cards = [['Starter Pack', '$1.99', 'red', 'BEST VALUE'], ['Ruby Pile ×500', '$4.99', 'blue', null], ['Remove Ads', '$2.99', 'gold', null]];
+  const cards = [['Starter Pack', '₹49', 'red', 'BEST VALUE'], ['Ruby Pouch ×300', '₹99', 'blue', null], ['Remove Ads', '₹99', 'gold', null]];
   cards.forEach(([name, price, col, tag], i) => {
     const x = 462 + i * 116, y = 90;
     const t = g(svg, { filter: 'url(#drop)' });
@@ -1108,11 +1496,11 @@ function dailyScreen() {
     if (i === 0) { person(t, x + 54, y + 140, { ...SUN, s: 2.3, cape: '#6a3fc0', tunic: '#efe2ff', trim: '#6a3fc0', aura: false }); icon.ruby(t, x + 24, y + 142, 9); T(t, x + 24, y + 160, '+150', 9, { sw: 2.2 }); }
     if (i === 1) { [[-16, 8], [0, 0], [16, 8], [-8, 16], [8, 16], [0, 24]].forEach(([a, b]) => icon.ruby(t, x + 54 + a, y + 74 + b, 13)); }
     if (i === 2) { const c = g(t); el('rect', { x: x + 30, y: y + 64, width: 48, height: 34, rx: 4, fill: '#fff4dc', stroke: OUT, 'stroke-width': 1.4 }, c); T(c, x + 54, y + 86, 'AD', 14, { sw: 0, fill: '#7a3a16', stroke: 'none' }); el('path', { d: `M${x + 24} ${y + 106} L${x + 84} ${y + 56}`, stroke: OUT, 'stroke-width': 7, 'stroke-linecap': 'round' }, c); el('path', { d: `M${x + 24} ${y + 106} L${x + 84} ${y + 56}`, stroke: '#e8452a', 'stroke-width': 4, 'stroke-linecap': 'round' }, c); }
-    T(t, x + 54, y + 174, i === 0 ? 'Sun Knight skin + rubies' : i === 1 ? '+50 bonus' : 'forever', 8.5, { sw: 2.2, fill: '#ffe8b0' });
+    T(t, x + 54, y + 174, i === 0 ? 'Sun Knight skin + rubies' : i === 1 ? '+30 bonus' : 'forever', 8.5, { sw: 2.2, fill: '#ffe8b0' });
     button(t, x + 10, y + 190, 88, 32, price, 'green', { size: 14 });
     if (tag) { outlined(t, 'path', { d: `M${x - 4} ${y + 34} H${x + 70} L${x + 62} ${y + 42} L${x + 70} ${y + 50} H${x - 4} Z`, fill: 'url(#ribbon)' }, 1); T(t, x + 32, y + 46, tag, 8.5, { sw: 2 }); }
   });
-  T(svg, 632, 348, 'Prices shown in your local currency by Google Play', 8, { fill: '#5a2a10', stroke: 'none', sw: 0, weight: 700 });
+  T(svg, 632, 348, 'India prices shown; every country sees its own price', 8, { fill: '#5a2a10', stroke: 'none', sw: 0, weight: 700 });
 }
 
 // ============================================================ splash
@@ -1128,9 +1516,15 @@ function splashArt() {
   el('path', { d: 'M0 400 Q260 360 520 392 Q780 366 1024 396 V500 H0 Z', fill: '#2f3f24' }, svg);
   fortGate(svg, 650, 370, 2.1);
   // enemy army silhouettes on the right
-  const army = g(svg, { opacity: 0.92 });
-  for (let i = 0; i < 9; i++) person(army, 860 + i * 18, 470 - (i % 3) * 6, { ...BANDIT, s: 1.5, flip: true });
-  elephant(army, 960, 452, 1.7, true, true);
+  // the Bandit King's army charging in from the right
+  const army = g(svg);
+  elephant(army, 930, 420, 2.2, true, true);
+  for (let i = 0; i < 7; i++) person(army, 760 + i * 34, 452 + (i % 2) * 10, { ...BANDIT, s: 2.4, flip: true });
+  wolfRider(army, 700, 476, 2.4, true);
+  person(army, 620, 488, { ...BARBARIAN, s: 3.2, flip: true });
+  banditKing(army, 840, 494, 3, true);
+  for (let i = 0; i < 10; i++) el('circle', { cx: 600 + i * 40, cy: 490 - (i % 3) * 4, r: 14 + (i % 3) * 4, fill: 'url(#dust)', opacity: 0.8 }, army);
+  spark(svg, 560, 410, 16); spark(svg, 600, 380, 10);
   // heroes in front
   person(svg, 230, 490, { ...SUN, s: 6.4 });
   person(svg, 360, 486, { ...ARCHER, s: 3.6 });
@@ -1162,10 +1556,12 @@ function gameIcon(host, size) {
   host.appendChild(d);
 }
 
-kitSheet(); menuScreen(); mapScreen(); dailyScreen(); splashArt();
-const ih = document.getElementById('icons');
-[256, 96, 48].forEach((s) => gameIcon(ih, s));
-window.__ready = true;
+document.fonts.ready.then(() => {
+  kitSheet(); menuScreen(); mapScreen(); dailyScreen(); splashArt();
+  const ih = document.getElementById('icons');
+  [256, 96, 48].forEach((s) => gameIcon(ih, s));
+  window.__ready = true;
+});
 </script>
 </body>
 </html>
