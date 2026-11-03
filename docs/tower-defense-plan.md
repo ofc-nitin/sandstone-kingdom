@@ -9,7 +9,20 @@ from the game.
 **Branches:** game work on `claude/exciting-sagan-dooxr8`; website on a separate
 `website` branch (deployed from there, so website changes never touch the game).
 
-**Art direction changed again (2026-11-02):** same Indian medieval theme, now **3D**: a real-time
+**Current direction (2026-11-03, Founder):**
+- **Art:** bright hand-painted 2D cartoon tower defense in landscape view (the classic,
+  proven look of the genre), set in a medieval Indian kingdom: green hills, sandstone forts
+  with chhatri domes, banyan and palm trees, marigolds, shrines. Concept:
+  [`style-boards/cartoon-td-concept.png`](style-boards/cartoon-td-concept.png).
+- **Names in plain English.** Towers: Archer Tower (Archers → Marksmen → Royal Longbows),
+  Barracks (Spearmen → Knights → Holy Knights), Mage Tower (Magic Caster → Arcane Sage →
+  Sun Mage), Cannon Tower (Cannon → Bombard → Thunder Cannon). Enemies: Bandit, Barbarian,
+  Wolf Rider, Shaman, Armored Brute, War Elephant (boss). Hero: The Sun Knight.
+- **Game name:** proposed **Sandstone Kingdom** (alternatives: Monsoon Kingdom, Kingdom of Forts), awaiting Founder pick.
+- **Domain / package:** `samvardhanstudios` → `com.samvardhanstudios.<gamename>`.
+- **Old prototype:** Gravity Flip Sort deleted (Founder approved).
+
+**Superseded:** **Art direction changed again (2026-11-02):** same Indian medieval theme, now **3D**: a real-time
 diorama of lacquered wooden toys (Channapatna / Kondapalli / kathputli inspired), built with
 three.js (WebGL). Concept: [`style-boards/toy-diorama-3d.png`](style-boards/toy-diorama-3d.png).
 Earlier 2D Phad version kept for reference below.
