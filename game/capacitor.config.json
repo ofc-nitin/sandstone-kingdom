@@ -1,9 +1,0 @@
-{
-  "appId": "com.samvardhanastudios.gravityflipsort",
-  "appName": "Gravity Flip Sort",
-  "webDir": "dist",
-  "backgroundColor": "#1b1d2a",
-  "android": {
-    "backgroundColor": "#1b1d2a"
-  }
-}
