@@ -289,3 +289,41 @@ Estimates are rough and assume quick feedback from you.
 - [AppLovin MAX vs AdMob mediation, Airframe](https://www.airframe.ai/product/applovin-com-max/compare)
 - [Google Play testing requirements for new personal accounts, Google](https://support.google.com/googleplay/android-developer/answer/14151465?hl=en-GB)
 - [Google Play 12 testers policy guide 2026, Testers Community](https://www.testerscommunity.com/guides/how-many-testers-do-you-need-google-play)
+
+---
+
+## 9. Task list update (2026-11-03): full game scope
+
+Full design: [`game-design.md`](game-design.md). UI target look: [`style-boards/ui-kit.png`](style-boards/ui-kit.png).
+6 regions × 5 levels (boss every 5th) = 30 levels; bosses unlock Endless; shop, daily
+login, achievements, leaderboards, story and cutscenes. Release in stages (v1.0 = Regions 1–3).
+
+### New decisions for you (👤)
+| # | Decision | Options |
+|---|---|---|
+| D1 | Confirm the game name | Sandstone Kingdom (recommended) / Monsoon Kingdom / Kingdom of Forts |
+| D2 | **How the painted art gets made** | (a) AI art tool with a commercial licence (~$10–30/month), (b) freelance illustrator for key art (~$500–2,000), (c) both (recommended) |
+| D3 | Music source | Royalty-free library with a commercial licence (cheaper) or commissioned soundtrack |
+| D4 | Approve the staged release | v1.0 = Regions 1–3, then +1 region per month |
+
+### New setup tasks
+| # | Task | Who |
+|---|---|---|
+| S1 | In Play Console: turn on **Play Games Services**, create the game project and link the app | 👤 (I give click-by-click steps) |
+| S2 | Create 32 achievements and 8 leaderboards in Play Games Services from the list I prepare (CSV with names, descriptions, icons) | 🤝 |
+| S3 | Create a free **Firebase** project (analytics, crash reports, remote tuning, public leaderboard copy) and send me the config file | 👤 |
+| S4 | Create in-app products in Play Console (ruby packs, Remove Ads, Starter Pack, skins) from my list | 👤 |
+| S5 | Sign up for the chosen AI art tool (or brief the illustrator using my style guide) | 👤 |
+| S6 | Approve each region's art and story before it ships | 👤 |
+
+### Build phases (all 🤖 unless marked)
+| Phase | Work |
+|---|---|
+| A. Foundations | PixiJS + Capacitor project, save system, settings, localisation framework, UI kit in code |
+| B. Core battle | Paths, waves, 4 towers × 3 tiers + specialisations, hero control, spells, bots that auto-play levels |
+| C. Region 1 | 5 levels + Bandit King boss, tutorial, prologue cutscene, Endless 1 |
+| D. Meta | World map, Royal Workshop, heroes screen, encyclopedia, daily login, daily quests |
+| E. Store and services | AdMob + consent, Play Billing + shop, Play Games sign-in, achievements, leaderboards, cloud save, Firebase |
+| F. Regions 2–3 | Weather mechanics (sandstorms, monsoon), 10 levels, 2 bosses, cutscenes |
+| G. Launch prep | Splash, icon, store screenshots and trailer, 12 languages, closed test (👤 recruits 12 testers if needed), fixes |
+| H. Post-launch | Regions 4–6 monthly, festival events (Holi, Diwali), Weekly Challenge, Royal Pass |

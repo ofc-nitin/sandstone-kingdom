@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>UI Kit: Sandstone Kingdom</title>
+<link href="https://fonts.googleapis.com/css2?family=Rozha+One&family=Martel:wght@400;700;800;900&display=block" rel="stylesheet">
+<style>
+  :root { --bg: #24170f; --text: #f6ecd6; --muted: #d7c3a0; --saffron: #f0912a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; width: 1400px; background: var(--bg); color: var(--text); font-family: 'Martel', serif; }
+  .wrap { padding: 40px 52px 48px; }
+  h1 { font-family: 'Rozha One'; font-weight: 400; font-size: 54px; margin: 0; color: var(--saffron); }
+  header p { margin: 6px 0 0; max-width: 900px; font-size: 16px; line-height: 1.5; }
+  h2 { font-family: 'Rozha One'; font-weight: 400; font-size: 28px; color: var(--saffron); margin: 36px 0 12px; }
+  .note { font-size: 14px; color: var(--muted); line-height: 1.55; margin: 8px 0 0; max-width: 1150px; }
+  .screen { border-radius: 18px; overflow: hidden; box-shadow: 0 0 0 8px #120c08; width: max-content; }
+  .screen svg { display: block; }
+  .icons { display: flex; gap: 36px; align-items: flex-end; }
+  .icons div { text-align: center; font-size: 13px; color: var(--muted); }
+  .icons svg { display: block; margin: 0 auto 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Sandstone Kingdom · UI kit, screens, splash and icon</h1>
+    <p>Carved sandstone and gold-trimmed controls with jewel centres, parchment panels with
+      gold filigree corners and ribbon titles. Everything here is drawn in code as the
+      target look; final characters and backgrounds will be painted art (see game-design.md §11).</p>
+  </header>
+
+  <h2>Buttons and controls</h2>
+  <div class="screen"><svg id="kit" width="1296" height="330" viewBox="0 0 864 220"></svg></div>
+
+  <h2>Main menu</h2>
+  <div class="screen"><svg id="menu" width="1296" height="599" viewBox="0 0 844 390"></svg></div>
+
+  <h2>World map: the journey of six seasons</h2>
+  <div class="screen"><svg id="map" width="1296" height="599" viewBox="0 0 844 390"></svg></div>
+  <p class="note">An illustrated journey route, deliberately <b>not</b> an outline of India
+    (border depictions are legally sensitive in India). Region 1 done, Region 2 in progress,
+    Endless unlocked for Region 1.</p>
+
+  <h2>Daily login and shop</h2>
+  <div class="screen"><svg id="daily" width="1296" height="599" viewBox="0 0 844 390"></svg></div>
+
+  <h2>Splash art / store feature graphic (1024 × 500)</h2>
+  <div class="screen"><svg id="splash" width="1296" height="633" viewBox="0 0 1024 500"></svg></div>
+
+  <h2>Game icon</h2>
+  <div class="icons" id="icons"></div>
+  <p class="note">Shown at store size, home-screen size and small notification size: it has
+    to read at 48 px, so it is one bold face, one colour story and no text.</p>
+</div>
+
+<script src="art.js"></script>
+<script>
+// ============================================================ UI defs
+function uiDefs(svg) {
+  defs(svg);
+  const d = svg.querySelector('defs');
+  const lin = (id, stops, x2 = 0, y2 = 1) => {
+    const lg = el('linearGradient', { id, x1: 0, y1: 0, x2, y2 }, d);
+    stops.forEach(([o, c, op = 1]) => el('stop', { offset: o, 'stop-color': c, 'stop-opacity': op }, lg));
+  };
+  const rad = (id, stops, cx = '50%', cy = '50%', r = '50%') => {
+    const rg = el('radialGradient', { id, cx, cy, r }, d);
+    stops.forEach(([o, c, op = 1]) => el('stop', { offset: o, 'stop-color': c, 'stop-opacity': op }, rg));
+  };
+  lin('btnRed', [[0, '#ff7a50'], [0.48, '#d83a1e'], [1, '#86190c']]);
+  lin('btnGreen', [[0, '#7ed36a'], [0.48, '#2f8f3c'], [1, '#14501e']]);
+  lin('btnBlue', [[0, '#7fb2ff'], [0.48, '#2f5fc8'], [1, '#162f72']]);
+  lin('btnGold', [[0, '#ffe38a'], [0.48, '#e0a224'], [1, '#8a5a0c']]);
+  lin('btnPurple', [[0, '#c19aff'], [0.48, '#6a3fc0'], [1, '#341a6e']]);
+  lin('btnGrey', [[0, '#c9c4bc'], [0.48, '#8d877e'], [1, '#4f4a44']]);
+  lin('goldRim', [[0, '#fff4c0'], [0.25, '#f4c64e'], [0.55, '#a8700f'], [0.8, '#f2c04a'], [1, '#7a4c08']]);
+  lin('woodDark', [[0, '#8a5a30'], [1, '#3f2614']]);
+  lin('parch', [[0, '#fdf2d8'], [1, '#ead0a0']]);
+  lin('ribbon', [[0, '#e8553a'], [0.6, '#b52a16'], [1, '#7a160a']]);
+  lin('logoGold', [[0, '#fff6c8'], [0.35, '#ffd25a'], [0.7, '#e08a1a'], [1, '#a8520c']]);
+  lin('skySunset', [[0, '#2f2560'], [0.38, '#b0507a'], [0.66, '#f39a58'], [1, '#ffd98a']]);
+  lin('skyDawn', [[0, '#5a7fc8'], [0.5, '#f3b07a'], [1, '#ffe2a4']]);
+  lin('hillFar', [[0, '#8a5f9a'], [1, '#b8789a']]);
+  lin('hillMid', [[0, '#5f7a4a'], [1, '#3f5a32']]);
+  lin('shade', [[0, '#000', 0], [1, '#000', 0.55]]);
+  rad('gemRed', [[0, '#ffd8c8'], [0.3, '#ff5a40'], [1, '#6a0808']], '38%', '32%', '70%');
+  rad('gemGreen', [[0, '#e0ffd0'], [0.3, '#4fd060'], [1, '#0c4a14']], '38%', '32%', '70%');
+  rad('gemBlue', [[0, '#e0f0ff'], [0.3, '#4a8cff'], [1, '#0c2a6e']], '38%', '32%', '70%');
+  rad('gemGold', [[0, '#fffbe0'], [0.3, '#ffcc3a'], [1, '#7a4c08']], '38%', '32%', '70%');
+  rad('gemPurple', [[0, '#f0e0ff'], [0.3, '#a070ff'], [1, '#2a0c5a']], '38%', '32%', '70%');
+  rad('sunDisc', [[0, '#fffbe6'], [0.4, '#ffe08a'], [0.75, '#ffa040'], [1, '#ff7a2a', 0]]);
+  const ds = el('filter', { id: 'drop', x: '-20%', y: '-20%', width: '140%', height: '160%' }, d);
+  el('feDropShadow', { dx: 0, dy: 2.4, stdDeviation: 1.6, 'flood-color': '#120804', 'flood-opacity': 0.55 }, ds);
+}
+const T = (p, x, y, s, size, o = {}) => {
+  const e = el('text', { x, y, 'font-family': o.font || 'Martel', 'font-weight': o.weight || 900, 'font-size': size, fill: o.fill || '#fff8e6', stroke: o.stroke || OUT, 'stroke-width': o.sw ?? 3.2, 'paint-order': 'stroke', 'text-anchor': o.anchor || 'middle', 'letter-spacing': o.ls || 0 }, p);
+  e.textContent = s;
+  return e;
+};
+
+// ============================================================ icons
+const icon = {
+  coin(p, x, y, r = 7) { outlined(p, 'circle', { cx: x, cy: y, r, fill: 'url(#gold)' }, 1.2); el('circle', { cx: x, cy: y, r: r * 0.58, fill: 'none', stroke: '#a46b1d', 'stroke-width': 1 }, p); el('path', { d: `M${x - r * 0.5} ${y - r * 0.4} q${r * 0.3} ${-r * 0.35} ${r * 0.6} ${-r * 0.2}`, stroke: '#fff', 'stroke-width': 1, fill: 'none' }, p); },
+  ruby(p, x, y, r = 7) { outlined(p, 'path', { d: `M${x - r} ${y - r * 0.3} L${x - r * 0.5} ${y - r} H${x + r * 0.5} L${x + r} ${y - r * 0.3} L${x} ${y + r} Z`, fill: 'url(#gemRed)' }, 1.1); el('path', { d: `M${x - r} ${y - r * 0.3} H${x + r} M${x - r * 0.5} ${y - r} L${x - r * 0.2} ${y - r * 0.3} L${x} ${y + r} L${x + r * 0.2} ${y - r * 0.3} L${x + r * 0.5} ${y - r}`, stroke: '#ffb0a0', 'stroke-width': 0.6, fill: 'none' }, p); },
+  diya(p, x, y, r = 7, lit = true) {
+    if (lit) el('circle', { cx: x, cy: y - r * 0.9, r: r * 1.3, fill: 'url(#fire)', opacity: 0.8 }, p);
+    outlined(p, 'path', { d: `M${x - r} ${y} Q${x} ${y + r} ${x + r} ${y} Z`, fill: lit ? '#c0662e' : '#6b5a4a' }, 1);
+    if (lit) el('path', { d: `M${x} ${y - 0.5} q${-r * 0.4} ${-r * 0.5} 0 ${-r * 1.2} q${r * 0.4} ${r * 0.7} 0 ${r * 1.2} Z`, fill: '#ffd25a', stroke: '#e2541d', 'stroke-width': 0.5 }, p);
+  },
+  lock(p, x, y, s = 1) { const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` }); el('path', { d: 'M-5 -2 V-6 Q-5 -11 0 -11 Q5 -11 5 -6 V-2', stroke: OUT, 'stroke-width': 4, fill: 'none' }, t); el('path', { d: 'M-5 -2 V-6 Q-5 -11 0 -11 Q5 -11 5 -6 V-2', stroke: '#c3c8d1', 'stroke-width': 2, fill: 'none' }, t); outlined(t, 'rect', { x: -7, y: -3, width: 14, height: 11, rx: 2, fill: 'url(#gold)' }, 1.2); el('circle', { cx: 0, cy: 2, r: 1.6, fill: OUT }, t); },
+  chest(p, x, y, s = 1) { const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` }); outlined(t, 'path', { d: 'M-12 0 V-10 H12 V0 Z', fill: 'url(#wood)' }, 1.3); outlined(t, 'path', { d: 'M-12 -10 Q0 -20 12 -10 Z', fill: '#a86a34' }, 1.3); el('path', { d: 'M-12 -10 H12 M-6 -15 V0 M6 -15 V0', stroke: 'url(#goldRim)', 'stroke-width': 2 }, t); outlined(t, 'rect', { x: -2.4, y: -8, width: 4.8, height: 5, rx: 1, fill: 'url(#gold)' }, 0.6); },
+  trophy(p, x, y, s = 1) { const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` }); outlined(t, 'path', { d: 'M-6 -10 H6 V-6 Q6 0 0 1 Q-6 0 -6 -6 Z', fill: '#fff4dc' }, 1); el('path', { d: 'M-6 -8 Q-10 -8 -9 -4 Q-8 -2 -5 -2 M6 -8 Q10 -8 9 -4 Q8 -2 5 -2', stroke: '#fff4dc', 'stroke-width': 1.4, fill: 'none' }, t); el('path', { d: 'M0 1 V4 M-4 6 H4', stroke: '#fff4dc', 'stroke-width': 2 }, t); },
+  bars(p, x, y, s = 1) { const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` }); [[-7, 6], [-1.5, 10], [4, 4]].forEach(([a, h]) => outlined(t, 'rect', { x: a, y: 5 - h, width: 4.5, height: h, rx: 0.8, fill: '#fff4dc' }, 0.8)); },
+  gear(p, x, y, s = 1) { const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` }); for (let i = 0; i < 8; i++) el('rect', { x: -1.8, y: -9, width: 3.6, height: 5, rx: 1, fill: '#fff4dc', transform: `rotate(${i * 45})` }, t); el('circle', { cx: 0, cy: 0, r: 6, fill: '#fff4dc' }, t); el('circle', { cx: 0, cy: 0, r: 2.4, fill: '#2f5fc8' }, t); },
+  play(p, x, y, s = 1) { el('path', { d: `M${x - 4 * s} ${y - 6 * s} L${x + 6 * s} ${y} L${x - 4 * s} ${y + 6 * s} Z`, fill: '#fff4dc', stroke: OUT, 'stroke-width': 0.8 }, p); },
+  close(p, x, y, s = 1) { el('path', { d: `M${x - 4 * s} ${y - 4 * s} L${x + 4 * s} ${y + 4 * s} M${x + 4 * s} ${y - 4 * s} L${x - 4 * s} ${y + 4 * s}`, stroke: '#fff4dc', 'stroke-width': 2.6 * s, 'stroke-linecap': 'round' }, p); },
+  plus(p, x, y, s = 1) { el('path', { d: `M${x - 4 * s} ${y} H${x + 4 * s} M${x} ${y - 4 * s} V${y + 4 * s}`, stroke: '#fff4dc', 'stroke-width': 2.4 * s, 'stroke-linecap': 'round' }, p); },
+  check(p, x, y, s = 1) { el('path', { d: `M${x - 6 * s} ${y} L${x - 2 * s} ${y + 4 * s} L${x + 6 * s} ${y - 5 * s}`, stroke: OUT, 'stroke-width': 5 * s, fill: 'none', 'stroke-linecap': 'round' }, p); el('path', { d: `M${x - 6 * s} ${y} L${x - 2 * s} ${y + 4 * s} L${x + 6 * s} ${y - 5 * s}`, stroke: '#7ef06a', 'stroke-width': 3 * s, fill: 'none', 'stroke-linecap': 'round' }, p); },
+  swords(p, x, y, s = 1) { el('path', { d: `M${x - 7 * s} ${y + 7 * s} L${x + 7 * s} ${y - 7 * s} M${x + 7 * s} ${y + 7 * s} L${x - 7 * s} ${y - 7 * s}`, stroke: '#fff4dc', 'stroke-width': 2.6 * s, 'stroke-linecap': 'round' }, p); },
+  infinity(p, x, y, s = 1) { el('path', { d: `M${x} ${y} C${x - 3 * s} ${y - 6 * s} ${x - 10 * s} ${y - 6 * s} ${x - 10 * s} ${y} C${x - 10 * s} ${y + 6 * s} ${x - 3 * s} ${y + 6 * s} ${x} ${y} C${x + 3 * s} ${y - 6 * s} ${x + 10 * s} ${y - 6 * s} ${x + 10 * s} ${y} C${x + 10 * s} ${y + 6 * s} ${x + 3 * s} ${y + 6 * s} ${x} ${y} Z`, stroke: '#fff4dc', 'stroke-width': 2.4 * s, fill: 'none' }, p); },
+  helmet(p, x, y, s = 1) { const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` }); outlined(t, 'path', { d: 'M-7 4 Q-8 -8 0 -9 Q8 -8 7 4 Z', fill: '#fff4dc' }, 1); el('path', { d: 'M0 -9 V-13', stroke: '#fff4dc', 'stroke-width': 1.6 }, t); el('path', { d: 'M1.5 -2 V4', stroke: '#2f5fc8', 'stroke-width': 1.6 }, t); },
+};
+
+// ============================================================ controls
+const COLORS = { red: ['url(#btnRed)', 'url(#gemRed)'], green: ['url(#btnGreen)', 'url(#gemGreen)'], blue: ['url(#btnBlue)', 'url(#gemBlue)'], gold: ['url(#btnGold)', 'url(#gemGold)'], purple: ['url(#btnPurple)', 'url(#gemPurple)'], grey: ['url(#btnGrey)', 'url(#btnGrey)'] };
+function button(p, x, y, w, h, label, color = 'red', o = {}) {
+  const t = g(p, { transform: `translate(${x} ${y})`, filter: 'url(#drop)' });
+  const r = h * 0.3;
+  if (o.pressed) t.setAttribute('transform', `translate(${x} ${y + 1.5})`);
+  el('rect', { x: 0, y: 0, width: w, height: h, rx: r, fill: OUT }, t);
+  el('rect', { x: 1.6, y: 1.6, width: w - 3.2, height: h - 3.2, rx: r - 1, fill: 'url(#goldRim)' }, t);
+  el('rect', { x: 4, y: 4, width: w - 8, height: h - 8, rx: r - 2.4, fill: '#4a1e0c' }, t);
+  el('rect', { x: 5, y: 5, width: w - 10, height: h - 10, rx: r - 3, fill: COLORS[color][0] }, t);
+  // carved inner pattern: a faint jali (lattice) band
+  for (let i = 12; i < w - 12; i += 7) el('path', { d: `M${i} ${h - 9} l3 -3 l3 3`, stroke: '#000', 'stroke-width': 0.7, fill: 'none', opacity: 0.18 }, t);
+  el('rect', { x: 7, y: 6, width: w - 14, height: h * 0.36, rx: (h * 0.36) / 2, fill: '#ffffff', opacity: o.pressed ? 0.12 : 0.3 }, t);
+  el('rect', { x: 6, y: h - 10, width: w - 12, height: 4, rx: 2, fill: '#000', opacity: 0.18 }, t);
+  // gold end caps with jewels (lotus finials)
+  for (const cx of o.icon ? [w - h * 0.42] : [h * 0.42, w - h * 0.42]) {
+    outlined(t, 'circle', { cx, cy: h / 2, r: h * 0.17, fill: 'url(#goldRim)' }, 0.9);
+    el('circle', { cx, cy: h / 2, r: h * 0.1, fill: COLORS[color][1] }, t);
+    el('circle', { cx: cx - h * 0.04, cy: h / 2 - h * 0.04, r: h * 0.035, fill: '#fff', opacity: 0.9 }, t);
+  }
+  if (o.icon) icon[o.icon](t, h * 0.62, h / 2 + (o.icon === 'helmet' ? 2 : 0), ['coin', 'ruby'].includes(o.icon) ? h * 0.2 : o.icon === 'infinity' ? h / 56 : o.icon === 'helmet' ? h / 30 : h / 40);
+  T(t, w / 2 + (o.icon ? h * 0.18 : 0), h / 2 + h * 0.17, label, o.size || h * 0.42, { sw: 3.6 });
+  if (o.badge) { outlined(t, 'circle', { cx: w - 4, cy: 3, r: 7, fill: 'url(#gemRed)' }, 1.2); T(t, w - 4, 6.5, o.badge, 9, { sw: 2 }); }
+  if (o.locked) { el('rect', { x: 5, y: 5, width: w - 10, height: h - 10, rx: r - 3, fill: '#1d1208', opacity: 0.45 }, t); icon.lock(t, w - h * 0.42, h / 2 + 3, h / 34); }
+  return t;
+}
+function roundBtn(p, cx, cy, r, color, draw, o = {}) {
+  const t = g(p, { filter: 'url(#drop)' });
+  el('circle', { cx, cy, r, fill: OUT }, t);
+  el('circle', { cx, cy, r: r - 1.6, fill: 'url(#goldRim)' }, t);
+  for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2; el('circle', { cx: cx + Math.cos(a) * (r - 3.2), cy: cy + Math.sin(a) * (r - 3.2), r: 0.8, fill: '#7a4c08' }, t); }
+  el('circle', { cx, cy, r: r - 5, fill: '#4a1e0c' }, t);
+  el('circle', { cx, cy, r: r - 6, fill: COLORS[color][1] }, t);
+  el('path', { d: `M${cx - (r - 9)} ${cy - 2} A${r - 9} ${r - 9} 0 0 1 ${cx + (r - 9)} ${cy - 2} A${r - 7} ${r - 5} 0 0 0 ${cx - (r - 9)} ${cy - 2} Z`, fill: '#fff', opacity: 0.32 }, t);
+  draw(t, cx, cy);
+  if (o.badge) { outlined(t, 'circle', { cx: cx + r * 0.7, cy: cy - r * 0.7, r: 6.5, fill: 'url(#gemRed)' }, 1.1); T(t, cx + r * 0.7, cy - r * 0.7 + 3.4, o.badge, 9, { sw: 2 }); }
+  if (o.label) T(p, cx, cy + r + 11, o.label, 10, { sw: 2.6 });
+  return t;
+}
+function pill(p, x, y, w, kind, value) {
+  const t = g(p, { filter: 'url(#drop)' });
+  el('rect', { x, y, width: w, height: 22, rx: 11, fill: OUT }, t);
+  el('rect', { x: x + 1.4, y: y + 1.4, width: w - 2.8, height: 19.2, rx: 9.6, fill: 'url(#goldRim)' }, t);
+  el('rect', { x: x + 3.4, y: y + 3.4, width: w - 6.8, height: 15.2, rx: 7.6, fill: 'url(#woodDark)' }, t);
+  icon[kind](t, x + 11, y + 11, 8);
+  T(t, x + w / 2 + 3, y + 15.5, value, 11.5, { sw: 2.6 });
+  roundBtn(t, x + w - 9, y + 11, 9, 'green', (q, a, b) => icon.plus(q, a, b, 0.7));
+}
+function ribbon(p, cx, y, w, label, size = 16) {
+  const t = g(p, { filter: 'url(#drop)' });
+  outlined(t, 'path', { d: `M${cx - w / 2 - 18} ${y + 6} L${cx - w / 2 - 6} ${y + 14} L${cx - w / 2 - 18} ${y + 24} H${cx - w / 2 + 4} V${y + 6} Z`, fill: '#7a160a' }, 1.4);
+  outlined(t, 'path', { d: `M${cx + w / 2 + 18} ${y + 6} L${cx + w / 2 + 6} ${y + 14} L${cx + w / 2 + 18} ${y + 24} H${cx + w / 2 - 4} V${y + 6} Z`, fill: '#7a160a' }, 1.4);
+  outlined(t, 'path', { d: `M${cx - w / 2} ${y} Q${cx} ${y - 6} ${cx + w / 2} ${y} V${y + 20} Q${cx} ${y + 14} ${cx - w / 2} ${y + 20} Z`, fill: 'url(#ribbon)' }, 1.6);
+  el('path', { d: `M${cx - w / 2 + 3} ${y + 3} Q${cx} ${y - 2.6} ${cx + w / 2 - 3} ${y + 3}`, stroke: '#ffd66b', 'stroke-width': 1, fill: 'none' }, t);
+  el('path', { d: `M${cx - w / 2 + 3} ${y + 17} Q${cx} ${y + 11.4} ${cx + w / 2 - 3} ${y + 17}`, stroke: '#ffd66b', 'stroke-width': 1, fill: 'none' }, t);
+  T(t, cx, y + 14.6, label, size, { font: 'Rozha One', weight: 400, sw: 3 });
+}
+function filigree(t, x, y, sx, sy) {
+  const q = g(t, { transform: `translate(${x} ${y}) scale(${sx} ${sy})` });
+  el('path', { d: 'M0 22 Q0 0 22 0 M4 26 Q6 6 26 4 M10 2 Q14 10 8 14 Q2 12 6 8', stroke: OUT, 'stroke-width': 3.4, fill: 'none', 'stroke-linecap': 'round' }, q);
+  el('path', { d: 'M0 22 Q0 0 22 0 M4 26 Q6 6 26 4 M10 2 Q14 10 8 14 Q2 12 6 8', stroke: 'url(#goldRim)', 'stroke-width': 1.8, fill: 'none', 'stroke-linecap': 'round' }, q);
+  outlined(q, 'circle', { cx: 6, cy: 6, r: 3.4, fill: 'url(#gemRed)' }, 0.8);
+}
+function panel(p, x, y, w, h, title, o = {}) {
+  const t = g(p);
+  el('rect', { x: x + 3, y: y + 6, width: w, height: h, rx: 16, fill: '#000', opacity: 0.45, filter: 'url(#soft)' }, t);
+  el('rect', { x, y, width: w, height: h, rx: 16, fill: OUT }, t);
+  el('rect', { x: x + 2, y: y + 2, width: w - 4, height: h - 4, rx: 14, fill: 'url(#woodDark)' }, t);
+  for (let i = 0; i < 5; i++) el('path', { d: `M${x + 6} ${y + 14 + i * (h / 5)} Q${x + w / 2} ${y + 10 + i * (h / 5)} ${x + w - 6} ${y + 16 + i * (h / 5)}`, stroke: '#2a1608', 'stroke-width': 0.7, fill: 'none', opacity: 0.5 }, t);
+  el('rect', { x: x + 7, y: y + 7, width: w - 14, height: h - 14, rx: 10, fill: 'url(#goldRim)' }, t);
+  el('rect', { x: x + 9.5, y: y + 9.5, width: w - 19, height: h - 19, rx: 8, fill: 'url(#parch)' }, t);
+  for (let i = 0; i < 60; i++) el('circle', { cx: x + 12 + rnd() * (w - 24), cy: y + 12 + rnd() * (h - 24), r: 0.6 + rnd() * 1.6, fill: '#c9a46a', opacity: 0.18 }, t);
+  el('rect', { x: x + 9.5, y: y + 9.5, width: w - 19, height: h - 19, rx: 8, fill: 'none', stroke: '#b8884a', 'stroke-width': 1, 'stroke-dasharray': '1 3', opacity: 0.6 }, t);
+  filigree(t, x + 11, y + 11, 1, 1); filigree(t, x + w - 11, y + 11, -1, 1); filigree(t, x + 11, y + h - 11, 1, -1); filigree(t, x + w - 11, y + h - 11, -1, -1);
+  if (title) ribbon(t, x + w / 2, y - 8, Math.min(w - 90, title.length * 11 + 40), title);
+  if (o.close) roundBtn(t, x + w - 8, y + 8, 13, 'red', (q, a, b) => icon.close(q, a, b, 0.9));
+  return t;
+}
+function toggle(p, x, y, on) {
+  const t = g(p, { filter: 'url(#drop)' });
+  el('rect', { x, y, width: 52, height: 22, rx: 11, fill: OUT }, t);
+  el('rect', { x: x + 1.4, y: y + 1.4, width: 49.2, height: 19.2, rx: 9.6, fill: 'url(#goldRim)' }, t);
+  el('rect', { x: x + 3.6, y: y + 3.6, width: 44.8, height: 14.8, rx: 7.4, fill: on ? 'url(#btnGreen)' : 'url(#woodDark)' }, t);
+  const kx = on ? x + 41 : x + 11;
+  outlined(t, 'circle', { cx: kx, cy: y + 11, r: 9, fill: 'url(#gold)' }, 1.2);
+  for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; el('path', { d: `M${kx + Math.cos(a) * 3.6} ${y + 11 + Math.sin(a) * 3.6} L${kx + Math.cos(a) * 6.6} ${y + 11 + Math.sin(a) * 6.6}`, stroke: '#a8520c', 'stroke-width': 1 }, t); }
+  el('circle', { cx: kx, cy: y + 11, r: 2.8, fill: '#fff4c8' }, t);
+}
+function slider(p, x, y, w, v) {
+  const t = g(p, { filter: 'url(#drop)' });
+  el('rect', { x, y, width: w, height: 12, rx: 6, fill: OUT }, t);
+  el('rect', { x: x + 1.4, y: y + 1.4, width: w - 2.8, height: 9.2, rx: 4.6, fill: '#3a1e0c' }, t);
+  el('rect', { x: x + 1.4, y: y + 1.4, width: (w - 2.8) * v, height: 9.2, rx: 4.6, fill: 'url(#saffron)' }, t);
+  el('rect', { x: x + 3, y: y + 2.4, width: (w - 6) * v, height: 2.4, rx: 1.2, fill: '#fff', opacity: 0.35 }, t);
+  icon.diya(t, x + w * v, y + 9, 8, true);
+}
+function tab(p, x, y, w, label, active) {
+  const t = g(p, { filter: 'url(#drop)' });
+  outlined(t, 'path', { d: `M${x} ${y + 22} V${y + 6} Q${x} ${y} ${x + 6} ${y} H${x + w - 6} Q${x + w} ${y} ${x + w} ${y + 6} V${y + 22} Z`, fill: active ? 'url(#btnRed)' : 'url(#woodDark)' }, 1.4);
+  el('path', { d: `M${x + 3} ${y + 4} H${x + w - 3}`, stroke: '#ffd66b', 'stroke-width': 1.2, opacity: active ? 1 : 0.4 }, t);
+  T(t, x + w / 2, y + 15.5, label, 11, { sw: 2.6, fill: active ? '#fff8e6' : '#e0c8a0' });
+}
+function logo(p, x, y, s = 1) {
+  const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` });
+  const glow = el('circle', { cx: 0, cy: -8, r: 56, fill: 'url(#sunDisc)', opacity: 0.85 }, t);
+  for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2; el('path', { d: `M${Math.cos(a) * 30} ${-8 + Math.sin(a) * 30} L${Math.cos(a + 0.08) * 66} ${-8 + Math.sin(a + 0.08) * 66} L${Math.cos(a - 0.08) * 66} ${-8 + Math.sin(a - 0.08) * 66} Z`, fill: '#ffd25a', opacity: 0.5 }, t); }
+  const word = (txt, yy, size) => {
+    for (let k = 5; k >= 1; k--) T(t, 0, yy + k, txt, size, { font: 'Rozha One', weight: 400, fill: '#6a1e08', stroke: '#3a1004', sw: 6, ls: 1 });
+    T(t, 0, yy, txt, size, { font: 'Rozha One', weight: 400, fill: 'url(#logoGold)', stroke: OUT, sw: 6, ls: 1 });
+    const hi = T(t, 0, yy - 1, txt, size, { font: 'Rozha One', weight: 400, fill: 'none', stroke: '#fff6c8', sw: 0.8, ls: 1 });
+    hi.setAttribute('opacity', 0.7);
+  };
+  word('SANDSTONE', -10, 34);
+  ribbon(t, 0, 2, 120, 'KINGDOM', 17);
+  T(t, 0, 40, 'TOWER DEFENSE', 9, { sw: 2.4, ls: 2, fill: '#ffe8b0' });
+}
+
+// ============================================================ kit sheet
+function kitSheet() {
+  const svg = document.getElementById('kit');
+  uiDefs(svg);
+  el('rect', { x: 0, y: 0, width: 864, height: 220, fill: '#5f7f3a' }, svg);
+  el('rect', { x: 0, y: 0, width: 864, height: 220, fill: 'url(#vignette)' }, svg);
+  button(svg, 20, 18, 150, 44, 'PLAY', 'red', { icon: 'play' });
+  button(svg, 186, 18, 150, 44, 'ENDLESS', 'purple', { icon: 'infinity' });
+  button(svg, 352, 18, 150, 44, 'HEROES', 'blue', { icon: 'helmet' });
+  button(svg, 518, 18, 150, 44, 'SHOP', 'gold', { icon: 'ruby', badge: '!' });
+  button(svg, 684, 18, 160, 44, 'LOCKED', 'grey', { locked: true });
+  button(svg, 20, 78, 120, 34, 'CLAIM', 'green');
+  button(svg, 152, 78, 120, 34, 'CLAIM', 'green', { pressed: true });
+  button(svg, 284, 78, 120, 34, 'UPGRADE', 'gold', { size: 13 });
+  button(svg, 416, 78, 120, 34, 'SELL', 'red');
+  T(svg, 212, 128, 'normal · pressed', 9, { sw: 2 });
+  roundBtn(svg, 580, 95, 18, 'blue', (q, a, b) => icon.gear(q, a, b, 1), { label: 'Settings' });
+  roundBtn(svg, 630, 95, 18, 'gold', (q, a, b) => icon.trophy(q, a, b + 2, 1), { label: 'Awards' });
+  roundBtn(svg, 680, 95, 18, 'green', (q, a, b) => icon.bars(q, a, b, 1), { label: 'Ranks' });
+  roundBtn(svg, 730, 95, 18, 'red', (q, a, b) => icon.chest(q, a, b + 6, 0.8), { label: 'Daily', badge: '1' });
+  roundBtn(svg, 780, 95, 18, 'purple', (q, a, b) => icon.swords(q, a, b, 0.9), { label: 'Battle' });
+  roundBtn(svg, 830, 95, 14, 'red', (q, a, b) => icon.close(q, a, b, 0.8), { label: 'Close' });
+  pill(svg, 20, 150, 110, 'coin', '12,480');
+  pill(svg, 144, 150, 92, 'ruby', '340');
+  toggle(svg, 254, 150, true); toggle(svg, 316, 150, false);
+  T(svg, 310, 190, 'Music on · Haptics off', 9, { sw: 2 });
+  slider(svg, 394, 156, 140, 0.7);
+  T(svg, 464, 190, 'Volume', 9, { sw: 2 });
+  tab(svg, 560, 146, 70, 'Offers', true); tab(svg, 634, 146, 70, 'Rubies', false); tab(svg, 708, 146, 70, 'Skins', false);
+  [0, 1, 2].forEach((i) => icon.diya(svg, 800 + i * 18, 170, 7, i < 2));
+  T(svg, 818, 190, '2 of 3 diyas', 9, { sw: 2 });
+}
+
+// ============================================================ main menu
+function menuScreen() {
+  const svg = document.getElementById('menu');
+  uiDefs(svg);
+  el('rect', { x: 0, y: 0, width: 844, height: 390, fill: 'url(#skyDawn)' }, svg);
+  el('circle', { cx: 470, cy: 168, r: 120, fill: 'url(#sunDisc)' }, svg);
+  for (let i = 0; i < 20; i++) { const a = Math.PI + (i / 19) * Math.PI; el('path', { d: `M470 168 L${470 + Math.cos(a - 0.03) * 520} ${168 + Math.sin(a - 0.03) * 520} L${470 + Math.cos(a + 0.03) * 520} ${168 + Math.sin(a + 0.03) * 520} Z`, fill: '#fff3c8', opacity: 0.12 }, svg); }
+  // clouds
+  [[120, 70, 1], [690, 52, 1.2], [330, 40, 0.8]].forEach(([cx, cy, s]) => { const c = g(svg, { opacity: 0.9 }); [[0, 0, 22], [24, -6, 18], [44, 2, 16], [-20, 4, 14]].forEach(([a, b, r]) => el('circle', { cx: cx + a * s, cy: cy + b * s, r: r * s, fill: '#fff4e4' }, c)); el('rect', { x: cx - 34 * s, y: cy, width: 94 * s, height: 16 * s, fill: '#fff4e4' }, c); });
+  // birds
+  for (let i = 0; i < 7; i++) el('path', { d: `M${560 + i * 18 + (i % 2) * 6} ${80 + (i % 3) * 9} q3 -3 6 0 q3 -3 6 0`, stroke: '#4a2a3a', 'stroke-width': 1.2, fill: 'none' }, svg);
+  // far hills and mid hills
+  el('path', { d: 'M0 230 Q90 170 190 210 Q290 150 400 200 Q520 140 640 196 Q740 160 844 200 V390 H0 Z', fill: 'url(#hillFar)', opacity: 0.85 }, svg);
+  el('path', { d: 'M0 262 Q120 222 240 252 Q380 216 520 250 Q660 222 844 250 V390 H0 Z', fill: 'url(#hillMid)' }, svg);
+  el('path', { d: 'M0 300 Q200 270 422 292 Q640 272 844 296 V390 H0 Z', fill: '#7fb145' }, svg);
+  // the fort on the hill
+  fortGate(svg, 470, 300, 1.55);
+  banyan(svg, 690, 318, 1.5); palm(svg, 760, 300, 1.3); banyan(svg, 300, 312, 1.2);
+  for (let i = 0; i < 120; i++) tuft(svg, rnd() * 844, 300 + rnd() * 90);
+  [[620, 360], [340, 372], [760, 372]].forEach(([a, b]) => marigold(svg, a, b));
+  // the hero in the foreground
+  person(svg, 150, 382, { ...SUN, s: 3.4 });
+  person(svg, 236, 372, { ...ARCHER, s: 2.2 });
+  person(svg, 84, 376, { ...SPEAR, s: 2.4 });
+  el('rect', { x: 0, y: 0, width: 844, height: 390, fill: 'url(#vignette)' }, svg);
+  // logo and buttons
+  logo(svg, 150, 84, 1.25);
+  const bx = 640;
+  button(svg, bx, 128, 180, 46, 'PLAY', 'red', { icon: 'play' });
+  button(svg, bx, 182, 180, 40, 'ENDLESS', 'purple', { icon: 'infinity', size: 16 });
+  button(svg, bx, 230, 180, 40, 'HEROES', 'blue', { icon: 'helmet', size: 16 });
+  button(svg, bx, 278, 180, 40, 'SHOP', 'gold', { icon: 'ruby', size: 16, badge: '!' });
+  pill(svg, 600, 12, 112, 'coin', '12,480');
+  pill(svg, 724, 12, 96, 'ruby', '340');
+  roundBtn(svg, 300, 360, 17, 'blue', (q, a, b) => icon.gear(q, a, b, 0.95));
+  roundBtn(svg, 344, 360, 17, 'gold', (q, a, b) => icon.trophy(q, a, b + 2, 0.95));
+  roundBtn(svg, 388, 360, 17, 'green', (q, a, b) => icon.bars(q, a, b, 0.95));
+  roundBtn(svg, 432, 360, 17, 'red', (q, a, b) => icon.chest(q, a, b + 6, 0.75), { badge: '1' });
+}
+
+// ============================================================ world map
+function regionArt(t, cx, cy, kind) {
+  const c = g(t);
+  const clipId = 'clip' + kind;
+  const cp = el('clipPath', { id: clipId }, c); el('circle', { cx, cy, r: 30 }, cp);
+  const q = g(c, { 'clip-path': `url(#${clipId})` });
+  const sky = { hills: '#9fd0f0', desert: '#ffd08a', ghats: '#7a8aa0', ruins: '#2a2a5a', delta: '#c8d4d0', himalaya: '#cfe6ff' }[kind];
+  el('rect', { x: cx - 32, y: cy - 32, width: 64, height: 64, fill: sky }, q);
+  if (kind === 'hills') { el('path', { d: `M${cx - 32} ${cy + 8} Q${cx - 10} ${cy - 14} ${cx + 8} ${cy + 2} Q${cx + 20} ${cy - 8} ${cx + 32} ${cy + 4} V${cy + 32} H${cx - 32} Z`, fill: '#6ea23a' }, q); archerTower(q, cx + 6, cy + 18, 0.5); }
+  if (kind === 'desert') { el('circle', { cx: cx + 12, cy: cy - 12, r: 8, fill: '#fff4c0' }, q); el('path', { d: `M${cx - 32} ${cy + 10} Q${cx - 8} ${cy - 6} ${cx + 32} ${cy + 8} V${cy + 32} H${cx - 32} Z`, fill: '#e8b060' }, q); el('path', { d: `M${cx - 32} ${cy + 20} Q${cx + 4} ${cy + 6} ${cx + 32} ${cy + 20} V${cy + 32} H${cx - 32} Z`, fill: '#d89a48' }, q); palm(q, cx - 14, cy + 16, 0.45); }
+  if (kind === 'ghats') { el('path', { d: `M${cx - 32} ${cy + 4} L${cx - 10} ${cy - 18} L${cx + 6} ${cy} L${cx + 20} ${cy - 10} L${cx + 32} ${cy + 2} V${cy + 32} H${cx - 32} Z`, fill: '#3f7a3a' }, q); el('path', { d: `M${cx - 2} ${cy - 6} V${cy + 30}`, stroke: '#cfeefc', 'stroke-width': 4 }, q); for (let i = 0; i < 14; i++) el('path', { d: `M${cx - 30 + i * 5} ${cy - 30 + (i % 3) * 6} l-3 8`, stroke: '#e6f4ff', 'stroke-width': 1 }, q); }
+  if (kind === 'ruins') { el('circle', { cx: cx + 10, cy: cy - 12, r: 9, fill: '#fff0c0' }, q); el('path', { d: `M${cx - 32} ${cy + 14} H${cx + 32} V${cy + 32} H${cx - 32} Z`, fill: '#8a6a4a' }, q); [[-18, 10], [-6, 18], [6, 12], [18, 16]].forEach(([a, h]) => outlined(q, 'rect', { x: cx + a - 3, y: cy + 14 - h, width: 6, height: h, fill: '#c9a07a' }, 0.6)); outlined(q, 'path', { d: `M${cx - 22} ${cy + 4} H${cx - 2} L${cx - 12} ${cy - 6} Z`, fill: '#c9a07a' }, 0.6); }
+  if (kind === 'delta') { el('rect', { x: cx - 32, y: cy + 6, width: 64, height: 30, fill: '#5a9ab0' }, q); for (let i = 0; i < 4; i++) { const x = cx - 22 + i * 14; el('path', { d: `M${x} ${cy + 10} V${cy - 8} M${x} ${cy + 10} l-4 6 M${x} ${cy + 10} l4 6`, stroke: '#5a3a22', 'stroke-width': 1.4 }, q); blobCluster(q, [[x, cy - 10, 6], [x + 4, cy - 6, 4]], '#3f7a3a'); } el('rect', { x: cx - 32, y: cy - 32, width: 64, height: 64, fill: '#f4f4f0', opacity: 0.25 }, q); }
+  if (kind === 'himalaya') { el('path', { d: `M${cx - 32} ${cy + 14} L${cx - 14} ${cy - 18} L${cx - 2} ${cy - 4} L${cx + 12} ${cy - 24} L${cx + 32} ${cy + 10} V${cy + 32} H${cx - 32} Z`, fill: '#7a8aa8' }, q); el('path', { d: `M${cx - 20} ${cy - 8} L${cx - 14} ${cy - 18} L${cx - 8} ${cy - 10} Z M${cx + 6} ${cy - 14} L${cx + 12} ${cy - 24} L${cx + 19} ${cy - 13} Z`, fill: '#ffffff' }, q); for (let i = 0; i < 16; i++) el('circle', { cx: cx - 30 + rnd() * 60, cy: cy - 30 + rnd() * 60, r: 0.9, fill: '#fff' }, q); }
+}
+function mapScreen() {
+  const svg = document.getElementById('map');
+  uiDefs(svg);
+  el('rect', { x: 0, y: 0, width: 844, height: 390, fill: '#3f2614' }, svg);
+  el('rect', { x: 10, y: 10, width: 824, height: 370, rx: 12, fill: 'url(#parch)' }, svg);
+  for (let i = 0; i < 200; i++) el('circle', { cx: 14 + rnd() * 816, cy: 14 + rnd() * 362, r: 0.6 + rnd() * 2, fill: '#b8884a', opacity: 0.16 }, svg);
+  // margin doodles: waves, little mountains, compass
+  for (let i = 0; i < 14; i++) el('path', { d: `M${40 + i * 56} 360 q7 -5 14 0 q7 -5 14 0`, stroke: '#7aa8b8', 'stroke-width': 1.2, fill: 'none', opacity: 0.7 }, svg);
+  const comp = g(svg, { transform: 'translate(782 312)' });
+  outlined(comp, 'circle', { cx: 0, cy: 0, r: 24, fill: 'none' }, 1);
+  el('circle', { cx: 0, cy: 0, r: 20, fill: 'none', stroke: '#b8884a', 'stroke-width': 0.8 }, comp);
+  outlined(comp, 'path', { d: 'M0 -24 L5 0 L0 24 L-5 0 Z', fill: 'url(#gold)' }, 0.8);
+  outlined(comp, 'path', { d: 'M-24 0 L0 5 L24 0 L0 -5 Z', fill: '#c9a46a' }, 0.8);
+  T(comp, 0, -28, 'N', 9, { sw: 0, fill: OUT });
+  // journey route
+  const R = [[150, 246, 'hills', 'Aravalli Hills', 'Spring', 'done'], [210, 112, 'desert', 'Thar Desert', 'Summer', 'now'], [350, 246, 'ghats', 'Western Ghats', 'Monsoon', 'locked'], [490, 112, 'ruins', 'Deccan Ruins', 'Autumn', 'locked'], [620, 246, 'delta', 'Sundarbans', 'Pre-winter', 'locked'], [740, 112, 'himalaya', 'Himalayas', 'Winter', 'locked']];
+  const route = R.map(([x, y], i) => (i ? `L${x} ${y}` : `M${x} ${y}`)).join(' ');
+  el('path', { d: route, stroke: '#8a5a2e', 'stroke-width': 3, fill: 'none', 'stroke-dasharray': '2 7', 'stroke-linecap': 'round' }, svg);
+  R.forEach(([x, y, kind, name, season, state], i) => {
+    const t = g(svg);
+    shadow(t, x + 2, y + 34, 30, 6);
+    regionArt(t, x, y, kind);
+    el('circle', { cx: x, cy: y, r: 31, fill: 'none', stroke: OUT, 'stroke-width': 5 }, t);
+    el('circle', { cx: x, cy: y, r: 31, fill: 'none', stroke: 'url(#goldRim)', 'stroke-width': 3 }, t);
+    for (let k = 0; k < 12; k++) { const a = (k / 12) * Math.PI * 2; outlined(t, 'circle', { cx: x + Math.cos(a) * 31, cy: y + Math.sin(a) * 31, r: 1.6, fill: 'url(#gold)' }, 0.4); }
+    if (state === 'locked') { el('circle', { cx: x, cy: y, r: 29, fill: '#2a1a10', opacity: 0.55 }, t); icon.lock(t, x, y + 4, 1.4); }
+    ribbon(t, x, y + 34, name.length * 7.2 + 18, name, 11);
+    T(t, x, y + 70, season, 9, { sw: 2.4, fill: '#ffe8b0' });
+    // five level nodes; the fifth is the boss
+    for (let k = 0; k < 5; k++) {
+      const nx = x - 28 + k * 14, ny = y + 82;
+      const boss = k === 4;
+      outlined(t, 'circle', { cx: nx, cy: ny, r: boss ? 6 : 4.4, fill: state === 'done' || (state === 'now' && k < 2) ? 'url(#gemGold)' : state === 'now' && k === 2 ? 'url(#gemRed)' : '#8a7a68' }, 1);
+      if (boss) el('path', { d: `M${nx - 3} ${ny - 1} l1.5 -3 l1.5 2 l1.5 -2 l1.5 3 Z`, fill: OUT }, t);
+    }
+    if (state === 'done') roundBtn(t, x + 30, y - 26, 10, 'purple', (q, a, b) => icon.infinity(q, a, b, 0.5));
+  });
+  // player token on the current region
+  const tok = g(svg);
+  el('circle', { cx: 252, cy: 96, r: 13, fill: 'url(#holy)' }, tok);
+  person(tok, 252, 106, { ...SUN, s: 0.9, weapon: null, shield: null, aura: false });
+  ribbon(svg, 422, 16, 250, 'The Journey of Six Seasons', 15);
+  button(svg, 18, 336, 98, 36, 'BACK', 'red', { size: 13 });
+  pill(svg, 610, 40, 112, 'coin', '12,480');
+  pill(svg, 730, 40, 96, 'ruby', '340');
+  // level card for the selected level
+  panel(svg, 284, 92, 132, 108, 'Level 8');
+  T(svg, 350, 128, 'Mirage Oasis', 12, { font: 'Rozha One', weight: 400, fill: '#5a2a10', stroke: 'none', sw: 0 });
+  [0, 1, 2].forEach((i) => icon.diya(svg, 332 + i * 18, 154, 7, false));
+  button(svg, 302, 162, 96, 28, 'BATTLE', 'red', { size: 12 });
+}
+
+// ============================================================ daily + shop
+function dailyScreen() {
+  const svg = document.getElementById('daily');
+  uiDefs(svg);
+  el('rect', { x: 0, y: 0, width: 844, height: 390, fill: 'url(#grass)' }, svg);
+  for (let i = 0; i < 20; i++) el('circle', { cx: rnd() * 844, cy: rnd() * 390, r: 20 + rnd() * 50, fill: rnd() > 0.5 ? '#a0cf58' : '#d9b878', opacity: 0.5, filter: 'url(#cloud)' }, svg);
+  el('rect', { x: 0, y: 0, width: 844, height: 390, fill: '#120804', opacity: 0.55 }, svg);
+  // daily login
+  panel(svg, 24, 30, 400, 340, 'Daily Reward');
+  T(svg, 224, 66, 'Log in every day for bigger rewards', 10, { fill: '#5a2a10', stroke: 'none', sw: 0, weight: 700 });
+  const rewards = [['coin', '200'], ['ruby', '10'], ['coin', '400'], ['ruby', '20'], ['coin', '800'], ['ruby', '30'], ['chest', 'Royal Chest']];
+  rewards.forEach(([kind, amt], i) => {
+    const day7 = i === 6;
+    const col = i % 4, row = Math.floor(i / 4);
+    const x = day7 ? 236 : 44 + col * 88, y = 78 + row * 128;
+    const w = day7 ? 164 : 80, h = day7 ? 112 : 112;
+    const t = g(svg, { filter: 'url(#drop)' });
+    const today = i === 3;
+    el('rect', { x, y, width: w, height: h, rx: 8, fill: OUT }, t);
+    el('rect', { x: x + 1.4, y: y + 1.4, width: w - 2.8, height: h - 2.8, rx: 7, fill: today ? 'url(#goldRim)' : '#b8884a' }, t);
+    el('rect', { x: x + 4, y: y + 4, width: w - 8, height: h - 8, rx: 5, fill: day7 ? 'url(#btnPurple)' : i < 3 ? '#e8d2a6' : 'url(#parch)' }, t);
+    el('rect', { x: x + 4, y: y + 4, width: w - 8, height: 18, rx: 5, fill: day7 ? '#3a1a6a' : '#7a3a16' }, t);
+    T(t, x + w / 2, y + 17, `DAY ${i + 1}`, 10, { sw: 2.2 });
+    if (today) { const halo = el('circle', { cx: x + w / 2, cy: y + 56, r: 26, fill: 'url(#holy)' }, t); anim(halo, { attributeName: 'r', values: '22;28;22', dur: '1.6s' }); }
+    if (kind === 'chest') { el('circle', { cx: x + w / 2, cy: y + 58, r: 30, fill: 'url(#holy)' }, t); icon.chest(t, x + w / 2, y + 72, 2.2); }
+    else { icon[kind](t, x + w / 2, y + 54, 15); }
+    T(t, x + w / 2, y + h - 14, amt, day7 ? 13 : 12, { sw: 2.6 });
+    if (i < 3) { el('rect', { x: x + 4, y: y + 4, width: w - 8, height: h - 8, rx: 5, fill: '#2a1a10', opacity: 0.35 }, t); icon.check(t, x + w / 2, y + 56, 2); }
+  });
+  button(svg, 52, 318, 160, 36, 'CLAIM DAY 4', 'green', { size: 13 });
+  T(svg, 318, 333, 'Signed in with Google Play Games:', 8.5, { fill: '#5a2a10', stroke: 'none', sw: 0, weight: 700 });
+  T(svg, 318, 345, '+20% rewards and cloud save', 8.5, { fill: '#2f7a3d', stroke: 'none', sw: 0, weight: 800 });
+  // shop
+  panel(svg, 440, 30, 384, 340, 'Royal Bazaar', { close: true });
+  tab(svg, 466, 60, 100, 'Offers', true); tab(svg, 572, 60, 100, 'Rubies', false); tab(svg, 678, 60, 100, 'Skins', false);
+  const cards = [['Starter Pack', '$1.99', 'red', 'BEST VALUE'], ['Ruby Pile ×500', '$4.99', 'blue', null], ['Remove Ads', '$2.99', 'gold', null]];
+  cards.forEach(([name, price, col, tag], i) => {
+    const x = 462 + i * 116, y = 90;
+    const t = g(svg, { filter: 'url(#drop)' });
+    el('rect', { x, y, width: 108, height: 236, rx: 10, fill: OUT }, t);
+    el('rect', { x: x + 1.6, y: y + 1.6, width: 104.8, height: 232.8, rx: 9, fill: 'url(#goldRim)' }, t);
+    el('rect', { x: x + 4.4, y: y + 4.4, width: 99.2, height: 227.2, rx: 7, fill: col === 'red' ? 'url(#btnRed)' : col === 'blue' ? 'url(#btnBlue)' : 'url(#btnGold)' }, t);
+    el('rect', { x: x + 8, y: y + 26, width: 92, height: 126, rx: 6, fill: '#000', opacity: 0.22 }, t);
+    el('circle', { cx: x + 54, cy: y + 88, r: 40, fill: 'url(#holy)' }, t);
+    T(t, x + 54, y + 20, name, 10.5, { sw: 2.6 });
+    if (i === 0) { person(t, x + 54, y + 140, { ...SUN, s: 2.3, cape: '#6a3fc0', tunic: '#efe2ff', trim: '#6a3fc0', aura: false }); icon.ruby(t, x + 24, y + 142, 9); T(t, x + 24, y + 160, '+150', 9, { sw: 2.2 }); }
+    if (i === 1) { [[-16, 8], [0, 0], [16, 8], [-8, 16], [8, 16], [0, 24]].forEach(([a, b]) => icon.ruby(t, x + 54 + a, y + 74 + b, 13)); }
+    if (i === 2) { const c = g(t); el('rect', { x: x + 30, y: y + 64, width: 48, height: 34, rx: 4, fill: '#fff4dc', stroke: OUT, 'stroke-width': 1.4 }, c); T(c, x + 54, y + 86, 'AD', 14, { sw: 0, fill: '#7a3a16', stroke: 'none' }); el('path', { d: `M${x + 24} ${y + 106} L${x + 84} ${y + 56}`, stroke: OUT, 'stroke-width': 7, 'stroke-linecap': 'round' }, c); el('path', { d: `M${x + 24} ${y + 106} L${x + 84} ${y + 56}`, stroke: '#e8452a', 'stroke-width': 4, 'stroke-linecap': 'round' }, c); }
+    T(t, x + 54, y + 174, i === 0 ? 'Sun Knight skin + rubies' : i === 1 ? '+50 bonus' : 'forever', 8.5, { sw: 2.2, fill: '#ffe8b0' });
+    button(t, x + 10, y + 190, 88, 32, price, 'green', { size: 14 });
+    if (tag) { outlined(t, 'path', { d: `M${x - 4} ${y + 34} H${x + 70} L${x + 62} ${y + 42} L${x + 70} ${y + 50} H${x - 4} Z`, fill: 'url(#ribbon)' }, 1); T(t, x + 32, y + 46, tag, 8.5, { sw: 2 }); }
+  });
+  T(svg, 632, 348, 'Prices shown in your local currency by Google Play', 8, { fill: '#5a2a10', stroke: 'none', sw: 0, weight: 700 });
+}
+
+// ============================================================ splash
+function splashArt() {
+  const svg = document.getElementById('splash');
+  uiDefs(svg);
+  el('rect', { x: 0, y: 0, width: 1024, height: 500, fill: 'url(#skySunset)' }, svg);
+  el('circle', { cx: 640, cy: 250, r: 170, fill: 'url(#sunDisc)' }, svg);
+  for (let i = 0; i < 26; i++) { const a = (i / 26) * Math.PI * 2; el('path', { d: `M640 250 L${640 + Math.cos(a - 0.025) * 900} ${250 + Math.sin(a - 0.025) * 900} L${640 + Math.cos(a + 0.025) * 900} ${250 + Math.sin(a + 0.025) * 900} Z`, fill: '#ffe8b0', opacity: 0.1 }, svg); }
+  for (let i = 0; i < 9; i++) el('path', { d: `M${700 + i * 22 + (i % 2) * 8} ${110 + (i % 3) * 12} q4 -4 8 0 q4 -4 8 0`, stroke: '#3a1a3a', 'stroke-width': 1.6, fill: 'none' }, svg);
+  el('path', { d: 'M0 300 L120 210 L210 270 L330 170 L450 260 L560 190 L700 270 L820 180 L940 250 L1024 210 V500 H0 Z', fill: '#6a3f7a', opacity: 0.7 }, svg);
+  el('path', { d: 'M0 340 Q160 290 320 330 Q500 280 700 326 Q860 296 1024 330 V500 H0 Z', fill: '#4a5a3a' }, svg);
+  el('path', { d: 'M0 400 Q260 360 520 392 Q780 366 1024 396 V500 H0 Z', fill: '#2f3f24' }, svg);
+  fortGate(svg, 650, 370, 2.1);
+  // enemy army silhouettes on the right
+  const army = g(svg, { opacity: 0.92 });
+  for (let i = 0; i < 9; i++) person(army, 860 + i * 18, 470 - (i % 3) * 6, { ...BANDIT, s: 1.5, flip: true });
+  elephant(army, 960, 452, 1.7, true, true);
+  // heroes in front
+  person(svg, 230, 490, { ...SUN, s: 6.4 });
+  person(svg, 360, 486, { ...ARCHER, s: 3.6 });
+  person(svg, 110, 488, { ...SPEAR, s: 4 });
+  person(svg, 450, 488, { ...MAGE, s: 3.4 });
+  // rim light from the sun
+  el('rect', { x: 0, y: 0, width: 1024, height: 500, fill: 'url(#sunlight)' }, svg);
+  el('rect', { x: 0, y: 0, width: 1024, height: 500, fill: 'url(#vignette)' }, svg);
+  logo(svg, 300, 110, 2);
+}
+
+// ============================================================ icon
+function gameIcon(host, size) {
+  const svg = el('svg', { width: size, height: size, viewBox: '0 0 512 512' });
+  uiDefs(svg);
+  const clip = el('clipPath', { id: 'iconClip' + size }, svg.querySelector('defs')); el('rect', { width: 512, height: 512, rx: 112 }, clip);
+  const t = g(svg, { 'clip-path': `url(#iconClip${size})` });
+  el('rect', { width: 512, height: 512, fill: 'url(#skySunset)' }, t);
+  el('circle', { cx: 256, cy: 250, r: 230, fill: 'url(#sunDisc)' }, t);
+  for (let i = 0; i < 20; i++) { const a = (i / 20) * Math.PI * 2; el('path', { d: `M256 250 L${256 + Math.cos(a - 0.05) * 400} ${250 + Math.sin(a - 0.05) * 400} L${256 + Math.cos(a + 0.05) * 400} ${250 + Math.sin(a + 0.05) * 400} Z`, fill: '#fff1c0', opacity: 0.22 }, t); }
+  // the Sun Knight's face, very close
+  person(t, 250, 760, { ...SUN, s: 19, weapon: 'sword', shield: null, aura: false, cape: null });
+  el('rect', { width: 512, height: 512, fill: 'url(#vignette)' }, t);
+  el('rect', { x: 6, y: 6, width: 500, height: 500, rx: 108, fill: 'none', stroke: 'url(#goldRim)', 'stroke-width': 12 }, svg);
+  el('rect', { x: 1, y: 1, width: 510, height: 510, rx: 111, fill: 'none', stroke: OUT, 'stroke-width': 3 }, svg);
+  const d = document.createElement('div');
+  d.appendChild(svg);
+  d.insertAdjacentHTML('beforeend', `${size} px`);
+  host.appendChild(d);
+}
+
+kitSheet(); menuScreen(); mapScreen(); dailyScreen(); splashArt();
+const ih = document.getElementById('icons');
+[256, 96, 48].forEach((s) => gameIcon(ih, s));
+window.__ready = true;
+</script>
+</body>
+</html>
