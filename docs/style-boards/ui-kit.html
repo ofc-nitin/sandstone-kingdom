@@ -36,10 +36,15 @@
   <div class="screen"><svg id="menu" width="1296" height="599" viewBox="0 0 844 390"></svg></div>
 
   <h2>World map: the journey of six seasons</h2>
-  <div class="screen"><svg id="map" width="1296" height="599" viewBox="0 0 844 390"></svg></div>
-  <p class="note">An illustrated journey route, deliberately <b>not</b> an outline of India
-    (border depictions are legally sensitive in India). Region 1 done, Region 2 in progress,
-    Endless unlocked for Region 1.</p>
+  <div class="screen" style="position:relative;width:1296px;height:599px">
+    <div id="mapScroll" style="width:1296px;height:599px;overflow-x:auto;overflow-y:hidden;cursor:grab;touch-action:pan-x"><svg id="map" width="2857" height="599" viewBox="0 0 1860 390"></svg></div>
+    <svg id="mapUI" width="1296" height="599" viewBox="0 0 844 390" style="position:absolute;left:0;top:0;pointer-events:none"></svg>
+  </div>
+  <p class="note">The map scrolls sideways (drag or swipe it in the HTML); the frame, Back
+    button and currency stay fixed. Each region has its own stretch of land. It is a journey
+    route, deliberately <b>not</b> an outline of India. Region 1 done, Region 2 in progress,
+    Endless unlocked for Region 1. The whole journey at a glance:</p>
+  <div id="mapOverview" class="screen" style="margin-top:10px"></div>
 
   <h2>Daily login and shop</h2>
   <div class="screen"><svg id="daily" width="1296" height="599" viewBox="0 0 844 390"></svg></div>
@@ -54,7 +59,7 @@
 </div>
 
 <script>
-/* ART-START: generated from art.js by build.py, edit art.js instead */
+/* ART-START: generated from game/src/art by build.py, edit there instead */
 // Shared drawing library for Sandstone Kingdom concept boards.
 // Every function draws into an SVG parent with the game's outline, lighting and palette.
 const NS = 'http://www.w3.org/2000/svg';
@@ -1024,6 +1029,9 @@ function shadowEmperor(p, x, y, s = 1, flip = false, hp) {
 /* ART-END */
 </script>
 <script>
+/* UI-START: generated from game/src/art by build.py, edit there instead */
+// Shared UI drawing helpers (buttons, panels, ribbons, icons) for Sandstone Kingdom.
+// Depends on art.js. Edit here; docs/style-boards/build.py copies it into the concept boards.
 // ============================================================ UI defs
 function uiDefs(svg) {
   defs(svg);
@@ -1064,6 +1072,11 @@ function uiDefs(svg) {
 const T = (p, x, y, s, size, o = {}) => {
   const e = el('text', { x, y, 'font-family': o.font || 'Martel', 'font-weight': o.weight || 900, 'font-size': size, fill: o.fill || '#fff8e6', stroke: o.stroke || OUT, 'stroke-width': o.sw ?? Math.min(3.2, size * 0.2), 'paint-order': 'stroke', 'text-anchor': o.anchor || 'middle', 'letter-spacing': o.ls || 0 }, p);
   e.textContent = s;
+  // o.max: never let the text grow wider than this; shrink the font to fit instead
+  if (o.max) {
+    const w = e.getComputedTextLength();
+    if (w > o.max) e.setAttribute('font-size', size * o.max / w);
+  }
   return e;
 };
 // width of a piece of text once fonts are loaded, used to size ribbons and buttons
@@ -1092,7 +1105,17 @@ const icon = {
   close(p, x, y, s = 1) { el('path', { d: `M${x - 4 * s} ${y - 4 * s} L${x + 4 * s} ${y + 4 * s} M${x + 4 * s} ${y - 4 * s} L${x - 4 * s} ${y + 4 * s}`, stroke: '#fff4dc', 'stroke-width': 2.6 * s, 'stroke-linecap': 'round' }, p); },
   plus(p, x, y, s = 1) { el('path', { d: `M${x - 4 * s} ${y} H${x + 4 * s} M${x} ${y - 4 * s} V${y + 4 * s}`, stroke: '#fff4dc', 'stroke-width': 2.4 * s, 'stroke-linecap': 'round' }, p); },
   check(p, x, y, s = 1) { el('path', { d: `M${x - 6 * s} ${y} L${x - 2 * s} ${y + 4 * s} L${x + 6 * s} ${y - 5 * s}`, stroke: OUT, 'stroke-width': 5 * s, fill: 'none', 'stroke-linecap': 'round' }, p); el('path', { d: `M${x - 6 * s} ${y} L${x - 2 * s} ${y + 4 * s} L${x + 6 * s} ${y - 5 * s}`, stroke: '#7ef06a', 'stroke-width': 3 * s, fill: 'none', 'stroke-linecap': 'round' }, p); },
-  swords(p, x, y, s = 1) { el('path', { d: `M${x - 7 * s} ${y + 7 * s} L${x + 7 * s} ${y - 7 * s} M${x + 7 * s} ${y + 7 * s} L${x - 7 * s} ${y - 7 * s}`, stroke: '#fff4dc', 'stroke-width': 2.6 * s, 'stroke-linecap': 'round' }, p); },
+  swords(p, x, y, s = 1) {
+    // two crossed swords: blade, gold crossguard and a round pommel each
+    for (const k of [-1, 1]) {
+      el('path', { d: `M${x - 6 * s * k} ${y + 6 * s} L${x + 7 * s * k} ${y - 7 * s}`, stroke: OUT, 'stroke-width': 4 * s, 'stroke-linecap': 'round' }, p);
+      el('path', { d: `M${x - 6 * s * k} ${y + 6 * s} L${x + 7 * s * k} ${y - 7 * s}`, stroke: '#f2f4f8', 'stroke-width': 2.2 * s, 'stroke-linecap': 'round' }, p);
+      el('path', { d: `M${x - 7 * s * k} ${y + 2 * s} L${x - 2 * s * k} ${y + 7 * s}`, stroke: OUT, 'stroke-width': 3.2 * s, 'stroke-linecap': 'round' }, p);
+      el('path', { d: `M${x - 7 * s * k} ${y + 2 * s} L${x - 2 * s * k} ${y + 7 * s}`, stroke: '#ffd25a', 'stroke-width': 1.8 * s, 'stroke-linecap': 'round' }, p);
+      el('path', { d: `M${x - 6 * s * k} ${y + 6 * s} L${x - 8.5 * s * k} ${y + 8.5 * s}`, stroke: '#8a5a2e', 'stroke-width': 2.4 * s, 'stroke-linecap': 'round' }, p);
+      outlined(p, 'circle', { cx: x - 9.4 * s * k, cy: y + 9.4 * s, r: 1.5 * s, fill: '#ffd25a' }, 0.6 * s);
+    }
+  },
   infinity(p, x, y, s = 1) { el('path', { d: `M${x} ${y} C${x - 3 * s} ${y - 6 * s} ${x - 10 * s} ${y - 6 * s} ${x - 10 * s} ${y} C${x - 10 * s} ${y + 6 * s} ${x - 3 * s} ${y + 6 * s} ${x} ${y} C${x + 3 * s} ${y - 6 * s} ${x + 10 * s} ${y - 6 * s} ${x + 10 * s} ${y} C${x + 10 * s} ${y + 6 * s} ${x + 3 * s} ${y + 6 * s} ${x} ${y} Z`, stroke: '#fff4dc', 'stroke-width': 2.4 * s, fill: 'none' }, p); },
   helmet(p, x, y, s = 1) { const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` }); outlined(t, 'path', { d: 'M-7 4 Q-8 -8 0 -9 Q8 -8 7 4 Z', fill: '#fff4dc' }, 1); el('path', { d: 'M0 -9 V-13', stroke: '#fff4dc', 'stroke-width': 1.6 }, t); el('path', { d: 'M1.5 -2 V4', stroke: '#2f5fc8', 'stroke-width': 1.6 }, t); },
 };
@@ -1145,7 +1168,7 @@ function pill(p, x, y, w, kind, value) {
   el('rect', { x: x + 1.4, y: y + 1.4, width: w - 2.8, height: 19.2, rx: 9.6, fill: 'url(#goldRim)' }, t);
   el('rect', { x: x + 3.4, y: y + 3.4, width: w - 6.8, height: 15.2, rx: 7.6, fill: 'url(#woodDark)' }, t);
   icon[kind](t, x + 11, y + 11, 8);
-  T(t, x + w / 2 + 3, y + 15.5, value, 11.5, { sw: 2.6 });
+  T(t, x + w / 2 + 3, y + 15.5, value, 11.5, { sw: 2.6, max: w - 44 });
   roundBtn(t, x + w - 9, y + 11, 9, 'green', (q, a, b) => icon.plus(q, a, b, 0.7));
 }
 function ribbon(p, cx, y, w, label, size = 16) {
@@ -1156,7 +1179,7 @@ function ribbon(p, cx, y, w, label, size = 16) {
   outlined(t, 'path', { d: `M${cx - w / 2} ${y} Q${cx} ${y - 3} ${cx + w / 2} ${y} V${y + 20} Q${cx} ${y + 17} ${cx - w / 2} ${y + 20} Z`, fill: 'url(#ribbon)' }, 1.6);
   el('path', { d: `M${cx - w / 2 + 3} ${y + 3} Q${cx} ${y + 0.4} ${cx + w / 2 - 3} ${y + 3}`, stroke: '#ffd66b', 'stroke-width': 1, fill: 'none' }, t);
   el('path', { d: `M${cx - w / 2 + 3} ${y + 17} Q${cx} ${y + 14.4} ${cx + w / 2 - 3} ${y + 17}`, stroke: '#ffd66b', 'stroke-width': 1, fill: 'none' }, t);
-  T(t, cx, y + 10 + size * 0.34, label, size, { font: 'Rozha One', weight: 400, sw: Math.min(2.6, size * 0.16) });
+  T(t, cx, y + 10 + size * 0.34, label, size, { font: 'Rozha One', weight: 400, sw: Math.min(2.6, size * 0.16), max: w - 14 });
 }
 function filigree(t, x, y, sx, sy) {
   const q = g(t, { transform: `translate(${x} ${y}) scale(${sx} ${sy})` });
@@ -1201,7 +1224,7 @@ function tab(p, x, y, w, label, active) {
   const t = g(p, { filter: 'url(#drop)' });
   outlined(t, 'path', { d: `M${x} ${y + 22} V${y + 6} Q${x} ${y} ${x + 6} ${y} H${x + w - 6} Q${x + w} ${y} ${x + w} ${y + 6} V${y + 22} Z`, fill: active ? 'url(#btnRed)' : 'url(#woodDark)' }, 1.4);
   el('path', { d: `M${x + 3} ${y + 4} H${x + w - 3}`, stroke: '#ffd66b', 'stroke-width': 1.2, opacity: active ? 1 : 0.4 }, t);
-  T(t, x + w / 2, y + 15.5, label, 11, { sw: 2.6, fill: active ? '#fff8e6' : '#e0c8a0' });
+  T(t, x + w / 2, y + 15.5, label, 11, { sw: 2.6, fill: active ? '#fff8e6' : '#e0c8a0', max: w - 10 });
 }
 function logo(p, x, y, s = 1) {
   const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` });
@@ -1218,6 +1241,46 @@ function logo(p, x, y, s = 1) {
   T(t, 0, 40, 'TOWER DEFENSE', 9, { sw: 2.4, ls: 2, fill: '#ffe8b0' });
 }
 
+
+// ============================================================ royal chest
+// An open treasure chest: dark wood, gold bands and lion feet, a ruby clasp,
+// red velvet lining, and treasure spilling out under a shaft of light.
+function royalChest(p, x, y, s = 1) {
+  const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` });
+  const halo = el('circle', { cx: 0, cy: -24, r: 40, fill: 'url(#holy)' }, t);
+  anim(halo, { attributeName: 'r', values: '36;44;36', dur: '2s' });
+  for (let i = -3; i <= 3; i++) el('path', { d: `M${i * 4} -30 L${i * 10 - 5} -62 L${i * 10 + 5} -62 Z`, fill: '#fff6c8', opacity: 0.2 }, t);
+  shadow(t, 0, 2, 30, 5, 0.4);
+  // open lid behind the box
+  outlined(t, 'path', { d: 'M-26 -30 L-24 -52 Q0 -64 24 -52 L26 -30 Z', fill: 'url(#woodDark)' }, 1.6);
+  outlined(t, 'path', { d: 'M-21 -32 L-19.6 -49 Q0 -59 19.6 -49 L21 -32 Z', fill: 'url(#btnRed)' }, 1.1);
+  for (let i = -16; i <= 16; i += 8) el('circle', { cx: i, cy: -42 - (16 - Math.abs(i)) * 0.25, r: 1.2, fill: '#ffd66b' }, t);
+  el('path', { d: 'M-24 -52 Q0 -64 24 -52', stroke: 'url(#goldRim)', 'stroke-width': 3, fill: 'none' }, t);
+  // treasure heap
+  [[-14, -32], [-6, -36], [4, -35], [13, -32], [-9, -29], [9, -29], [0, -31]].forEach(([a, b]) => coinIcon(t, a, b, 5));
+  rubyIcon(t, -3, -42, 5.4);
+  outlined(t, 'circle', { cx: 10, cy: -40, r: 3.8, fill: 'url(#gemBlue)' }, 0.8);
+  outlined(t, 'circle', { cx: -14, cy: -39, r: 3.4, fill: 'url(#gemGreen)' }, 0.8);
+  for (let i = 0; i < 9; i++) outlined(t, 'circle', { cx: -20 + i * 2.6, cy: -30 + Math.sin(i / 2.6) * 5, r: 1.3, fill: '#fffaf0' }, 0.4);
+  // a small crown on top of the heap
+  outlined(t, 'path', { d: 'M2 -44 L2 -50 L5 -47 L8 -52 L11 -47 L14 -50 L14 -44 Z', fill: 'url(#gold)' }, 0.8);
+  outlined(t, 'circle', { cx: 8, cy: -52.6, r: 1.2, fill: '#e2342a' }, 0.4);
+  // the box
+  outlined(t, 'path', { d: 'M-28 -30 H28 L26 -2 H-26 Z', fill: 'url(#woodDark)' }, 1.8);
+  for (let i = -20; i <= 20; i += 8) el('path', { d: `M${i} -28 V-4`, stroke: '#2a1608', 'stroke-width': 0.6, opacity: 0.5 }, t);
+  for (const yy of [-29, -4]) { el('path', { d: `M-28 ${yy} H28`, stroke: OUT, 'stroke-width': 5 }, t); el('path', { d: `M-28 ${yy} H28`, stroke: 'url(#goldRim)', 'stroke-width': 3.2 }, t); }
+  for (const xx of [-18, 18]) { el('path', { d: `M${xx} -30 V-2`, stroke: OUT, 'stroke-width': 5 }, t); el('path', { d: `M${xx} -30 V-2`, stroke: 'url(#goldRim)', 'stroke-width': 3.2 }, t); }
+  for (const [cx, cy] of [[-26, -27], [26, -27], [-25, -6], [25, -6]]) outlined(t, 'circle', { cx, cy, r: 2.2, fill: 'url(#gold)' }, 0.6);
+  // ornate front plate with a ruby clasp and lotus filigree
+  outlined(t, 'path', { d: 'M-9 -24 H9 V-12 Q0 -6 -9 -12 Z', fill: 'url(#gold)' }, 1.2);
+  el('path', { d: 'M-7 -14 Q-4 -20 0 -16 Q4 -20 7 -14', stroke: '#8a5a0c', 'stroke-width': 0.8, fill: 'none' }, t);
+  rubyIcon(t, 0, -18, 3.6);
+  // lion-paw feet
+  for (const fx of [-22, 22]) outlined(t, 'path', { d: `M${fx - 5} -2 Q${fx - 6} 3 ${fx - 2} 3 H${fx + 2} Q${fx + 6} 3 ${fx + 5} -2 Z`, fill: 'url(#gold)' }, 1);
+  [[-19, -50], [21, -46], [0, -66], [-24, -38]].forEach(([a, b], i) => { const sp = g(t); sparkle(sp, a, b, 3 + (i % 2)); anim(sp, { attributeName: 'opacity', values: '0;1;0', dur: `${1.2 + i * 0.3}s` }); });
+  return t;
+}
+/* UI-END */
 // ============================================================ kit sheet
 function kitSheet() {
   const svg = document.getElementById('kit');
@@ -1323,129 +1386,149 @@ function seasonBadge(p, x, y, kind) {
   if (kind === 'prewinter') [-2.4, 0.6, 3.4].forEach((d) => el('path', { d: `M${x - 4.4} ${y + d} q2.2 -1.6 4.4 0 q2.2 1.6 4.4 0`, stroke: '#eef6f6', 'stroke-width': 1, fill: 'none' }, t));
   if (kind === 'winter') for (let i = 0; i < 3; i++) { const a = (i / 3) * Math.PI; el('path', { d: `M${x + Math.cos(a) * 5} ${y + Math.sin(a) * 5} L${x - Math.cos(a) * 5} ${y - Math.sin(a) * 5}`, stroke: '#ffffff', 'stroke-width': 1.2 }, t); }
 }
+// ============================================================ world map (side-scrolling)
+const MAP_W = 1860;
+const BANDS = [
+  { name: 'Aravalli Hills', season: 'spring', x0: 130, col: '#a9c862' },
+  { name: 'Thar Desert', season: 'summer', x0: 410, col: '#ecc57e' },
+  { name: 'Western Ghats', season: 'monsoon', x0: 690, col: '#4f9a4f' },
+  { name: 'Deccan Ruins', season: 'autumn', x0: 970, col: '#cfa56c' },
+  { name: 'Sundarbans', season: 'prewinter', x0: 1250, col: '#6aa898' },
+  { name: 'Himalayas', season: 'winter', x0: 1530, col: '#e2eaf4' },
+];
+function mapNodes() {
+  const N = [[96, 318]]; // level 0: Training Grounds, beside the capital
+  BANDS.forEach((b, r) => {
+    const ys = r % 2 ? [190, 232, 276, 248, 300] : [300, 262, 222, 250, 196];
+    ys.forEach((y, i) => N.push([b.x0 + 40 + i * 50, y]));
+  });
+  return N;
+}
 function mapScreen() {
   const svg = document.getElementById('map');
   uiDefs(svg);
-  el('rect', { x: 0, y: 0, width: 844, height: 390, fill: '#3f2614' }, svg);
-  const clipM = el('clipPath', { id: 'mapClip' }, svg.querySelector('defs')); el('rect', { x: 10, y: 10, width: 824, height: 370, rx: 12 }, clipM);
-  const M = g(svg, { 'clip-path': 'url(#mapClip)' });
-  // sea, then the land with soft painted zones
-  el('rect', { x: 0, y: 0, width: 844, height: 390, fill: 'url(#water)' }, M);
-  for (let i = 0; i < 40; i++) {
-    const x = rnd() * 844, y = 300 + rnd() * 90;
-    const w = el('path', { d: `M${x} ${y} q4 -3 8 0 q4 -3 8 0`, stroke: '#d8f2fa', 'stroke-width': 1, fill: 'none', opacity: 0.8 }, M);
-    el('animateTransform', { attributeName: 'transform', type: 'translate', values: '0 0;6 0;0 0', dur: `${3 + (i % 4)}s`, repeatCount: 'indefinite' }, w);
-  }
-  outlined(M, 'path', { d: 'M38 10 H844 V352 Q780 340 720 356 Q640 344 560 358 Q470 346 400 360 Q300 348 210 358 Q120 350 70 362 Q40 300 44 220 Q30 140 38 10 Z', fill: '#9cc45a' }, 2.4);
-  const zones = g(M, { filter: 'url(#cloud)' });
-  [[130, 110, 170, 100, '#f0cf8a'], [290, 215, 120, 70, '#b8cf70'], [96, 268, 80, 110, '#3f8a45'], [300, 330, 190, 50, '#d2b07a'], [610, 330, 190, 50, '#5fa890'], [620, 110, 300, 120, '#e4ecf6'], [470, 210, 120, 80, '#a6d062']].forEach(([cx, cy, rx, ry, c]) => el('ellipse', { cx, cy, rx, ry, fill: c, opacity: 0.95 }, zones));
-  for (let i = 0; i < 260; i++) { const x = 50 + rnd() * 780, y = 20 + rnd() * 320; el('path', { d: `M${x} ${y} l1 -3 M${x + 2} ${y} l0 -4`, stroke: '#4f8a2c', 'stroke-width': 0.8, opacity: 0.45 }, M); }
-  // Thar: dunes, oasis, camel caravan
-  for (let i = 0; i < 9; i++) { const x = 60 + (i % 3) * 70 + rnd() * 20, y = 60 + Math.floor(i / 3) * 34; el('path', { d: `M${x - 24} ${y} Q${x} ${y - 12} ${x + 24} ${y}`, stroke: '#c9954e', 'stroke-width': 1.6, fill: 'none' }, M); el('path', { d: `M${x - 18} ${y - 2} Q${x} ${y - 10} ${x + 10} ${y - 5}`, stroke: '#fff0c8', 'stroke-width': 1, fill: 'none', opacity: 0.8 }, M); }
-  el('ellipse', { cx: 210, cy: 92, rx: 14, ry: 5, fill: 'url(#water)', stroke: OUT, 'stroke-width': 1 }, M);
-  palm(M, 200, 92, 0.42); palm(M, 222, 94, 0.36);
-  const caravan = g(M);
-  [0, 1, 2].forEach((i) => camel(caravan, 70 + i * 20, 160 - i * 2, 0.3, false, i === 0));
-  el('animateTransform', { attributeName: 'transform', type: 'translate', values: '0 0;30 -6;0 0', dur: '18s', repeatCount: 'indefinite' }, caravan);
-  // Aravalli: rolling hills, banyans and the capital
-  [[250, 196, 50, 22], [330, 190, 40, 18], [200, 214, 34, 14]].forEach(([x, y, w, h]) => outlined(M, 'path', { d: `M${x - w} ${y} Q${x} ${y - h * 2} ${x + w} ${y} Z`, fill: '#8fb44f' }, 1.2));
-  banyan(M, 340, 236, 0.38); banyan(M, 196, 200, 0.32);
-  fortGate(M, 228, 236, 0.42);
-  // Western Ghats: green peaks, waterfall, rain
-  [[60, 236, 46, 44], [100, 222, 50, 52], [70, 290, 44, 40]].forEach(([x, y, w, h]) => peak(M, x, y, w, h, false, '#3f7a3a'));
-  el('path', { d: 'M100 172 L100 230', stroke: '#e6f6ff', 'stroke-width': 4 }, M);
-  const fall = el('path', { d: 'M100 172 L100 230', stroke: '#9fd8f0', 'stroke-width': 2, 'stroke-dasharray': '3 4' }, M);
-  anim(fall, { attributeName: 'stroke-dashoffset', values: '0;-14', dur: '0.6s' });
-  el('ellipse', { cx: 100, cy: 232, rx: 8, ry: 3, fill: '#e6f6ff' }, M);
-  const rain = g(M, { opacity: 0.7 });
-  for (let i = 0; i < 30; i++) { const x = 40 + rnd() * 120, y = 160 + rnd() * 150; const r = el('path', { d: `M${x} ${y} l-2 6`, stroke: '#d2ecff', 'stroke-width': 0.9 }, rain); el('animateTransform', { attributeName: 'transform', type: 'translate', values: '0 0;-4 12;0 0', dur: `${0.6 + (i % 3) * 0.2}s`, repeatCount: 'indefinite' }, r); }
-  // Deccan: boulders and old ruins
-  rock(M, 250, 356, 0.5); rock(M, 420, 352, 0.6); rock(M, 330, 360, 0.4);
-  [[360, 300], [372, 300], [384, 300]].forEach(([x, y], i) => outlined(M, 'rect', { x: x - 2.4, y: y - 14 + (i === 1 ? -3 : 0), width: 4.8, height: 14 + (i === 1 ? 3 : 0), fill: 'url(#sandV)' }, 0.8));
-  outlined(M, 'rect', { x: 354, y: 284, width: 36, height: 4, fill: '#e8c08a' }, 0.8);
-  // the great river from the mountains to the delta
-  const RIVER = 'M560 120 C540 170 600 190 560 230 C520 270 600 300 640 340 L700 380';
-  el('path', { d: RIVER, stroke: OUT, 'stroke-width': 11, fill: 'none', 'stroke-linecap': 'round' }, M);
-  el('path', { d: RIVER, stroke: '#5fb0d0', 'stroke-width': 8, fill: 'none', 'stroke-linecap': 'round' }, M);
-  const flow = el('path', { d: RIVER, stroke: '#d8f2fa', 'stroke-width': 1.4, fill: 'none', 'stroke-dasharray': '6 10' }, M);
-  anim(flow, { attributeName: 'stroke-dashoffset', values: '0;-32', dur: '1.6s' });
-  // Sundarbans: mangroves and drifting fog
-  for (let i = 0; i < 10; i++) { const x = 520 + (i % 5) * 52 + rnd() * 10, y = 300 + Math.floor(i / 5) * 30; el('path', { d: `M${x} ${y} l-3 6 M${x} ${y} l3 6`, stroke: '#5a3a22', 'stroke-width': 1.2 }, M); blobCluster(M, [[x, y - 4, 6], [x + 5, y - 1, 4]], '#2f6a3a'); }
-  crocodile(M, 640, 352, 0.3);
-  const fog = g(M, { opacity: 0.55 });
-  [[560, 316, 60, 10], [700, 300, 70, 12]].forEach(([cx, cy, rx, ry], i) => { const f = el('ellipse', { cx, cy, rx, ry, fill: '#f4f8f8', filter: 'url(#cloud)' }, fog); anim(f, { attributeName: 'cx', values: `${cx};${cx + 30};${cx}`, dur: `${10 + i * 4}s` }); });
-  // Himalayas: snowy range and the Shadow Emperor's fortress
-  [[420, 120, 70, 60], [480, 110, 80, 76], [560, 104, 90, 86], [660, 112, 86, 80], [750, 118, 80, 70], [820, 126, 70, 60], [520, 140, 60, 40], [700, 150, 60, 42]].forEach(([x, y, w, h]) => peak(M, x, y, w, h));
-  const fort = g(M);
-  el('circle', { cx: 610, cy: 66, r: 30, fill: 'url(#gemPurple)', opacity: 0.45, filter: 'url(#cloud)' }, fort);
-  outlined(fort, 'path', { d: 'M592 80 V58 L598 50 L604 58 V54 L610 42 L616 54 V58 L622 50 L628 58 V80 Z', fill: '#2a1f3e' }, 1.2);
-  [[600, 66], [610, 62], [620, 66]].forEach(([x, y]) => el('rect', { x: x - 1.2, y, width: 2.4, height: 4, fill: '#c9a0ff', filter: 'url(#bloom)' }, fort));
-  const bolt = el('path', { d: 'M640 30 l-6 10 l5 0 l-7 12', stroke: '#e0c8ff', 'stroke-width': 1.4, fill: 'none', filter: 'url(#bloom)' }, fort);
+  const d = svg.querySelector('defs');
+  const lg = el('linearGradient', { id: 'bands', x1: 0, y1: 0, x2: MAP_W, y2: 0, gradientUnits: 'userSpaceOnUse' }, d);
+  [[0, '#9cc45a'], ...BANDS.map((b) => [(b.x0 + 140) / MAP_W, b.col]), [1, '#d8e2f0']].forEach(([o, c]) => el('stop', { offset: o, 'stop-color': c }, lg));
+  el('rect', { x: 0, y: 0, width: MAP_W, height: 390, fill: 'url(#bands)' }, svg);
+  for (let i = 0; i < 40; i++) el('ellipse', { cx: rnd() * MAP_W, cy: rnd() * 390, rx: 40 + rnd() * 80, ry: 16 + rnd() * 30, fill: rnd() > 0.5 ? '#ffffff' : '#2a4a1a', opacity: 0.08, filter: 'url(#cloud)' }, svg);
+  for (let i = 0; i < 700; i++) { const x = rnd() * 1250, y = 60 + rnd() * 320; if (x > 400 && x < 690) continue; el('path', { d: `M${x} ${y} l1 -3 M${x + 2} ${y} l0 -4`, stroke: '#3f7a24', 'stroke-width': 0.8, opacity: 0.4 }, svg); }
+
+  // --- Aravalli: the capital, hills, banyans, a peacock
+  [[60, 230, 70, 30], [190, 200, 60, 24], [300, 214, 70, 26]].forEach(([x, y, w, h]) => outlined(svg, 'path', { d: `M${x - w} ${y} Q${x} ${y - h * 2} ${x + w} ${y} Z`, fill: '#8fb44f' }, 1.4));
+  fortGate(svg, 70, 280, 0.75);
+  banyan(svg, 230, 150, 0.55); banyan(svg, 360, 340, 0.5); palm(svg, 20, 170, 0.5);
+  peacock(svg, 160, 360, 0.6); shrine(svg, 330, 170, 0.6); [[200, 340], [280, 370], [120, 200]].forEach(([a, b]) => marigold(svg, a, b));
+  // --- Thar: dunes, an oasis and a camel caravan
+  for (let i = 0; i < 16; i++) { const x = 420 + (i % 4) * 70 + rnd() * 20, y = 100 + Math.floor(i / 4) * 70; el('path', { d: `M${x - 30} ${y} Q${x} ${y - 14} ${x + 30} ${y}`, stroke: '#c9954e', 'stroke-width': 1.8, fill: 'none' }, svg); el('path', { d: `M${x - 22} ${y - 2} Q${x} ${y - 12} ${x + 12} ${y - 6}`, stroke: '#fff0c8', 'stroke-width': 1.2, fill: 'none' }, svg); }
+  el('ellipse', { cx: 560, cy: 150, rx: 28, ry: 9, fill: 'url(#water)', stroke: OUT, 'stroke-width': 1.2 }, svg);
+  palm(svg, 540, 150, 0.6); palm(svg, 584, 152, 0.5);
+  const caravan = g(svg);
+  [0, 1, 2, 3].forEach((i) => camel(caravan, 440 + i * 30, 360 - (i % 2) * 4, 0.45, false, i === 0));
+  el('animateTransform', { attributeName: 'transform', type: 'translate', values: '0 0;60 0;0 0', dur: '20s', repeatCount: 'indefinite' }, caravan);
+  scorpion(svg, 640, 110, 0.5);
+  // --- Western Ghats: green peaks, a waterfall, monsoon rain
+  [[720, 150, 90, 90], [800, 130, 100, 110], [880, 160, 80, 80], [760, 360, 70, 60]].forEach(([x, y, w, h]) => peak(svg, x, y, w, h, false, '#3f7a3a'));
+  el('path', { d: 'M800 40 V140', stroke: '#e6f6ff', 'stroke-width': 7 }, svg);
+  const fall = el('path', { d: 'M800 40 V140', stroke: '#8fd0ec', 'stroke-width': 3, 'stroke-dasharray': '4 5' }, svg);
+  anim(fall, { attributeName: 'stroke-dashoffset', values: '0;-18', dur: '0.6s' });
+  el('ellipse', { cx: 800, cy: 144, rx: 16, ry: 5, fill: '#e6f6ff' }, svg);
+  const rain = g(svg, { opacity: 0.7 });
+  for (let i = 0; i < 70; i++) { const x = 690 + rnd() * 280, y = rnd() * 380; const r = el('path', { d: `M${x} ${y} l-3 8`, stroke: '#d2ecff', 'stroke-width': 1 }, rain); el('animateTransform', { attributeName: 'transform', type: 'translate', values: '0 0;-5 16;0 0', dur: `${0.6 + (i % 3) * 0.2}s`, repeatCount: 'indefinite' }, r); }
+  // --- Deccan: giant boulders and ruined pillars
+  [[1000, 120, 0.9], [1120, 340, 1.1], [1150, 110, 0.7], [990, 360, 0.6]].forEach(([x, y, s]) => rock(svg, x, y, s));
+  for (let i = 0; i < 6; i++) outlined(svg, 'rect', { x: 1040 + i * 14 - 3, y: 150 - (i % 2) * 6, width: 6, height: 24 + (i % 2) * 6, fill: 'url(#sandV)' }, 1);
+  outlined(svg, 'rect', { x: 1034, y: 142, width: 84, height: 6, fill: '#e8c08a' }, 1);
+  golem(svg, 1180, 220, 0.6);
+  // --- Sundarbans: the delta river, mangroves, fog, a crocodile and a boat
+  const RIVER = 'M1260 0 C1300 80 1240 140 1300 200 C1360 260 1300 320 1340 390';
+  el('path', { d: RIVER, stroke: OUT, 'stroke-width': 30, fill: 'none' }, svg);
+  el('path', { d: RIVER, stroke: '#5fb0d0', 'stroke-width': 26, fill: 'none' }, svg);
+  const flow = el('path', { d: RIVER, stroke: '#d8f2fa', 'stroke-width': 2, fill: 'none', 'stroke-dasharray': '8 12' }, svg);
+  anim(flow, { attributeName: 'stroke-dashoffset', values: '0;-40', dur: '2s' });
+  for (let i = 0; i < 16; i++) { const x = 1360 + (i % 4) * 34 + rnd() * 10, y = 90 + Math.floor(i / 4) * 80; el('path', { d: `M${x} ${y} l-4 8 M${x} ${y} l4 8`, stroke: '#5a3a22', 'stroke-width': 1.4 }, svg); blobCluster(svg, [[x, y - 6, 9], [x + 7, y - 2, 6]], '#2f6a3a', '#4f8f4a'); }
+  crocodile(svg, 1300, 260, 0.6);
+  boat(svg, 1290, 90, 0.6);
+  const fog = g(svg, { opacity: 0.55 });
+  [[1330, 160, 110, 18], [1420, 300, 120, 20]].forEach(([cx, cy, rx, ry], i) => { const f = el('ellipse', { cx, cy, rx, ry, fill: '#f4f8f8', filter: 'url(#cloud)' }, fog); anim(f, { attributeName: 'cx', values: `${cx};${cx + 40};${cx}`, dur: `${10 + i * 4}s` }); });
+  // --- Himalayas: snowy range, snowfall, the Shadow Emperor's fortress at the end of the road
+  [[1560, 140, 110, 110], [1650, 120, 130, 140], [1760, 140, 120, 120], [1840, 160, 100, 100], [1610, 380, 90, 70], [1720, 380, 110, 80]].forEach(([x, y, w, h]) => peak(svg, x, y, w, h));
+  const fort = g(svg);
+  el('circle', { cx: 1790, cy: 210, r: 50, fill: 'url(#gemPurple)', opacity: 0.45, filter: 'url(#cloud)' }, fort);
+  outlined(fort, 'path', { d: 'M1760 240 V200 L1770 186 L1780 200 V192 L1790 172 L1800 192 V200 L1810 186 L1820 200 V240 Z', fill: '#2a1f3e' }, 1.6);
+  [[1774, 214], [1790, 206], [1806, 214]].forEach(([x, y]) => el('rect', { x: x - 2, y, width: 4, height: 6, fill: '#c9a0ff', filter: 'url(#bloom)' }, fort));
+  const bolt = el('path', { d: 'M1830 150 l-8 14 l7 0 l-9 16', stroke: '#e0c8ff', 'stroke-width': 1.8, fill: 'none', filter: 'url(#bloom)' }, fort);
   anim(bolt, { attributeName: 'opacity', values: '0;1;0;0;0', dur: '2.4s' });
-  const snow = g(M);
-  for (let i = 0; i < 40; i++) { const x = 400 + rnd() * 440, y = 10 + rnd() * 140; const f = el('circle', { cx: x, cy: y, r: 0.9 + rnd() * 0.8, fill: '#ffffff', opacity: 0.9 }, snow); anim(f, { attributeName: 'cy', values: `${y};${y + 16};${y}`, dur: `${3 + (i % 5)}s` }); }
-  // the golden road through all 31 levels (0 = tutorial)
-  const N = [[262, 252], [295, 232], [318, 208], [300, 182], [268, 168], [236, 156],
-    [200, 140], [166, 124], [132, 108], [96, 98], [64, 120],
-    [70, 166], [84, 206], [100, 250], [118, 290], [150, 322],
-    [196, 334], [244, 322], [292, 332], [340, 318], [392, 328],
-    [450, 336], [506, 322], [560, 336], [616, 320], [672, 332],
-    [722, 300], [748, 256], [736, 210], [704, 168], [648, 112]];
-  let road = `M228 236 L${N[0][0]} ${N[0][1]}`;
-  for (let i = 1; i < N.length; i++) { const [x0, y0] = N[i - 1], [x1, y1] = N[i]; road += ` Q${(x0 + x1) / 2 + (y1 - y0) * 0.25} ${(y0 + y1) / 2 - (x1 - x0) * 0.25} ${x1} ${y1}`; }
-  el('path', { d: road, stroke: OUT, 'stroke-width': 9, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, M);
-  el('path', { d: road, stroke: '#e8c27a', 'stroke-width': 6.4, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, M);
-  el('path', { d: road, stroke: '#fff2c8', 'stroke-width': 1.2, fill: 'none', 'stroke-dasharray': '2 5' }, M);
-  const CURRENT = 8; // Thar level 3 (level 8)
+  yeti(svg, 1600, 330, 0.55);
+  for (let i = 0; i < 80; i++) { const x = 1530 + rnd() * 330, y = rnd() * 380; const f = el('circle', { cx: x, cy: y, r: 1 + rnd(), fill: '#ffffff', opacity: 0.9 }, svg); anim(f, { attributeName: 'cy', values: `${y};${y + 20};${y}`, dur: `${3 + (i % 5)}s` }); }
+
+  // clouds drifting across the whole journey
+  for (let i = 0; i < 7; i++) {
+    const c = g(svg, { opacity: 0.85 }), x = 140 + i * 260, y = 60 + (i % 3) * 40, s = 0.8 + (i % 2) * 0.4;
+    [[0, 0, 14], [14, -5, 12], [28, 1, 10], [-12, 2, 9]].forEach(([a, b, r]) => el('circle', { cx: x + a * s, cy: y + b * s, r: r * s, fill: '#ffffff' }, c));
+    el('animateTransform', { attributeName: 'transform', type: 'translate', values: `0 0;${50 + i * 6} 0;0 0`, dur: `${30 + i * 5}s`, repeatCount: 'indefinite' }, c);
+  }
+  // --- the golden road through levels 0–30
+  const N = mapNodes();
+  let road = `M70 280 L${N[0][0]} ${N[0][1]}`;
+  for (let i = 1; i < N.length; i++) { const [x0, y0] = N[i - 1], [x1, y1] = N[i]; road += ` Q${(x0 + x1) / 2} ${(y0 + y1) / 2 + (i % 2 ? -18 : 18)} ${x1} ${y1}`; }
+  road += ` Q${N.at(-1)[0] + 30} 240 1790 236`;
+  el('path', { d: road, stroke: OUT, 'stroke-width': 12, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, svg);
+  el('path', { d: road, stroke: '#e8c27a', 'stroke-width': 8.6, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, svg);
+  el('path', { d: road, stroke: '#fff2c8', 'stroke-width': 1.4, fill: 'none', 'stroke-dasharray': '3 6' }, svg);
+  const CURRENT = 8;
   N.forEach(([x, y], i) => {
     const boss = i > 0 && i % 5 === 0, done = i < CURRENT, now = i === CURRENT;
-    const t = g(M, { filter: 'url(#drop)' });
-    if (now) { const h = el('circle', { cx: x, cy: y, r: 12, fill: 'url(#holy)' }, t); anim(h, { attributeName: 'r', values: '10;15;10', dur: '1.4s' }); }
+    const t = g(svg, { filter: 'url(#drop)' });
+    if (now) { const h = el('circle', { cx: x, cy: y, r: 16, fill: 'url(#holy)' }, t); anim(h, { attributeName: 'r', values: '13;20;13', dur: '1.4s' }); }
     if (boss) {
-      outlined(t, 'path', { d: `M${x - 8} ${y - 8} H${x + 8} V${y + 2} Q${x} ${y + 10} ${x - 8} ${y + 2} Z`, fill: done ? 'url(#btnRed)' : '#6a5a4e' }, 1.4);
-      el('path', { d: `M${x - 4} ${y - 2} l2 -4 l2 3 l2 -3 l2 4 Z`, fill: done ? '#ffd66b' : '#a89a8a' }, t);
+      outlined(t, 'path', { d: `M${x - 12} ${y - 12} H${x + 12} V${y + 3} Q${x} ${y + 15} ${x - 12} ${y + 3} Z`, fill: done ? 'url(#btnRed)' : '#6a5a4e' }, 1.6);
+      el('path', { d: `M${x - 6} ${y - 3} l3 -6 l3 4.5 l3 -4.5 l3 6 Z`, fill: done ? '#ffd66b' : '#a89a8a' }, t);
     } else {
-      outlined(t, 'circle', { cx: x, cy: y, r: i === 0 ? 7 : 6, fill: now ? 'url(#gemRed)' : done ? 'url(#gemGold)' : '#8a7a68' }, 1.3);
-      if (i === 0) T(t, x, y + 3, 'T', 8, { sw: 1.6 });
+      outlined(t, 'circle', { cx: x, cy: y, r: 9, fill: now ? 'url(#gemRed)' : done ? 'url(#gemGold)' : '#8a7a68' }, 1.5);
+      T(t, x, y + 3.6, i === 0 ? 'T' : String(i), i > 9 ? 8.5 : 10, { sw: 2 });
     }
-    if (done && !boss && i > 0) [-1, 0, 1].forEach((k) => icon.diya(t, x + k * 6, y - 10, 2.6, !(i === 7 && k === 1)));
+    if (done && !boss && i > 0) [-1, 0, 1].forEach((k) => icon.diya(t, x + k * 8, y - 14, 3.2, !(i === 7 && k === 1)));
+    if (done && boss) { roundBtn(t, x + 16, y - 16, 8, 'purple', (q, a, b) => icon.infinity(q, a, b, 0.4)); }
   });
-  // hero token on the current level and a mini level card
+  BANDS.forEach((b) => { ribbon(svg, b.x0 + 140, 66, 60, b.name, 13); seasonBadge(svg, b.x0 + 140, 58, b.season); });
+  ribbon(svg, 70, 334, 60, 'Suryagarh', 10);
+  // hero token and the level card for the current level
   const [cx, cy] = N[CURRENT];
-  person(M, cx + 2, cy - 4, { ...SUN, s: 0.7, weapon: null, shield: null, aura: false });
-  el('path', { d: `M${cx + 8} ${cy - 10} Q${cx + 70} ${cy - 50} 300 96`, stroke: '#fff4dc', 'stroke-width': 1.2, 'stroke-dasharray': '2 3', fill: 'none' }, M);
-  // region labels with season badges
-  [[130, 40, 'Thar Desert', 'summer'], [352, 262, 'Aravalli Hills', 'spring'], [186, 288, 'Western Ghats', 'monsoon'], [300, 354, 'Deccan Ruins', 'autumn'], [560, 296, 'Sundarbans', 'prewinter'], [660, 200, 'Himalayas', 'winter']].forEach(([x, y, name, season]) => {
-    ribbon(M, x, y, 40, name, 10);
-  });
-  [[130, 40, 'summer'], [352, 262, 'spring'], [186, 288, 'monsoon'], [300, 354, 'autumn'], [560, 296, 'prewinter'], [660, 200, 'winter']].forEach(([x, y, k]) => seasonBadge(M, x, y - 6, k));
-  // drifting clouds and birds over the whole map
-  const sky = g(M);
-  [[180, 30, 1], [480, 200, 0.8], [760, 60, 1.1]].forEach(([x, y, s], i) => {
-    const c = g(sky, { opacity: 0.85 });
-    [[0, 0, 12], [12, -4, 10], [24, 1, 9], [-10, 2, 8]].forEach(([a, b, r]) => el('circle', { cx: x + a * s, cy: y + b * s, r: r * s, fill: '#ffffff' }, c));
-    el('animateTransform', { attributeName: 'transform', type: 'translate', values: `0 0;${40 + i * 10} 0;0 0`, dur: `${30 + i * 8}s`, repeatCount: 'indefinite' }, c);
-  });
-  const birds = g(M);
-  for (let i = 0; i < 5; i++) el('path', { d: `M${420 + i * 10} ${236 + (i % 2) * 5} q2.4 -2.4 4.8 0 q2.4 -2.4 4.8 0`, stroke: '#3a2a2a', 'stroke-width': 1, fill: 'none' }, birds);
-  el('animateTransform', { attributeName: 'transform', type: 'translate', values: '0 0;80 -30;0 0', dur: '20s', repeatCount: 'indefinite' }, birds);
-  // a sail boat on the sea
-  const boatG = g(M);
-  outlined(boatG, 'path', { d: 'M760 372 Q770 380 790 372 Z', fill: 'url(#wood)' }, 1);
-  outlined(boatG, 'path', { d: 'M774 371 V350 L788 368 Z', fill: '#fff4dc' }, 0.8);
-  el('animateTransform', { attributeName: 'transform', type: 'translate', values: '0 0;-30 2;0 0', dur: '16s', repeatCount: 'indefinite' }, boatG);
-  el('rect', { x: 10, y: 10, width: 824, height: 370, rx: 12, fill: 'url(#vignette)' }, M);
-  // frame and UI on top
-  el('rect', { x: 10, y: 10, width: 824, height: 370, rx: 12, fill: 'none', stroke: 'url(#goldRim)', 'stroke-width': 4 }, svg);
-  filigree(svg, 14, 14, 1, 1); filigree(svg, 830, 14, -1, 1); filigree(svg, 14, 376, 1, -1); filigree(svg, 830, 376, -1, -1);
-  ribbon(svg, 422, 14, 200, 'The Journey of Six Seasons', 15);
-  panel(svg, 300, 66, 132, 108, 'Level 8');
-  T(svg, 366, 102, 'Mirage Oasis', 12, { font: 'Rozha One', weight: 400, fill: '#5a2a10', stroke: 'none', sw: 0 });
-  [0, 1, 2].forEach((i) => icon.diya(svg, 348 + i * 18, 128, 7, false));
-  button(svg, 318, 136, 96, 28, 'BATTLE', 'red', { size: 12 });
-  button(svg, 22, 344, 96, 30, 'BACK', 'red', { size: 12 });
-  pill(svg, 610, 348, 112, 'coin', '12,480');
-  pill(svg, 730, 348, 96, 'ruby', '340');
+  person(svg, cx + 2, cy - 6, { ...SUN, s: 0.9, weapon: null, shield: null, aura: false });
+  panel(svg, cx + 30, cy - 150, 150, 112, 'Level 8');
+  T(svg, cx + 105, cy - 114, 'Mirage Oasis', 13, { font: 'Rozha One', weight: 400, fill: '#5a2a10', stroke: 'none', sw: 0, max: 128 });
+  [0, 1, 2].forEach((i) => icon.diya(svg, cx + 87 + i * 18, cy - 88, 7, false));
+  button(svg, cx + 52, cy - 78, 106, 30, 'BATTLE', 'red', { size: 13 });
+  el('rect', { x: 0, y: 0, width: MAP_W, height: 390, fill: 'url(#vignette)', opacity: 0.6 }, svg);
+
+  // fixed UI layer that does not scroll
+  const ui = document.getElementById('mapUI');
+  uiDefs(ui);
+  el('rect', { x: 0, y: 0, width: 844, height: 390, fill: 'none', stroke: 'url(#goldRim)', 'stroke-width': 6 }, ui);
+  filigree(ui, 6, 6, 1, 1); filigree(ui, 838, 6, -1, 1); filigree(ui, 6, 384, 1, -1); filigree(ui, 838, 384, -1, -1);
+  ribbon(ui, 422, 12, 200, 'The Journey of Six Seasons', 15);
+  button(ui, 20, 346, 96, 30, 'BACK', 'red', { size: 12 });
+  pill(ui, 610, 350, 112, 'coin', '12,480');
+  pill(ui, 730, 350, 96, 'ruby', '340');
+  for (const [x, dir] of [[22, -1], [822, 1]]) {
+    const a = g(ui, { opacity: 0.85 });
+    outlined(a, 'circle', { cx: x, cy: 195, r: 13, fill: 'url(#woodDark)' }, 1.4);
+    el('path', { d: `M${x - 4 * dir} 188 L${x + 4 * dir} 195 L${x - 4 * dir} 202`, stroke: '#fff4dc', 'stroke-width': 2.4, fill: 'none', 'stroke-linecap': 'round' }, a);
+  }
+  // drag to scroll, and start the view on the current region
+  const sc = document.getElementById('mapScroll');
+  sc.scrollLeft = (BANDS[1].x0 - 160) * (599 / 390);
+  let drag = null;
+  sc.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, s: sc.scrollLeft }; sc.setPointerCapture(e.pointerId); });
+  sc.addEventListener('pointermove', (e) => { if (drag) sc.scrollLeft = drag.s - (e.clientX - drag.x); });
+  sc.addEventListener('pointerup', () => { drag = null; });
+  // full-journey overview below the live view
+  const ov = document.getElementById('mapOverview');
+  const copy = svg.cloneNode(true);
+  copy.removeAttribute('id');
+  copy.setAttribute('width', 1296); copy.setAttribute('height', Math.round(1296 * 390 / MAP_W));
+  ov.appendChild(copy);
 }
 
 // ============================================================ daily + shop
@@ -1457,7 +1540,7 @@ function dailyScreen() {
   el('rect', { x: 0, y: 0, width: 844, height: 390, fill: '#120804', opacity: 0.55 }, svg);
   // daily login
   panel(svg, 24, 30, 400, 340, 'Daily Reward');
-  T(svg, 224, 66, 'Log in every day for bigger rewards', 10, { fill: '#5a2a10', stroke: 'none', sw: 0, weight: 700 });
+  T(svg, 224, 66, 'Log in every day for bigger rewards', 10, { fill: '#5a2a10', stroke: 'none', sw: 0, weight: 700, max: 340 });
   const rewards = [['coin', '200'], ['ruby', '10'], ['coin', '400'], ['ruby', '20'], ['coin', '800'], ['ruby', '30'], ['chest', 'Royal Chest']];
   rewards.forEach(([kind, amt], i) => {
     const day7 = i === 6;
@@ -1472,14 +1555,14 @@ function dailyScreen() {
     el('rect', { x: x + 4, y: y + 4, width: w - 8, height: 18, rx: 5, fill: day7 ? '#3a1a6a' : '#7a3a16' }, t);
     T(t, x + w / 2, y + 17, `DAY ${i + 1}`, 10, { sw: 2.2 });
     if (today) { const halo = el('circle', { cx: x + w / 2, cy: y + 56, r: 26, fill: 'url(#holy)' }, t); anim(halo, { attributeName: 'r', values: '22;28;22', dur: '1.6s' }); }
-    if (kind === 'chest') { el('circle', { cx: x + w / 2, cy: y + 58, r: 30, fill: 'url(#holy)' }, t); icon.chest(t, x + w / 2, y + 72, 2.2); }
+    if (kind === 'chest') royalChest(t, x + w / 2, y + 88, 0.92);
     else { icon[kind](t, x + w / 2, y + 54, 15); }
-    T(t, x + w / 2, y + h - 14, amt, day7 ? 13 : 12, { sw: 2.6 });
+    T(t, x + w / 2, y + h - 14, amt, day7 ? 13 : 12, { sw: 2.6, max: w - 12 });
     if (i < 3) { el('rect', { x: x + 4, y: y + 4, width: w - 8, height: h - 8, rx: 5, fill: '#2a1a10', opacity: 0.35 }, t); icon.check(t, x + w / 2, y + 56, 2); }
   });
   button(svg, 52, 318, 160, 36, 'CLAIM DAY 4', 'green', { size: 13 });
-  T(svg, 318, 333, 'Signed in with Google Play Games:', 8.5, { fill: '#5a2a10', stroke: 'none', sw: 0, weight: 700 });
-  T(svg, 318, 345, '+20% rewards and cloud save', 8.5, { fill: '#2f7a3d', stroke: 'none', sw: 0, weight: 800 });
+  T(svg, 318, 333, 'Signed in with Google Play Games:', 8.5, { fill: '#5a2a10', stroke: 'none', sw: 0, weight: 700, max: 176 });
+  T(svg, 318, 345, '+20% rewards and cloud save', 8.5, { fill: '#2f7a3d', stroke: 'none', sw: 0, weight: 800, max: 176 });
   // shop
   panel(svg, 440, 30, 384, 340, 'Royal Bazaar', { close: true });
   tab(svg, 466, 60, 100, 'Offers', true); tab(svg, 572, 60, 100, 'Rubies', false); tab(svg, 678, 60, 100, 'Skins', false);
@@ -1492,15 +1575,15 @@ function dailyScreen() {
     el('rect', { x: x + 4.4, y: y + 4.4, width: 99.2, height: 227.2, rx: 7, fill: col === 'red' ? 'url(#btnRed)' : col === 'blue' ? 'url(#btnBlue)' : 'url(#btnGold)' }, t);
     el('rect', { x: x + 8, y: y + 26, width: 92, height: 126, rx: 6, fill: '#000', opacity: 0.22 }, t);
     el('circle', { cx: x + 54, cy: y + 88, r: 40, fill: 'url(#holy)' }, t);
-    T(t, x + 54, y + 20, name, 10.5, { sw: 2.6 });
+    T(t, x + 54, y + 20, name, 10.5, { sw: 2.6, max: 94 });
     if (i === 0) { person(t, x + 54, y + 140, { ...SUN, s: 2.3, cape: '#6a3fc0', tunic: '#efe2ff', trim: '#6a3fc0', aura: false }); icon.ruby(t, x + 24, y + 142, 9); T(t, x + 24, y + 160, '+150', 9, { sw: 2.2 }); }
     if (i === 1) { [[-16, 8], [0, 0], [16, 8], [-8, 16], [8, 16], [0, 24]].forEach(([a, b]) => icon.ruby(t, x + 54 + a, y + 74 + b, 13)); }
     if (i === 2) { const c = g(t); el('rect', { x: x + 30, y: y + 64, width: 48, height: 34, rx: 4, fill: '#fff4dc', stroke: OUT, 'stroke-width': 1.4 }, c); T(c, x + 54, y + 86, 'AD', 14, { sw: 0, fill: '#7a3a16', stroke: 'none' }); el('path', { d: `M${x + 24} ${y + 106} L${x + 84} ${y + 56}`, stroke: OUT, 'stroke-width': 7, 'stroke-linecap': 'round' }, c); el('path', { d: `M${x + 24} ${y + 106} L${x + 84} ${y + 56}`, stroke: '#e8452a', 'stroke-width': 4, 'stroke-linecap': 'round' }, c); }
-    T(t, x + 54, y + 174, i === 0 ? 'Sun Knight skin + rubies' : i === 1 ? '+30 bonus' : 'forever', 8.5, { sw: 2.2, fill: '#ffe8b0' });
+    T(t, x + 54, y + 174, i === 0 ? 'Skin + 150 rubies' : i === 1 ? '+30 bonus' : 'forever', 8.5, { sw: 2.2, fill: '#ffe8b0', max: 94 });
     button(t, x + 10, y + 190, 88, 32, price, 'green', { size: 14 });
-    if (tag) { outlined(t, 'path', { d: `M${x - 4} ${y + 34} H${x + 70} L${x + 62} ${y + 42} L${x + 70} ${y + 50} H${x - 4} Z`, fill: 'url(#ribbon)' }, 1); T(t, x + 32, y + 46, tag, 8.5, { sw: 2 }); }
+    if (tag) { outlined(t, 'path', { d: `M${x - 4} ${y + 34} H${x + 70} L${x + 62} ${y + 42} L${x + 70} ${y + 50} H${x - 4} Z`, fill: 'url(#ribbon)' }, 1); T(t, x + 32, y + 46, tag, 8.5, { sw: 2, max: 64 }); }
   });
-  T(svg, 632, 348, 'India prices shown; every country sees its own price', 8, { fill: '#5a2a10', stroke: 'none', sw: 0, weight: 700 });
+  T(svg, 632, 348, 'India prices shown; every country sees its own price', 8, { fill: '#5a2a10', stroke: 'none', sw: 0, weight: 700, max: 330 });
 }
 
 // ============================================================ splash

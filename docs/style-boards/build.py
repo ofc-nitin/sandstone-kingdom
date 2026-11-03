@@ -1,17 +1,27 @@
-"""Copies art.js into every concept board so each HTML file works on its own.
+"""Copies the shared game art into every concept board so each HTML file works on its own.
 
-Usage: python3 build.py   (run after editing art.js)
+The source of truth is game/src/art/art.js (characters, towers, scenery) and
+game/src/art/ui-art.js (buttons, panels, ribbons, icons).
+Usage: python3 docs/style-boards/build.py   (run after editing either file)
 """
 import pathlib
 import re
 
 here = pathlib.Path(__file__).parent
-lib = (here / 'art.js').read_text()
-block = re.compile(r'/\* ART-START.*?\*/\n.*?/\* ART-END \*/\n', re.S)
+art_dir = here.parent.parent / 'game' / 'src' / 'art'
+blocks = {
+    'ART': (art_dir / 'art.js').read_text(),
+    'UI': (art_dir / 'ui-art.js').read_text(),
+}
 for page in sorted(here.glob('*.html')):
     text = page.read_text()
-    if 'ART-START' not in text:
-        continue
-    head = '/* ART-START: generated from art.js by build.py, edit art.js instead */\n'
-    page.write_text(block.sub(lambda m: head + lib + '/* ART-END */\n', text))
-    print('updated', page.name)
+    changed = False
+    for tag, lib in blocks.items():
+        pattern = re.compile(r'/\* ' + tag + r'-START.*?\*/\n.*?/\* ' + tag + r'-END \*/\n', re.S)
+        if pattern.search(text):
+            head = f'/* {tag}-START: generated from game/src/art by build.py, edit there instead */\n'
+            text = pattern.sub(lambda m: head + lib + f'/* {tag}-END */\n', text)
+            changed = True
+    if changed:
+        page.write_text(text)
+        print('updated', page.name)

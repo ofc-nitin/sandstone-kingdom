@@ -82,6 +82,37 @@ Enemy art for every region: [`style-boards/enemies.png`](style-boards/enemies.pn
 | 5 | **Sundarbans Delta** | **Hemant**, pre-winter | **Fog** hides incoming waves; **tides** change water paths; enemies come by land *and* river | Crocodiles, River Pirates, Swamp Witches | **The Crocodile Warlord**: dives underwater, ambushes from new paths | The Mangrove Ranger |
 | 6 | **Himalayas** | **Shishir**, winter | **Frost** slows your towers' fire rate; **avalanches** block paths; snow covers build plots | Ice Wolves, Frost Mages, Yeti Brutes | **The Shadow Emperor** (final): 3 phases, steals a tower each phase, summons all past bosses as shadows | The Snow Leopard Guard |
 
+### Every level gets harder, and new enemies keep arriving
+
+- **One new enemy (or more) in almost every level.** When it first appears, the game
+  pauses for a moment and shows a short "New enemy!" card with its art, name, weakness
+  and a one-line lore note, and adds it to the Encyclopedia.
+- **36 enemy types** in the campaign: per region, 3 core enemies, 2 elites and a boss.
+  Earlier enemies keep returning in later regions, mixed with the new ones.
+- **Each level is tougher than the last:** enemies have about 12% more health per level,
+  waves get longer (6 waves in level 1, up to 15 in boss levels), later levels add a
+  second entrance, more build spots start locked, and starting gold gets tighter.
+
+| Region | Core enemies | Elites | Boss | Level-by-level introductions |
+|---|---|---|---|---|
+| 1 Aravalli Hills | Bandit, Wolf Rider, Barbarian | Bandit Archer (shoots soldiers), Armored Brute | Bandit King | L1 Bandit · L2 Wolf Rider · L3 Barbarian · L4 Bandit Archer, Armored Brute · L5 boss |
+| 2 Thar Desert | Scorpion Swarm, Camel Raider, Sand Burrower | Desert Shaman (heals, casts mirages), War Elephant | Dune Colossus | L6 Scorpions · L7 Camel Raider · L8 Sand Burrower · L9 Shaman, War Elephant · L10 boss |
+| 3 Western Ghats | River Raider, Mud Brute, Storm Bat | Thunder Drummer (speeds up enemies), Boar Rider | Storm Serpent | L11 River Raider · L12 Mud Brute · L13 Storm Bat · L14 Drummer, Boar Rider · L15 boss |
+| 4 Deccan Ruins | Stone Golem, Night Stalker, Shaman | Golem Sentinel (huge armour), Night Archer | Stone Titan | L16 Golem · L17 Night Stalker · L18 Shaman · L19 Sentinel, Night Archer · L20 boss |
+| 5 Sundarbans | Crocodile, River Pirate, Swamp Witch | Pirate Captain (boosts pirates), Giant Turtle (carries raiders across water) | Crocodile Warlord | L21 Crocodile · L22 Pirate · L23 Witch · L24 Captain, Turtle · L25 boss |
+| 6 Himalayas | Ice Wolf, Frost Mage, Yeti Brute | Frost Giant, Shadow Knight | Shadow Emperor | L26 Ice Wolf · L27 Frost Mage · L28 Yeti · L29 Frost Giant, Shadow Knight · L30 final boss |
+
+### Build spots: some start locked
+
+Every map has open build spots plus a few **locked** ones, which are more common in later levels:
+- **Rubble spots** (covered in rocks and bushes): tap and pay **battle gold** to clear
+  them (40, then 60, then 80 for each further spot in that level).
+- **Timed spots** (a sundial icon): they clear by themselves after a set number of
+  waves, for example "opens after wave 4".
+- **Royal spots** (gold-edged, rare): give towers +15% range, but cost more to clear.
+
+Planning which spots to open first becomes part of the strategy.
+
 ### Difficulty curve
 - Region 1 teaches. Every later region introduces one new weather mechanic, 3 new
   enemies and one new hero.
@@ -118,6 +149,20 @@ Enemy art for every region: [`style-boards/enemies.png`](style-boards/enemies.pn
 | Barracks | Spearmen → Knights → Holy Knights | **Sun Guard** (heal over time) or **Elephant Corps** (one war elephant that tramples) |
 | Mage Tower | Magic Caster → Arcane Sage → Sun Mage | **Lightning Sage** (chain lightning) or **Time Sage** (slows everything) |
 | Cannon Tower | Cannon → Bombard → Thunder Cannon | **Rocket Battery** (Mysore-rocket inspired, long range) or **Mortar** (huge splash) |
+
+### Royal towers: unlocked with rubies
+
+Four special towers, unlocked **once, permanently** in the shop or the Royal Workshop
+with rubies, then usable in every level. They are side-grades that add new tactics, not
+must-haves. Each can also be earned free by mastering a region (all 3 diyas), so the
+game stays fair for players who never pay.
+
+| Royal tower | Rubies | Free unlock | What it does |
+|---|---|---|---|
+| **Royal Falconer** | 400 | 3 diyas on all of Region 2 | Falcons hunt flying enemies and mark targets for extra damage |
+| **Stepwell Fountain** | 500 | 3 diyas on all of Region 3 | Slows enemies in its water and heals nearby soldiers |
+| **Alchemist's Workshop** | 650 | 3 diyas on all of Region 4 | Throws poison clouds that weaken armour |
+| **War Elephant Stable** | 800 | 3 diyas on all of Region 5 | A war elephant patrols the road, trampling groups |
 
 ### Heroes
 - One hero per level, controlled by tapping on the map.
@@ -278,11 +323,28 @@ See [`style-boards/ui-kit.png`](style-boards/ui-kit.png).
 
 ---
 
+## 9b. Works properly on every Android device
+
+The game must look right on every phone and tablet, not just one.
+
+| Rule | How |
+|---|---|
+| Landscape only | Locked to landscape, so layouts never flip |
+| No zoomed or squashed screens | The battlefield is drawn at a fixed design size (844 × 390) and scaled to fit the screen **without stretching**. Phones wider than that see extra scenery at the sides; tablets (4:3) see extra scenery above and below. Nothing important is ever cut off. |
+| UI pinned to screen edges | HUD, buttons and menus are positioned from the real screen corners, not the battlefield, so they are always reachable and never pushed off-screen |
+| Notches and rounded corners | Android safe-area insets are respected, so nothing hides behind a camera cut-out |
+| Sharp on every screen | Drawing uses the phone's real pixel density (up to 3×), so art is crisp, not blurry |
+| Touch targets | Every button and build spot is at least 44 × 44 points, so it is easy to tap even on small phones |
+| Text size | Settings offer three text sizes; text never overflows its box (it shrinks to fit) |
+| Checked automatically | Every build is screenshot on a range of screen sizes (small and large phones, 20:9 tall phones, tablets) to catch layout problems before players see them |
+
+---
+
 ## 10. Technical
 
 | Topic | Plan |
 |---|---|
-| Engine | **PixiJS** (WebGL 2D: fast sprites, particles, effects) inside **Capacitor** for Android |
+| Engine | Our own small 2D engine on the **HTML Canvas** (no third-party game engine needed for this many sprites), inside **Capacitor** for Android. Game rules are kept separate from drawing so they can be tested automatically. |
 | Art pipeline | All art drawn in code as vector (SVG), then rendered to sprite sheets at build time for speed; UI and effects stay live in code (section 11) |
 | Saving | Autosave on the phone after every level; **cloud save via Play Games Saved Games** when signed in, with conflict handling (keep the furthest progress) |
 | Offline | The whole campaign works offline. Ads, the shop, leaderboards and cloud save need a connection. |
