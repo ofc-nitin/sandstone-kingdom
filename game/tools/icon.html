@@ -1,0 +1,65 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link href="../fonts/fonts.css" rel="stylesheet"></head>
+<body style="margin:0;background:#333">
+<script src="../src/art/art.js"></script>
+<script src="../src/art/ui-art.js"></script>
+<script src="../src/art/scenes-art.js"></script>
+<script>
+// Store and launcher art, drawn from the game's own vector art.
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function svgOf(w, h, draw) {
+  const s = document.createElementNS(SVG_NS, 'svg');
+  s.setAttribute("xmlns", SVG_NS); s.setAttribute('viewBox', `0 0 ${w} ${h}`); s.setAttribute('width', w); s.setAttribute('height', h);
+  document.body.appendChild(s); uiDefs(s); draw(s);
+  s.querySelectorAll('animate, animateTransform').forEach((a) => a.remove());
+  return s;
+}
+async function toPng(s, pw, ph) {
+  s.remove();
+  const img = new Image();
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(s));
+  await img.decode();
+  const c = document.createElement('canvas'); c.width = pw; c.height = ph;
+  c.getContext('2d').drawImage(img, 0, 0, pw, ph);
+  return c.toDataURL('image/png');
+}
+function sky(s, w, h) {
+  el('rect', { x: 0, y: 0, width: w, height: h, fill: 'url(#skyDawn)' }, s);
+  el('circle', { cx: w / 2, cy: h * 0.5, r: w * 0.42, fill: 'url(#sunDisc)' }, s);
+  for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2; el('path', { d: `M${w / 2} ${h * 0.5} L${w / 2 + Math.cos(a - 0.06) * w} ${h * 0.5 + Math.sin(a - 0.06) * w} L${w / 2 + Math.cos(a + 0.06) * w} ${h * 0.5 + Math.sin(a + 0.06) * w} Z`, fill: '#fff3c8', opacity: 0.16 }, s); }
+}
+// the fort and the Sun Knight's helmet-crest: the game's emblem
+function emblem(s, cx, cy, k) {
+  const t = g(s, { transform: `translate(${cx} ${cy}) scale(${k})` });
+  el('ellipse', { cx: 0, cy: 6, rx: 70, ry: 10, fill: '#3a2414', opacity: 0.25 }, t);
+  fortGate(t, 0, 8, 0.9);
+  return t;
+}
+window.render = async (kind) => {
+  if (kind === 'icon') { // full square icon (legacy launchers + Play Store 512)
+    const s = svgOf(108, 108, (q) => { sky(q, 108, 108); el('path', { d: 'M0 84 Q54 70 108 84 V108 H0 Z', fill: '#6ea23a' }, q); emblem(q, 54, 86, 0.5); });
+    return toPng(s, 512, 512);
+  }
+  if (kind === 'fg') { // adaptive icon foreground: art inside the central 66/108 safe zone
+    const s = svgOf(108, 108, (q) => emblem(q, 54, 76, 0.42));
+    return toPng(s, 432, 432);
+  }
+  if (kind === 'bg') {
+    const s = svgOf(108, 108, (q) => { sky(q, 108, 108); el('path', { d: 'M0 80 Q54 68 108 80 V108 H0 Z', fill: '#6ea23a' }, q); });
+    return toPng(s, 432, 432);
+  }
+  if (kind === 'feature') { // Play Store feature graphic 1024x500
+    const s = svgOf(1024, 500, (q) => {
+      const m = g(q, { transform: 'translate(-62 -32) scale(1.37)' }); menuScene(m);
+      el('rect', { x: 0, y: 0, width: 1024, height: 500, fill: 'url(#vignette)' }, q);
+      logo(q, 250, 150, 1.55);
+    });
+    return toPng(s, 1024, 500);
+  }
+  if (kind === 'splash') { // launch screen, landscape
+    const s = svgOf(844, 390, (q) => { menuScene(q); el('rect', { x: 0, y: 0, width: 844, height: 390, fill: '#120804', opacity: 0.35 }, q); logo(q, 422, 190, 1.7); });
+    return toPng(s, 1920, 887);
+  }
+};
+window.ready = document.fonts.load('400 20px "Rozha One"').then(() => document.fonts.load('900 20px Martel'));
+</script></body></html>

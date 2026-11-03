@@ -1,0 +1,8 @@
+Rozha One: Copyright (c) 2014, Indian Type Foundry (info@indiantypefoundry.com).
+Martel: Copyright (c) 2014, Dan Reynolds and Mathieu Réguer.
+
+These Font Software are licensed under the SIL Open Font License, Version 1.1.
+The license is available with a FAQ at: https://openfontlicense.org
+
+The fonts may be used, bundled and embedded freely in software, including commercial
+games, as long as they are not sold on their own.

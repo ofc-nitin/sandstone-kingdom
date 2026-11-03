@@ -4,6 +4,21 @@
 
 const NS = 'http://www.w3.org/2000/svg';
 
+// SVG drawn as an image cannot see the page's fonts, so text sprites carry the font data inside.
+let fontCSS = '';
+export async function loadSpriteFonts() {
+  const files = [['Rozha One', 400, 'fonts/RozhaOne-400.woff2'], ['Martel', 700, 'fonts/Martel-700.woff2'], ['Martel', 900, 'fonts/Martel-900.woff2']];
+  try {
+    const parts = await Promise.all(files.map(async ([fam, w, url]) => {
+      const buf = new Uint8Array(await (await fetch(url)).arrayBuffer());
+      let bin = '';
+      for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+      return `@font-face{font-family:'${fam}';font-weight:${w};src:url(data:font/woff2;base64,${btoa(bin)}) format('woff2');}`;
+    }));
+    fontCSS = parts.join('');
+  } catch { fontCSS = ''; }
+}
+
 // draw(svg) draws with origin at the sprite's anchor (feet / base).
 // box = [x, y, w, h] in art units around that origin; scale = pixels per art unit.
 export async function rasterize(draw, box, scale, { ui = false } = {}) {
@@ -22,6 +37,7 @@ export async function rasterize(draw, box, scale, { ui = false } = {}) {
   svg.querySelectorAll('animate, animateTransform').forEach((a) => a.remove());
   svg.remove();
   svg.removeAttribute('style'); // the off-screen position must not end up inside the image
+  if (fontCSS && svg.querySelector('text')) { const st = document.createElementNS(NS, 'style'); st.textContent = fontCSS; svg.insertBefore(st, svg.firstChild); }
   const text = new XMLSerializer().serializeToString(svg);
   const img = new Image();
   img.decoding = 'async';

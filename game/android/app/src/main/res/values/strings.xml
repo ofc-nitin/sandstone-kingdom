@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Sandstone Kingdom</string>
+    <string name="title_activity_main">Sandstone Kingdom</string>
+    <string name="package_name">com.samvardhanstudios.sandstonekingdom</string>
+    <string name="custom_url_scheme">com.samvardhanstudios.sandstonekingdom</string>
+    <!-- FOUNDER: replace with your real AdMob app ID (AdMob > Apps > App settings) -->
+    <string name="admob_app_id" translatable="false">ca-app-pub-3940256099942544~3347511713</string>
+    <!-- FOUNDER: your Play Games Services project ID (Play Console > Play Games Services > Setup), digits only -->
+    <string name="game_services_project_id" translatable="false">0</string>
+</resources>

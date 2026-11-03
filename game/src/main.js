@@ -11,6 +11,7 @@ import { Assets } from './render/assets.js';
 import { WorldRenderer } from './render/world.js';
 import { Hud, text } from './render/hud.js';
 import { Screens } from './ui/screens.js';
+import { loadSpriteFonts } from './render/raster.js';
 import { sound } from './audio/sound.js';
 import { platform } from './platform/index.js';
 
@@ -382,9 +383,10 @@ window.__sk = {
 
 (async () => {
   loadingTip = Math.floor(Math.random() * TIPS.length);
+  try { await Promise.all(['400 20px "Rozha One"', '900 20px Martel', '700 20px Martel'].map((f) => document.fonts.load(f))); } catch { /* fonts fall back */ }
+  await loadSpriteFonts();
   await layout();
   requestAnimationFrame(frame);
-  try { await Promise.all(['400 20px "Rozha One"', '900 20px Martel', '700 20px Martel'].map((f) => document.fonts.load(f))); } catch { /* fonts fall back */ }
   app.applySettings();
   // platform services start in the background; the game never waits on the network
   platform.device.init({ onPause: () => { sound.pause(); store.save(true); if (screen === 'battle' && !hud.modal) hud.modal = { type: 'pause' }; }, onResume: () => sound.resume(), onBack });

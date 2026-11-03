@@ -1,0 +1,14 @@
+{
+  "appId": "com.samvardhanstudios.sandstonekingdom",
+  "appName": "Sandstone Kingdom",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": false,
+    "webContentsDebuggingEnabled": false,
+    "backgroundColor": "#24170f"
+  },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 0 }
+  }
+}

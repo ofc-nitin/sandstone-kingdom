@@ -1,0 +1,84 @@
+name: Android build
+
+# Builds the game for Android on every push: runs the tests, then makes
+#  - app-debug.apk   install it on any phone to test (Settings > allow unknown apps)
+#  - app-release.aab upload it to Google Play Console (signed when the upload-key secrets are set)
+on:
+  push:
+    branches: [main, 'claude/**']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: game
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: game/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install
+        run: npm ci
+
+      - name: Game tests
+        run: npm test
+
+      - name: Build web bundle and sync into Android
+        run: |
+          npm run build:web
+          npx cap sync android
+
+      - name: Upload key (optional)
+        env:
+          KEYSTORE_B64: ${{ secrets.SK_UPLOAD_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            echo "SK_KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+            echo "Release bundle will be signed with the upload key"
+          else
+            echo "No upload key secret: the release bundle is built unsigned"
+          fi
+
+      - name: Build APK and app bundle
+        working-directory: game/android
+        env:
+          SK_VERSION_CODE: ${{ github.run_number }}
+          SK_KEYSTORE_PASSWORD: ${{ secrets.SK_KEYSTORE_PASSWORD }}
+          SK_KEY_ALIAS: ${{ secrets.SK_KEY_ALIAS }}
+          SK_KEY_PASSWORD: ${{ secrets.SK_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug bundleRelease
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sandstone-kingdom-debug-apk
+          path: game/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sandstone-kingdom-release-aab
+          path: game/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
