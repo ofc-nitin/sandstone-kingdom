@@ -1,0 +1,4 @@
+# app-ads.txt for Sandstone Kingdom: Tower Defense (com.samvardhanstudios.sandstonekingdom)
+# The Play Store listing's developer website must be https://samvardhanstudios.com so AdMob can find this file.
+# FOUNDER: replace pub-0000000000000000 with your AdMob publisher ID (AdMob > Settings > Account information).
+google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
