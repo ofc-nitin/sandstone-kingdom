@@ -8,7 +8,7 @@ export function coverage(game, plot, range) {
   return n;
 }
 
-export function playLevel(game, { plan = ['archer', 'barracks', 'archer', 'mage', 'archer', 'cannon', 'archer', 'archer'], build = true, maxTime = 900 } = {}) {
+export function playLevel(game, { plan = ['archer', 'barracks', 'archer', 'mage', 'archer', 'cannon', 'archer', 'archer'], build = true, useAbilities = build, maxTime = 900 } = {}) {
   const dt = 1 / 30;
   let next = 0;
   game.callWave();
@@ -27,6 +27,13 @@ export function playLevel(game, { plan = ['archer', 'barracks', 'archer', 'mage'
         if (locked) game.clearPlot(locked.id);
       }
       if (!weakest && open.length && game.gold >= TOWERS[type].tiers[0].cost && game.build(open[0].id, type)) next++;
+    }
+    if (useAbilities) {
+      // cast ready spells on the enemy furthest along, and use the hero's skill on a crowd
+      const lead = [...game.enemies].sort((a, b) => b.d / game.paths[b.lane].length - a.d / game.paths[a.lane].length)[0];
+      if (lead) for (const name of Object.keys(game.spells)) if (game.spells[name].cd <= 0) game.castSpell(name, lead.x, lead.y);
+      const h = game.hero;
+      if (h && !h.dead && game.enemies.filter((e) => Math.hypot(e.x - h.x, e.y - h.y) < 48).length >= 2) game.heroSkill();
     }
     game.update(dt);
     game.drainEvents();

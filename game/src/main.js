@@ -36,6 +36,7 @@ const hud = new Hud({
   quit: () => goTitle(),
   next: () => startLevel(game.level.id + 1),
   speed: () => { speed = speed === 1 ? 2 : 1; },
+  heroSkill: () => game.heroSkill(),
   dismiss: () => { hud.modal = modalQueue.shift() || null; },
 });
 
@@ -65,7 +66,7 @@ async function startLevel(id) {
   await layout();
   game = new Game(currentLevel, { seed: (Date.now() % 100000) + 1, seen: save.seen });
   world.effects = [];
-  hud.menu = null; hud.modal = null; hud.banner = { text: currentLevel.name, sub: id === 0 ? 'Tutorial' : `Level ${id}`, t: 0, life: 2.2, big: true };
+  hud.menu = null; hud.modal = null; hud.targeting = null; hud.heroSelected = false; hud.banner = { text: currentLevel.name, sub: id === 0 ? 'Tutorial' : `Level ${id}`, t: 0, life: 2.2, big: true };
   modalQueue = [];
   tutorialStep = 0;
   speed = 1;
@@ -96,6 +97,10 @@ function processEvents() {
 
 // ---------------------------------------------------------------- input
 function worldTap(wx, wy) {
+  if (hud.targeting) { game.castSpell(hud.targeting, wx, wy); hud.targeting = null; return; }
+  if (hud.heroSelected) { game.moveHero(wx, wy); hud.heroSelected = false; return; }
+  const h = game.hero;
+  if (h && !h.dead && Math.hypot(h.x - wx, h.y - 14 - wy) < 20) { hud.heroSelected = true; hud.menu = null; return; }
   const tower = game.towers.find((t) => Math.abs(t.x - wx) < 26 && wy < t.y + 12 && wy > t.y - 70);
   if (tower) { hud.menu = { type: 'tower', plotId: tower.plot.id, towerId: tower.id }; return; }
   const plot = game.plots.find((p) => Math.hypot(p.x - wx, (p.y - wy) * 1.6) < 30);

@@ -60,6 +60,8 @@ export class Assets {
     const add = (name, draw, box, k, ui = false) => jobs.push(rasterize(draw, box, view.px(k), { ui }).then((r) => { this.sprites[name] = r; }));
     for (const [name, a] of Object.entries(ENEMY_ART)) add('enemy:' + name, a.draw, a.box, UNIT_SCALE);
     for (const [name, o] of Object.entries(SOLDIER_ART)) add('soldier:' + name, (s) => person(s, 0, 0, o), PERSON_BOX, UNIT_SCALE);
+    add('hero:sunKnight', (s) => person(s, 0, 0, { ...SUN, s: 1.15 }), [-36, -80, 76, 90], UNIT_SCALE);
+    add('ui:heroFace', (s) => { el('circle', { cx: 0, cy: -2, r: 22, fill: 'url(#holy)' }, s); person(s, 0, 30, { ...SUN, s: 1.6, weapon: null, shield: null, aura: false, cape: null }); }, [-24, -26, 48, 48], view.u * 1.1, true);
     for (const [name, fn] of Object.entries(TOWER_ART)) for (let t = 0; t < 3; t++) add(`tower:${name}:${t}`, (s) => { fn(s, 0, 0, 1); tierDressing(s, t); }, TOWER_BOX, TOWER_SCALE);
     add('plot:open', (s) => plot(s, 0, 0), [-32, -28, 64, 44], 1);
     add('plot:rubble', rubble, [-32, -30, 64, 46], 1);
@@ -83,6 +85,10 @@ export class Assets {
       ['sell', 'gold', (q, a, b) => coinIcon(q, a, b, 7)],
       ['clear', 'green', (q, a, b) => { el('path', { d: `M${a - 7} ${b + 6} L${a + 5} ${b - 6}`, stroke: '#8a5a2e', 'stroke-width': 3 }, q); outlined(q, 'path', { d: `M${a + 2} ${b - 9} L${a + 9} ${b - 2} L${a + 5} ${b + 2} L${a - 2} ${b - 5} Z`, fill: 'url(#steel)' }, 0.8); }],
       ['grey', 'grey', () => {}],
+      ['arrowRain', 'green', (q, a, b) => { for (let k = -1; k <= 1; k++) { el('path', { d: `M${a + k * 6 - 3} ${b - 9} l6 15`, stroke: '#fff4dc', 'stroke-width': 2, 'stroke-linecap': 'round' }, q); el('path', { d: `M${a + k * 6 + 3} ${b + 6} l-1 -4.5 l3.6 1.6 Z`, fill: '#fff4dc' }, q); } }],
+      ['reinforcements', 'red', (q, a, b) => { icon.helmet(q, a - 5, b + 2, 0.9); icon.helmet(q, a + 6, b + 4, 0.9); }],
+      ['holyFire', 'gold', (q, a, b) => el('path', { d: `M${a} ${b - 11} Q${a + 10} ${b} ${a} ${b + 9} Q${a - 10} ${b} ${a} ${b - 11} Z`, fill: '#fff4dc', stroke: '#c8361d', 'stroke-width': 1 }, q)],
+      ['sunStrike', 'purple', (q, a, b) => { for (let i = 0; i < 8; i++) { const t = (i / 8) * Math.PI * 2; el('path', { d: `M${a + Math.cos(t) * 5} ${b + Math.sin(t) * 5} L${a + Math.cos(t) * 10} ${b + Math.sin(t) * 10}`, stroke: '#ffe28a', 'stroke-width': 2 }, q); } el('circle', { cx: a, cy: b, r: 4, fill: '#ffe28a' }, q); }],
     ]) add('btn:' + name, (s) => roundBtn(s, 0, 0, 22, color, drawIcon), [-26, -26, 52, 54], ui, true);
     for (const [name, fn] of Object.entries(TOWER_ART)) add('icon:' + name, (s) => fn(s, 0, 0, 1), TOWER_BOX, ui * 0.36, true);
     add('chest', (s) => royalChest(s, 0, 0, 1), [-44, -82, 88, 90], ui, true);

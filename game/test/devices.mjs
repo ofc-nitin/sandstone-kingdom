@@ -61,6 +61,25 @@ for (const d of DEVICES) {
   await p.waitForTimeout(200);
   await p.screenshot({ path: `${out}/${d.name}-3-new-enemy.png` });
 
+  // the boss level with hero, spells and effects in flight
+  await p.evaluate(() => window.__sk.startLevel(5));
+  await p.waitForFunction(() => window.__sk.screen === 'battle', null, { timeout: 90000 });
+  await p.evaluate(() => {
+    const sk = window.__sk, g = sk.game;
+    g.gold = 3000;
+    for (const k of ['bandit', 'wolfRider', 'barbarian', 'banditArcher', 'brute', 'banditKing']) g.seen[k] = true;
+    g.plots.forEach((pl, i) => { if (pl.lock) g.clearPlot(pl.id); if (i < 6) g.build(pl.id, ['archer', 'mage', 'cannon', 'barracks'][i % 4]); });
+    for (let w = 0; w < 9; w++) { g.callWave(); for (let i = 0; i < 60 * 3; i++) g.update(1 / 60); }
+    for (let i = 0; i < 60 * 10 && !g.enemies.some((e) => e.boss); i++) g.update(1 / 60);
+    const lead = g.enemies[0];
+    if (lead) { g.castSpell('holyFire', lead.x, lead.y); g.castSpell('arrowRain', lead.x, lead.y); g.heroSkill(); }
+    for (let i = 0; i < 20; i++) g.update(1 / 60);
+  });
+  await p.waitForTimeout(120);
+  await p.evaluate(() => { const h = window.__sk.hud; h.modal = null; h.banner = null; h.menu = null; });
+  await p.waitForTimeout(150);
+  await p.screenshot({ path: `${out}/${d.name}-5-boss.png` });
+
   await p.evaluate(() => window.__sk.startLevel(0));
   await p.waitForFunction(() => window.__sk.screen === 'battle', null, { timeout: 90000 });
   await p.evaluate(() => { window.__sk.hud.banner = null; });

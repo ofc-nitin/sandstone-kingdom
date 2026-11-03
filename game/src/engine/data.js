@@ -8,7 +8,7 @@ export const ENEMIES = {
     tip: 'Very fast. Block the road with Barracks soldiers so towers can catch them.' },
   barbarian: { name: 'Barbarian', hp: 140, speed: 17, armor: 0.15, mres: 0, gold: 15, lives: 2, dmg: 7, atk: 1.2, art: 'barbarian',
     tip: 'Tough and hits soldiers hard. Mages and Cannons wear him down.' },
-  banditArcher: { name: 'Bandit Archer', hp: 48, speed: 21, armor: 0, mres: 0, gold: 10, lives: 1, dmg: 4, atk: 1.4, art: 'banditArcher',
+  banditArcher: { name: 'Bandit Archer', hp: 48, speed: 21, armor: 0, mres: 0, gold: 10, lives: 1, dmg: 4, atk: 1.4, art: 'banditArcher', ranged: { range: 64, dmg: 5, rate: 1.5 },
     tip: 'Shoots your soldiers from range. Kill it before it reaches them.' },
   brute: { name: 'Armored Brute', hp: 280, speed: 13, armor: 0.5, mres: 0, gold: 24, lives: 2, dmg: 10, atk: 1.4, art: 'brute',
     tip: 'Heavy armour shrugs off arrows. Magic goes straight through it.' },
@@ -54,3 +54,20 @@ export const TOWERS = {
 };
 export const TOWER_ORDER = ['archer', 'barracks', 'mage', 'cannon'];
 export const SELL_REFUND = 0.6;
+
+// The hero fights on the road like a strong soldier; the player can move him anywhere
+// along the road, and his skill hits everything around him.
+export const HEROES = {
+  sunKnight: {
+    name: 'The Sun Knight', art: 'sunKnight', hp: 300, dmg: [11, 17], rate: 0.85, armor: 0.3, speed: 62, respawn: 14, regen: 5, leash: 62,
+    skill: { name: 'Sun Strike', cooldown: 18, radius: 48, dmg: 70, stun: 1.4 },
+  },
+};
+
+// Spells: tap the button, then tap the battlefield.
+export const SPELLS = {
+  arrowRain: { name: 'Arrow Rain', cooldown: 32, radius: 40, ticks: 4, interval: 0.3, dmg: 10, kind: 'physical' },
+  reinforcements: { name: 'Reinforcements', cooldown: 24, count: 2, life: 18, stats: { hp: 80, dmg: [3, 5], rate: 1, armor: 0.1, art: 'spearman' } },
+  holyFire: { name: 'Holy Fire', cooldown: 42, radius: 46, dmg: 30, burn: 10, burnTime: 4, stun: 1 },
+};
+export const SPELL_ORDER = ['arrowRain', 'reinforcements', 'holyFire'];

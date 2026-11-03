@@ -2,7 +2,7 @@
 // scaled by view.u so it is the same physical size on every phone.
 import { blit } from './raster.js';
 import { UNIT_SCALE } from './assets.js';
-import { TOWERS, TOWER_ORDER, ENEMIES, SELL_REFUND } from '../engine/data.js';
+import { TOWERS, TOWER_ORDER, ENEMIES, SELL_REFUND, SPELLS, HEROES } from '../engine/data.js';
 
 const OUT = '#3a2414';
 const FONT = 'Martel, Georgia, serif';
@@ -80,6 +80,8 @@ export class Hud {
     this.targets = [];
     this.pointAt = null;
     this.time = 0;
+    this.heroSelected = false;
+    this.targeting = null; // spell waiting for a tap on the battlefield
   }
 
   get pointAtPlot() { return this.pointAt; }
@@ -139,6 +141,39 @@ export class Hud {
       this.tap(p.x, p.y, br * 1.3, 0, () => this.actions.callWave(), true);
       const label = game.state === 'ready' ? 'START' : `+${Math.ceil(game.nextWaveTimer || 0)}`;
       text(ctx, label, p.x, p.y + br + 14 * u, 12 * u, { sw: 3 * u });
+    }
+
+    // ---- bottom-left: the hero portrait and his skill
+    const pie = (x, y, r, frac) => { if (frac <= 0) return; ctx.fillStyle = 'rgba(20,10,4,0.62)'; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * frac); ctx.closePath(); ctx.fill(); };
+    const h = game.hero;
+    if (h) {
+      const hr = 26 * u, hx = L + hr + 2 * u, hy = B - hr - 2 * u;
+      ctx.beginPath(); ctx.arc(hx, hy, hr + 3 * u, 0, Math.PI * 2); ctx.fillStyle = OUT; ctx.fill();
+      ctx.beginPath(); ctx.arc(hx, hy, hr + 1.5 * u, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (h.dead ? 0 : h.hp / h.maxHp)); ctx.strokeStyle = '#ffd25a'; ctx.lineWidth = 3 * u; ctx.stroke();
+      blit(ctx, assets.get('btn:grey'), hx, hy, u * 1.16);
+      blit(ctx, assets.get('ui:heroFace'), hx, hy, u * 1.06);
+      if (h.dead) { pie(hx, hy, hr, 1); text(ctx, String(Math.ceil(h.respawnT)), hx, hy + 6 * u, 16 * u); }
+      if (this.heroSelected) { ctx.beginPath(); ctx.arc(hx, hy, hr + 5 * u, 0, Math.PI * 2); ctx.strokeStyle = '#fff4dc'; ctx.lineWidth = 2 * u; ctx.setLineDash([4 * u, 3 * u]); ctx.stroke(); ctx.setLineDash([]); }
+      this.tap(hx, hy, hr * 1.1, 0, () => { if (!h.dead) { this.heroSelected = !this.heroSelected; this.targeting = null; this.menu = null; } }, true);
+      const sx = hx + hr + 30 * u, sy = hy + 4 * u, sk = HEROES[h.hero].skill;
+      blit(ctx, assets.get('btn:sunStrike'), sx, sy, u * 0.9);
+      pie(sx, sy, 18 * u, h.skillCd / sk.cooldown);
+      if (h.skillCd > 0) text(ctx, String(Math.ceil(h.skillCd)), sx, sy + 5 * u, 13 * u);
+      this.tap(sx, sy, 20 * u, 0, () => this.actions.heroSkill(), true);
+    }
+    // ---- bottom-right: spells
+    const names = Object.keys(game.spells), sr = 23 * u;
+    names.forEach((name, i) => {
+      const x = R - sr - (names.length - 1 - i) * (sr * 2 + 12 * u), y = B - sr - 2 * u, sp = game.spells[name], def = SPELLS[name];
+      if (this.targeting === name) { ctx.beginPath(); ctx.arc(x, y, sr + 5 * u + Math.sin(this.time * 8) * 2 * u, 0, Math.PI * 2); ctx.strokeStyle = '#ffd25a'; ctx.lineWidth = 3 * u; ctx.stroke(); }
+      blit(ctx, assets.get('btn:' + name), x, y, u * 1.05);
+      pie(x, y, sr - 2 * u, game.state === 'ready' ? 1 : sp.cd / def.cooldown);
+      if (sp.cd > 0) text(ctx, String(Math.ceil(sp.cd)), x, y + 6 * u, 15 * u);
+      this.tap(x, y, sr * 1.1, 0, () => { if (sp.cd <= 0 && game.state !== 'ready') { this.targeting = this.targeting === name ? null : name; this.heroSelected = false; this.menu = null; } }, true);
+    });
+    if ((this.targeting || this.heroSelected) && !this.modal) {
+      const msg = this.targeting ? `Tap the battlefield to cast ${SPELLS[this.targeting].name}` : 'Tap the road to send the Sun Knight';
+      text(ctx, msg, cssW / 2, B - 64 * u, 14 * u, { sw: 3.4 * u, max: cssW - 60 * u });
     }
 
     // ---- menus around a build spot or tower

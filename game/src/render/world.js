@@ -16,6 +16,13 @@ export class WorldRenderer {
     if (e.type === 'summon') fx({ kind: 'smoke', x: e.x, y: e.y - 10, life: 0.8 });
     if (e.type === 'built' || e.type === 'upgraded') fx({ kind: 'dust', x: e.tower.x, y: e.tower.y, life: 0.6 });
     if (e.type === 'bossArrives') this.shake = 0.5;
+    if (e.type === 'volley') fx({ kind: 'volley', x: e.x, y: e.y, r: e.r, life: 0.45, seed: Math.random() * 100 });
+    if (e.type === 'spell' && e.spell === 'holyFire') { fx({ kind: 'holy', x: e.x, y: e.y, r: e.r, life: 0.9 }); this.shake = Math.max(this.shake, 0.15); }
+    if (e.type === 'spell' && e.spell === 'reinforcements') fx({ kind: 'dust', x: e.x, y: e.y, life: 0.7 });
+    if (e.type === 'heroSkill') { fx({ kind: 'shock', x: e.x, y: e.y - 6, r: e.r, life: 0.6 }); this.shake = Math.max(this.shake, 0.2); }
+    if (e.type === 'enemyShot') fx({ kind: 'shot', x: e.x, y: e.y, tx: e.tx, ty: e.ty, life: 0.25 });
+    if (e.type === 'heroMove') fx({ kind: 'flag', x: e.x, y: e.y, life: 1.2 });
+    if (e.type === 'heroDown') fx({ kind: 'poof', x: e.x, y: e.y - 10, life: 0.7 });
   }
 
   draw(ctx, view, game, assets, ui) {
@@ -48,8 +55,13 @@ export class WorldRenderer {
     for (const t of game.towers) actors.push({ y: t.y, draw: () => blit(ctx, assets.get(`tower:${t.def.art}:${t.tier}`), t.x, t.y, 1) });
     for (const so of game.soldiers) {
       if (so.dead) continue;
-      const art = so.tower.def.tiers[so.tower.tier].art;
-      actors.push({ y: so.y, draw: () => { blit(ctx, assets.get('soldier:' + art), so.x, so.y, UNIT_SCALE, so.facing < 0); if (so.hp < so.maxHp) this.bar(ctx, so.x, so.y - 40, so.hp / so.maxHp, 12, '#7ad0ff'); } });
+      const sprite = so.hero ? assets.get('hero:' + so.hero) : assets.get('soldier:' + (so.temp ? so.stats.art : so.tower.def.tiers[so.tower.tier].art));
+      const alpha = so.temp && so.life < 2 ? Math.max(0.2, so.life / 2) : 1;
+      actors.push({ y: so.y, draw: () => {
+        if (so.hero && ui.heroSelected) { ctx.beginPath(); ctx.ellipse(so.x, so.y + 1, 15, 6, 0, 0, Math.PI * 2); ctx.strokeStyle = '#ffd25a'; ctx.lineWidth = 2.2; ctx.stroke(); }
+        blit(ctx, sprite, so.x, so.y, UNIT_SCALE, so.facing < 0, alpha);
+        if (so.hp < so.maxHp) this.bar(ctx, so.x, so.y - (so.hero ? 52 : 40), so.hp / so.maxHp, so.hero ? 18 : 12, so.hero ? '#ffd25a' : '#7ad0ff');
+      } });
     }
     for (const e of game.enemies) {
       const sprite = assets.get('enemy:' + e.def.art);
@@ -57,7 +69,9 @@ export class WorldRenderer {
       const flip = Math.cos(e.angle) < -0.2;
       const big = e.def.boss ? 1 : 0.6;
       actors.push({ y: e.y, draw: () => {
+        if (e.burn) { ctx.fillStyle = 'rgba(255,140,40,0.55)'; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.ellipse(e.x + (i - 1) * 5, e.y - 10 - ((this.clock * 30 + i * 7) % 14), 2.4, 4, 0, 0, Math.PI * 2); ctx.fill(); } }
         if (sprite) blit(ctx, sprite, e.x, e.y - bob, UNIT_SCALE, flip);
+        if (e.stun > 0) { ctx.fillStyle = '#ffe28a'; for (let i = 0; i < 3; i++) { const a = this.clock * 5 + i * 2.1; ctx.beginPath(); ctx.arc(e.x + Math.cos(a) * 8, e.y - (e.def.boss ? 70 : 44) + Math.sin(a) * 3, 1.8, 0, Math.PI * 2); ctx.fill(); } }
         if (e.hp < e.maxHp) this.bar(ctx, e.x, e.y - (e.def.boss ? 96 : 50) * big - 6, e.hp / e.maxHp, e.def.boss ? 34 : 16);
       } });
     }
@@ -97,6 +111,7 @@ export class WorldRenderer {
   }
 
   update(dt) {
+    this.clock = (this.clock || 0) + dt;
     this.shake = Math.max(0, this.shake - dt);
     for (const f of this.effects) f.t += dt;
     this.effects = this.effects.filter((f) => f.t < f.life);
@@ -119,6 +134,21 @@ export class WorldRenderer {
         const gr = ctx.createRadialGradient(f.x, f.y - 6, 0, f.x, f.y - 6, r); gr.addColorStop(0, 'rgba(255,251,224,1)'); gr.addColorStop(0.35, 'rgba(255,192,74,0.95)'); gr.addColorStop(0.7, 'rgba(240,98,29,0.6)'); gr.addColorStop(1, 'rgba(200,54,29,0)');
         ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(f.x, f.y - 6, r, r * 0.8, 0, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = `rgba(216,207,194,${0.7 * (1 - k)})`; for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.arc(f.x + (i - 1.5) * 8, f.y - 14 - k * 20, 6 + k * 6, 0, Math.PI * 2); ctx.fill(); }
+      } else if (f.kind === 'volley') {
+        ctx.strokeStyle = `rgba(255,244,220,${1 - k})`; ctx.lineWidth = 1.3;
+        for (let i = 0; i < 9; i++) { const a = (f.seed + i * 2.4) % (Math.PI * 2), r = ((f.seed * 7 + i * 13) % f.r); const x = f.x + Math.cos(a) * r, y = f.y + Math.sin(a) * r * 0.6; ctx.beginPath(); ctx.moveTo(x - 4, y - 26 * (1 - k)); ctx.lineTo(x, y - 18 * (1 - k) + 4); ctx.stroke(); }
+      } else if (f.kind === 'holy') {
+        ctx.globalAlpha = 1 - k; const r = f.r * (0.6 + 0.5 * k);
+        const gr = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r); gr.addColorStop(0, 'rgba(255,250,220,0.9)'); gr.addColorStop(0.5, 'rgba(255,190,70,0.7)'); gr.addColorStop(1, 'rgba(230,80,30,0)');
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(f.x, f.y, r, r * 0.6, 0, 0, Math.PI * 2); ctx.fill();
+      } else if (f.kind === 'shock') {
+        ctx.globalAlpha = 1 - k; ctx.strokeStyle = '#ffe28a'; ctx.lineWidth = 4 * (1 - k) + 1;
+        ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r * k, f.r * k * 0.6, 0, 0, Math.PI * 2); ctx.stroke();
+      } else if (f.kind === 'shot') {
+        ctx.strokeStyle = '#7a4a22'; ctx.lineWidth = 1.4; ctx.beginPath(); const px = f.x + (f.tx - f.x) * k, py = f.y + (f.ty - f.y) * k; ctx.moveTo(px - (f.tx - f.x) * 0.15, py - (f.ty - f.y) * 0.15); ctx.lineTo(px, py); ctx.stroke();
+      } else if (f.kind === 'flag') {
+        ctx.globalAlpha = 1 - k * k; ctx.strokeStyle = '#3a2414'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.x, f.y - 16); ctx.stroke();
+        ctx.fillStyle = '#ffd25a'; ctx.beginPath(); ctx.moveTo(f.x, f.y - 16); ctx.lineTo(f.x + 9, f.y - 13); ctx.lineTo(f.x, f.y - 10); ctx.fill();
       } else if (f.kind === 'coin') {
         ctx.globalAlpha = 1 - k * k; ctx.font = '900 11px Martel, serif'; ctx.textAlign = 'center';
         ctx.lineWidth = 3; ctx.strokeStyle = '#3a2414'; ctx.fillStyle = '#ffd66b';

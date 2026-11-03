@@ -8,7 +8,7 @@ import { playLevel } from './bot.js';
 
 const straight = { start: [0, 100], curves: [[100, 100, 200, 100, 300, 100]] };
 const tinyLevel = (extra = {}) => ({
-  id: 99, name: 'Test', gold: 500, lives: 5, paths: [straight], plots: [{ x: 150, y: 60 }, { x: 250, y: 140, lock: { type: 'gold', cost: 40 } }, { x: 60, y: 140, lock: { type: 'wave', wave: 2 } }],
+  id: 99, name: 'Test', gold: 500, lives: 5, hero: false, paths: [straight], plots: [{ x: 150, y: 60 }, { x: 250, y: 140, lock: { type: 'gold', cost: 40 } }, { x: 60, y: 140, lock: { type: 'wave', wave: 2 } }],
   waves: [[{ type: 'bandit', count: 1, every: 1 }], [{ type: 'bandit', count: 1, every: 1 }]], ...extra,
 });
 const run = (game, seconds) => { for (let t = 0; t < seconds; t += 1 / 30) game.update(1 / 30); };
@@ -131,6 +131,59 @@ test('the Bandit King keeps calling bandits', () => {
   g.callWave();
   run(g, 10);
   assert.ok(g.enemies.filter((e) => e.type === 'bandit').length >= 2);
+});
+
+test('the hero holds the road, can be moved, and his skill stuns everything near him', () => {
+  const g = new Game(tinyLevel({ hero: 'sunKnight', heroStart: { x: 150, y: 100 }, waves: [[{ type: 'barbarian', count: 1 }]] }));
+  assert.ok(g.hero);
+  g.callWave();
+  run(g, 8);
+  const e = g.enemies[0];
+  assert.ok(e && e.blocker === g.hero, 'barbarian blocked by the hero');
+  assert.equal(g.heroSkill(), true);
+  assert.ok(e.stun > 0);
+  assert.equal(g.heroSkill(), false, 'skill is on cooldown');
+  assert.equal(g.moveHero(60, 100), true);
+  assert.deepEqual(g.hero.home, { x: 60, y: 100 });
+});
+
+test('the hero respawns at his start after falling', () => {
+  const g = new Game(tinyLevel({ hero: 'sunKnight', heroStart: { x: 150, y: 100 } }));
+  g.hurtSoldier(g.hero, 99999);
+  assert.ok(g.hero.dead);
+  run(g, 15);
+  assert.equal(g.hero.dead, false);
+  assert.equal(g.hero.hp, g.hero.maxHp);
+});
+
+test('spells: Arrow Rain hits in volleys, Holy Fire burns and stuns, Reinforcements are temporary', () => {
+  const g = new Game(tinyLevel({ spells: ['arrowRain', 'reinforcements', 'holyFire'], waves: [[{ type: 'brute', count: 1 }]] }));
+  assert.equal(g.castSpell('arrowRain', 100, 100), false, 'no spells before the battle starts');
+  g.callWave();
+  const brute = g.spawnEnemy('brute', 0, 100);
+  const hp = brute.hp;
+  assert.equal(g.castSpell('arrowRain', brute.x, brute.y), true);
+  assert.equal(g.castSpell('arrowRain', brute.x, brute.y), false, 'cooldown');
+  run(g, 1.5);
+  assert.ok(brute.hp < hp, 'arrow rain did damage');
+  assert.equal(g.castSpell('holyFire', brute.x, brute.y), true);
+  assert.ok(brute.burn && brute.stun > 0);
+  assert.equal(g.castSpell('reinforcements', 200, 100), true);
+  assert.equal(g.soldiers.filter((s) => s.temp).length, 2);
+  run(g, 20);
+  assert.equal(g.soldiers.filter((s) => s.temp).length, 0, 'reinforcements leave after their time');
+});
+
+test('bandit archers stop to shoot soldiers in range', () => {
+  const g = new Game(tinyLevel());
+  g.build(0, 'barracks');
+  const archer = g.spawnEnemy('banditArcher', 0, 60);
+  const soldier = g.soldiers[0];
+  const hp = soldier.hp;
+  const d = archer.d;
+  run(g, 3);
+  assert.ok(soldier.hp < hp || soldier.dead, 'soldier was shot');
+  assert.ok(archer.d - d < 60, 'archer stopped walking to shoot');
 });
 
 for (const level of LEVELS) {

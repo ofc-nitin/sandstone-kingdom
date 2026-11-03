@@ -1,7 +1,7 @@
 // The battle simulation. No drawing and no DOM here: the renderer reads this state and
 // the tests drive it directly. Everything advances in update(dt).
 import { makePath } from './path.js';
-import { ENEMIES, TOWERS, SELL_REFUND } from './data.js';
+import { ENEMIES, TOWERS, SELL_REFUND, HEROES, SPELLS, SPELL_ORDER } from './data.js';
 
 export const WAVE_GAP = 16; // seconds between the end of one wave's spawns and the next wave
 export const EARLY_CALL_GOLD_PER_SECOND = 1;
@@ -41,6 +41,81 @@ export class Game {
     this.nextWaveTimer = null;
     this.seen = { ...seen };
     this.nextId = 1;
+    this.areaEffects = [];
+    // spells unlock as the campaign goes on; each level lists the ones it allows
+    this.spells = {};
+    for (const name of level.spells ?? SPELL_ORDER) this.spells[name] = { cd: 0 };
+    this.hero = null;
+    if (level.hero !== false) this.spawnHero(level.hero || 'sunKnight');
+  }
+
+  // ---------------------------------------------------------------- hero
+  spawnHero(type) {
+    const def = HEROES[type], path = this.paths[0];
+    const start = this.level.heroStart || (() => { const p = path.at(path.length * 0.55); return { x: p.x, y: p.y }; })();
+    const h = { id: this.nextId++, hero: type, def, start: { ...start }, home: { ...start }, x: start.x, y: start.y, hp: def.hp, maxHp: def.hp, armor: def.armor, target: null, atkCd: 0, dead: false, respawnT: 0, facing: 1, skillCd: 0 };
+    this.hero = h;
+    this.soldiers.push(h);
+  }
+
+  moveHero(x, y) {
+    const h = this.hero;
+    if (!h || h.dead || this.isOver()) return false;
+    this.releaseSoldier(h);
+    // stand on the road if the tap was close to it, so he can block enemies there
+    let best = null;
+    for (const path of this.paths) { const n = path.nearest(x, y); if (!best || n.dist < best.dist) best = { ...n, path }; }
+    if (best && best.dist < 90) { const p = best.path.at(best.d); x = p.x; y = p.y; }
+    h.home = { x: Math.max(10, Math.min(834, x)), y: Math.max(20, Math.min(380, y)) };
+    this.emit({ type: 'heroMove', x: h.home.x, y: h.home.y });
+    return true;
+  }
+
+  heroSkill() {
+    const h = this.hero;
+    if (!h || h.dead || h.skillCd > 0 || this.isOver()) return false;
+    const sk = h.def.skill;
+    h.skillCd = sk.cooldown;
+    for (const e of this.enemies) {
+      if (e.dead || Math.hypot(e.x - h.x, e.y - h.y) > sk.radius) continue;
+      this.damage(e, sk.dmg, 'magic');
+      e.stun = Math.max(e.stun || 0, sk.stun);
+    }
+    this.emit({ type: 'heroSkill', x: h.x, y: h.y, r: sk.radius });
+    return true;
+  }
+
+  // ---------------------------------------------------------------- spells
+  castSpell(name, x, y) {
+    const sp = this.spells[name], def = SPELLS[name];
+    if (!sp || sp.cd > 0 || this.isOver() || this.state === 'ready') return false;
+    sp.cd = def.cooldown;
+    if (name === 'arrowRain') this.areaEffects.push({ x, y, r: def.radius, ticks: def.ticks, interval: def.interval, t: 0, dmg: def.dmg, kind: def.kind });
+    if (name === 'holyFire') {
+      for (const e of this.enemies) {
+        if (e.dead || Math.hypot(e.x - x, e.y - y) > def.radius) continue;
+        this.damage(e, def.dmg, 'magic');
+        e.burn = { dps: def.burn, t: def.burnTime };
+        e.stun = Math.max(e.stun || 0, def.stun);
+      }
+    }
+    if (name === 'reinforcements') {
+      let best = null;
+      this.paths.forEach((path) => { const n = path.nearest(x, y); if (!best || n.dist < best.dist) best = { ...n, path }; });
+      const c = best.path.at(best.d);
+      for (let i = 0; i < def.count; i++) {
+        const home = { x: c.x + (i ? 6 : -6), y: c.y + (i ? 4 : -4) };
+        this.soldiers.push({ id: this.nextId++, temp: true, stats: def.stats, life: def.life, home, x: home.x, y: home.y - 30, hp: def.stats.hp, maxHp: def.stats.hp, armor: def.stats.armor, target: null, atkCd: 0, dead: false, facing: 1 });
+      }
+    }
+    this.emit({ type: 'spell', spell: name, x, y, r: def.radius || 30 });
+    return true;
+  }
+
+  soldierStats(s) {
+    if (s.hero) return s.def;
+    if (s.temp) return s.stats;
+    return s.tower.def.tiers[s.tower.tier];
   }
 
   get waveCount() { return this.level.waves.length; }
@@ -180,16 +255,26 @@ export class Game {
     }
   }
 
+  hurtSoldier(b, amount) {
+    b.hp -= amount * (1 - b.armor);
+    if (b.hp > 0) return;
+    b.dead = true;
+    this.releaseSoldier(b);
+    this.emit({ type: b.hero ? 'heroDown' : 'soldierDown', x: b.x, y: b.y });
+    if (b.temp) return;
+    b.respawnT = this.soldierStats(b).respawn;
+  }
+
   releaseSoldier(s) {
     if (s.target && s.target.blocker === s) s.target.blocker = null;
     s.target = null;
   }
 
-  damage(e, amount, kind) {
-    const resist = kind === 'magic' ? e.def.mres : e.def.armor;
-    const dealt = Math.max(1, amount * (1 - resist));
+  damage(e, amount, kind, quiet = false) {
+    const resist = kind === 'magic' ? e.def.mres : kind === 'fire' ? 0 : e.def.armor;
+    const dealt = quiet ? amount : Math.max(1, amount * (1 - resist));
     e.hp -= dealt;
-    this.emit({ type: 'hit', x: e.x, y: e.y - 14, kind });
+    if (!quiet) this.emit({ type: 'hit', x: e.x, y: e.y - 14, kind });
     if (e.hp <= 0 && !e.dead) {
       e.dead = true;
       this.gold += e.def.gold;
@@ -219,6 +304,8 @@ export class Game {
     for (const e of this.enemies) {
       if (e.dead) continue;
       const path = this.paths[e.lane];
+      if (e.burn) { e.burn.t -= dt; this.damage(e, e.burn.dps * dt, 'fire', true); if (e.burn.t <= 0) e.burn = null; if (e.dead) continue; }
+      if (e.stun > 0) { e.stun -= dt; continue; }
       if (e.def.summon) {
         e.summonCd -= dt;
         if (e.summonCd <= 0) {
@@ -232,17 +319,21 @@ export class Game {
         e.atkCd -= dt;
         if (e.atkCd <= 0) {
           e.atkCd = e.def.atk;
-          b.hp -= e.def.dmg * (1 - b.armor);
-          if (b.hp <= 0) {
-            b.dead = true;
-            b.respawnT = b.tower.def.tiers[b.tower.tier].respawn;
-            this.releaseSoldier(b);
-            this.emit({ type: 'soldierDown', x: b.x, y: b.y });
-          }
+          this.hurtSoldier(b, e.def.dmg);
         }
         continue;
       }
       e.blocker = null;
+      // archers stop to shoot soldiers in range instead of walking past them
+      if (e.def.ranged) {
+        const r = e.def.ranged;
+        const victim = this.soldiers.find((s) => !s.dead && Math.hypot(s.x - e.x, s.y - e.y) <= r.range);
+        if (victim) {
+          e.atkCd -= dt;
+          if (e.atkCd <= 0) { e.atkCd = r.rate; this.hurtSoldier(victim, r.dmg); this.emit({ type: 'enemyShot', x: e.x, y: e.y - 20, tx: victim.x, ty: victim.y - 14 }); }
+          continue;
+        }
+      }
       e.walk += dt;
       e.d += e.def.speed * dt;
       if (e.d >= path.length) {
@@ -257,27 +348,36 @@ export class Game {
 
     // barracks soldiers: intercept, hold the line, fight, respawn
     for (const s of this.soldiers) {
+      if (s.temp) { s.life -= dt; if (s.life <= 0 && !s.dead) { s.dead = true; this.releaseSoldier(s); } }
       if (s.dead) {
+        if (s.temp) continue;
         s.respawnT -= dt;
-        if (s.respawnT <= 0) { s.dead = false; s.hp = s.maxHp; s.x = s.home.x; s.y = s.home.y; }
+        if (s.respawnT <= 0) {
+          s.dead = false; s.hp = s.maxHp;
+          if (s.hero) { s.home = { ...s.start }; this.emit({ type: 'heroBack' }); }
+          s.x = s.home.x; s.y = s.home.y;
+        }
         continue;
       }
-      if (s.target && (s.target.dead || (s.target.blocker && s.target.blocker !== s) || Math.hypot(s.target.x - s.home.x, s.target.y - s.home.y) > SOLDIER_LEASH)) this.releaseSoldier(s);
+      if (s.hero && s.skillCd > 0) s.skillCd -= dt;
+      const leash = s.hero ? s.def.leash : SOLDIER_LEASH;
+      if (s.target && (s.target.dead || (s.target.blocker && s.target.blocker !== s) || Math.hypot(s.target.x - s.home.x, s.target.y - s.home.y) > leash)) this.releaseSoldier(s);
       if (!s.target) {
         let best = null, bd = Infinity;
         for (const e of this.enemies) {
           if (e.dead || e.blocker || e.def.flying) continue;
           if (this.soldiers.some((o) => o !== s && o.target === e)) continue;
           const d = Math.hypot(e.x - s.home.x, e.y - s.home.y);
-          if (d < SOLDIER_LEASH * 0.8 && d < bd) { bd = d; best = e; }
+          if (d < leash * 0.8 && d < bd) { bd = d; best = e; }
         }
         s.target = best;
       }
-      const st = s.tower.def.tiers[s.tower.tier];
+      const st = this.soldierStats(s);
+      const speed = s.hero ? st.speed : 46;
       if (s.target) {
         const e = s.target, dx = e.x - s.x, dy = e.y - s.y, dist = Math.hypot(dx, dy);
         s.facing = dx >= 0 ? 1 : -1;
-        if (dist > SOLDIER_REACH - 3) { const step = Math.min(dist - (SOLDIER_REACH - 4), 46 * dt); s.x += (dx / dist) * step; s.y += (dy / dist) * step; }
+        if (dist > SOLDIER_REACH - 3) { const step = Math.min(dist - (SOLDIER_REACH - 4), speed * dt); s.x += (dx / dist) * step; s.y += (dy / dist) * step; }
         if (dist <= SOLDIER_REACH) {
           if (!e.blocker) e.blocker = s;
           s.atkCd -= dt;
@@ -285,9 +385,22 @@ export class Game {
         }
       } else {
         const dx = s.home.x - s.x, dy = s.home.y - s.y, dist = Math.hypot(dx, dy);
-        if (dist > 0.5) { const step = Math.min(dist, 40 * dt); s.x += (dx / dist) * step; s.y += (dy / dist) * step; s.facing = dx >= 0 ? 1 : -1; }
+        if (dist > 0.5) { const step = Math.min(dist, (s.hero ? speed : 40) * dt); s.x += (dx / dist) * step; s.y += (dy / dist) * step; s.facing = dx >= 0 ? 1 : -1; }
+        if (s.hero && s.hp < s.maxHp) s.hp = Math.min(s.maxHp, s.hp + st.regen * dt);
       }
     }
+    this.soldiers = this.soldiers.filter((s) => !(s.temp && s.dead));
+
+    // spell cooldowns and timed area effects (Arrow Rain lands in volleys)
+    for (const sp of Object.values(this.spells)) if (sp.cd > 0) sp.cd = Math.max(0, sp.cd - dt);
+    for (const a of this.areaEffects) {
+      a.t -= dt;
+      if (a.t > 0) continue;
+      a.t = a.interval; a.ticks--;
+      for (const e of this.enemies) if (!e.dead && Math.hypot(e.x - a.x, e.y - a.y) <= a.r) this.damage(e, a.dmg, a.kind);
+      this.emit({ type: 'volley', x: a.x, y: a.y, r: a.r });
+    }
+    this.areaEffects = this.areaEffects.filter((a) => a.ticks > 0);
 
     // towers pick the enemy furthest along the road within range
     for (const t of this.towers) {
