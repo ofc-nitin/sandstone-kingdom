@@ -206,3 +206,97 @@ for (const level of LEVELS) {
     assert.equal(playLevel(lazy, { build: false }), 'lost');
   });
 }
+
+test('challenge rules limit towers, lives, spells and hero', () => {
+  const g = new Game(LEVELS[1], { rules: { towers: ['archer'], lives: 1, noSpells: true, noHero: true } });
+  assert.equal(g.maxLives, 1);
+  assert.equal(g.hero, null);
+  assert.deepEqual(Object.keys(g.spells), []);
+  g.gold = 1000;
+  const free = g.plots.find((p) => !p.lock).id;
+  assert.equal(g.build(free, 'mage'), false);
+  assert.equal(g.build(free, 'archer'), true);
+});
+
+test('the special tower is the one chosen and stands only on special spots', () => {
+  const lvl = tinyLevel({ gold: 1000 });
+  lvl.plots = [{ x: 150, y: 60, royal: true }, { x: 250, y: 140 }];
+  assert.equal(new Game(lvl).build(0, 'falconer'), false, 'not chosen');
+  const g = new Game(lvl, { special: 'falconer' });
+  assert.equal(g.build(0, 'fountain'), false, 'only the chosen one');
+  assert.equal(g.build(1, 'falconer'), false, 'not on a normal spot');
+  assert.equal(g.build(0, 'falconer'), true);
+  assert.deepEqual(g.towersFor(1), ['archer', 'barracks', 'mage', 'cannon']);
+});
+
+test('every level has at most 3 special spots', () => {
+  for (const l of LEVELS) assert.ok(l.plots.filter((p) => p.royal).length <= 3, l.name);
+});
+
+test('the falconer marks prey so it takes extra damage', () => {
+  const lvl = tinyLevel({ gold: 1000 }); lvl.plots[0].royal = true;
+  const g = new Game(lvl, { special: 'falconer' });
+  assert.equal(g.build(0, 'falconer'), true);
+  const e = g.spawnEnemy('brute', 0, 120);
+  e.stun = 99;
+  run(g, 1.2);
+  assert.ok(e.mark && e.mark.mul > 1, 'enemy is marked');
+  const before = e.hp; g.damage(e, 10, 'magic', true);
+  assert.ok(Math.abs(before - e.hp - 10 * e.mark.mul) < 1e-6);
+});
+
+test('the stepwell fountain slows enemies in its water', () => {
+  const lvl = tinyLevel({ gold: 1000, waves: [[{ type: 'barbarian', count: 1 }]] }); lvl.plots[0].royal = true;
+  const slowGame = new Game(lvl, { special: 'fountain' }); assert.equal(slowGame.build(0, 'fountain'), true);
+  const fast = new Game(lvl), slow = slowGame;
+  for (const g of [fast, slow]) { const e = g.spawnEnemy('barbarian', 0, 100); e.offset = 0; }
+  run(fast, 3); run(slow, 3);
+  assert.ok(slow.enemies[0].d < fast.enemies[0].d - 10, 'slowed enemy is behind');
+});
+
+test('power-ups: one of each per level, only after the battle starts', () => {
+  const g = new Game(tinyLevel(), { powerups: { gold: 3, freeze: 1 } });
+  assert.equal(g.usePowerup('gold'), false, 'not before the first wave');
+  g.callWave();
+  const gold = g.gold;
+  assert.equal(g.usePowerup('gold'), true);
+  assert.equal(g.gold, gold + 120);
+  assert.equal(g.usePowerup('gold'), false, 'only one per level');
+  assert.equal(g.usePowerup('lives'), false, 'not owned');
+  run(g, 1);
+  g.usePowerup('freeze');
+  assert.ok(g.enemies.every((e) => e.stun >= 4));
+});
+
+test('a lost battle can be revived once', () => {
+  const g = new Game(tinyLevel({ lives: 1 }));
+  g.callWave();
+  run(g, 30);
+  assert.equal(g.state, 'lost');
+  assert.equal(g.revive(), true);
+  assert.equal(g.state, 'playing');
+  assert.equal(g.lives, 5);
+  assert.equal(g.canRevive, false);
+});
+
+test('endless mode keeps making harder waves and scores', () => {
+  const g = new Game(LEVELS[5], { endless: true });
+  assert.equal(g.waveCount, Infinity);
+  g.lives = 1e6;
+  for (let i = 0; i < 400 && g.waves.length < 14; i++) { g.callWave(); run(g, 1); }
+  assert.ok(g.waves.length >= 14);
+  assert.ok(g.scale > LEVELS[5].hpScale);
+  assert.notEqual(g.state, 'won');
+  run(g, 20);
+  assert.ok(g.score > 0);
+});
+
+test('summary reports what happened in the battle', () => {
+  const g = new Game(LEVELS[1], { seed: 3 });
+  const res = playLevel(g, { useAbilities: true });
+  const s = g.summary();
+  assert.equal(s.won, g.state === 'won');
+  assert.ok(res);
+  assert.ok(Object.values(s.kills).reduce((a, b) => a + b, 0) > 20);
+  assert.ok(s.towerTypes.length >= 1);
+});

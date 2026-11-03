@@ -1,8 +1,8 @@
 // Builds every bitmap the battle needs, sized for the current screen.
-/* global person, wolfRider, banditKing, archerTower, barracks, mageTower, cannonTower, fortGate, plot,
+/* global person, wolfRider, banditKing, archerTower, barracks, mageTower, cannonTower, falconer, fountain, falcon, specialPlot, fortGate, plot,
    banyan, palm, rock, marigold, pond, peacock, tent, campfire, cart, stepwell, shrine, haystack, pots, fence,
    tuft, coinIcon, rubyIcon, icon, roundBtn, button, panel, ribbon, royalChest, el, g, outlined, shadow, moss, rnd,
-   BANDIT, BARBARIAN, BRUTE, SPEAR, KNIGHT, HOLY, SUN, ARCHER, MAGE, OUT */
+   BANDIT, BARBARIAN, BRUTE, SPEAR, KNIGHT, HOLY, SUN, ARCHER, MAGE, OUT, logo, menuScene, mapScene, MAP_W */
 import { rasterize } from './raster.js';
 import { WORLD_W, WORLD_H } from './view.js';
 
@@ -22,7 +22,7 @@ const ENEMY_ART = {
   banditKing: { box: [-56, -118, 112, 128], draw: (s) => banditKing(s, 0, 0, 1) },
 };
 const SOLDIER_ART = { spearman: SPEAR, knight: KNIGHT, holyKnight: { ...HOLY, aura: false } };
-const TOWER_ART = { archerTower, barracks, mageTower, cannonTower };
+const TOWER_ART = { archerTower, barracks, mageTower, cannonTower, falconer, fountain };
 
 // Tier 2 adds gold trim, tier 3 a golden glow and banner: the upgrade shows on the building.
 function tierDressing(s, tier) {
@@ -66,6 +66,8 @@ export class Assets {
     add('plot:open', (s) => plot(s, 0, 0), [-32, -28, 64, 44], 1);
     add('plot:rubble', rubble, [-32, -30, 64, 46], 1);
     add('plot:timed', sundialPlot, [-32, -28, 64, 44], 1);
+    add('plot:special', (s) => specialPlot(s, 0, 0), [-34, -30, 68, 46], 1);
+    add('proj:falcon', (s) => falcon(s, 0, 0, 0.6, true), [-12, -10, 24, 18], 1);
     add('gate', (s) => fortGate(s, 0, 0, 1), [-90, -140, 180, 160], level.gate.s);
     // HUD icons, drawn at UI scale
     const ui = view.u;
@@ -91,8 +93,49 @@ export class Assets {
       ['sunStrike', 'purple', (q, a, b) => { for (let i = 0; i < 8; i++) { const t = (i / 8) * Math.PI * 2; el('path', { d: `M${a + Math.cos(t) * 5} ${b + Math.sin(t) * 5} L${a + Math.cos(t) * 10} ${b + Math.sin(t) * 10}`, stroke: '#ffe28a', 'stroke-width': 2 }, q); } el('circle', { cx: a, cy: b, r: 4, fill: '#ffe28a' }, q); }],
     ]) add('btn:' + name, (s) => roundBtn(s, 0, 0, 22, color, drawIcon), [-26, -26, 52, 54], ui, true);
     for (const [name, fn] of Object.entries(TOWER_ART)) add('icon:' + name, (s) => fn(s, 0, 0, 1), TOWER_BOX, ui * 0.36, true);
+    for (const name of ['falconer', 'fountain']) add('card:' + name, (s) => TOWER_ART[name](s, 0, 0, 1), TOWER_BOX, ui * 0.5, true);
     add('chest', (s) => royalChest(s, 0, 0, 1), [-44, -82, 88, 90], ui, true);
+    // menu icons and power-ups
+    for (const [name, color, drawIcon] of [
+      ['settings', 'blue', (q, a, b) => icon.gear(q, a, b, 1)],
+      ['trophy', 'gold', (q, a, b) => icon.trophy(q, a, b + 2, 1)],
+      ['ranks', 'green', (q, a, b) => icon.bars(q, a, b, 1)],
+      ['daily', 'red', (q, a, b) => icon.chest(q, a, b + 6, 0.8)],
+      ['quests', 'green', (q, a, b) => { outlined(q, 'rect', { x: a - 7, y: b - 9, width: 14, height: 18, rx: 2, fill: '#fff4dc' }, 1); el('path', { d: `M${a - 4} ${b - 4} h8 M${a - 4} ${b} h8 M${a - 4} ${b + 4} h5`, stroke: '#8a5a2e', 'stroke-width': 1.4 }, q); }],
+      ['workshop', 'purple', (q, a, b) => { el('path', { d: `M${a - 7} ${b + 8} L${a + 3} ${b - 2}`, stroke: '#c89a5a', 'stroke-width': 3, 'stroke-linecap': 'round' }, q); outlined(q, 'path', { d: `M${a - 1} ${b - 9} L${a + 9} ${b + 1} L${a + 6} ${b + 4} L${a - 4} ${b - 6} Z`, fill: '#e6e9ef' }, 0.9); }],
+      ['shop', 'red', (q, a, b) => rubyIcon(q, a, b, 8)],
+      ['back', 'red', (q, a, b) => el('path', { d: `M${a + 5} ${b - 8} L${a - 5} ${b} L${a + 5} ${b + 8}`, stroke: '#fff4dc', 'stroke-width': 3.4, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, q)],
+      ['close', 'red', (q, a, b) => icon.close(q, a, b, 1.2)],
+      ['left', 'blue', (q, a, b) => el('path', { d: `M${a + 4} ${b - 7} L${a - 4} ${b} L${a + 4} ${b + 7}`, stroke: '#fff4dc', 'stroke-width': 3, fill: 'none', 'stroke-linecap': 'round' }, q)],
+      ['right', 'blue', (q, a, b) => el('path', { d: `M${a - 4} ${b - 7} L${a + 4} ${b} L${a - 4} ${b + 7}`, stroke: '#fff4dc', 'stroke-width': 3, fill: 'none', 'stroke-linecap': 'round' }, q)],
+      ['freeze', 'blue', (q, a, b) => { for (let i = 0; i < 3; i++) { const t = (i / 3) * Math.PI; el('path', { d: `M${a + Math.cos(t) * 9} ${b + Math.sin(t) * 9} L${a - Math.cos(t) * 9} ${b - Math.sin(t) * 9}`, stroke: '#ffffff', 'stroke-width': 2.2, 'stroke-linecap': 'round' }, q); } el('circle', { cx: a, cy: b, r: 2.4, fill: '#cfeaff' }, q); }],
+      ['gold', 'gold', (q, a, b) => coinIcon(q, a, b, 8)],
+      ['lives', 'red', (q, a, b) => outlined(q, 'path', { d: `M${a} ${b + 8} C${a - 12} ${b - 1} ${a - 9} ${b - 10} ${a} ${b - 4} C${a + 9} ${b - 10} ${a + 12} ${b - 1} ${a} ${b + 8} Z`, fill: '#ff8a7a' }, 1)],
+      ['play', 'green', (q, a, b) => icon.play(q, a + 1, b, 1.1)],
+      ['ad', 'purple', (q, a, b) => { outlined(q, 'rect', { x: a - 9, y: b - 6, width: 18, height: 12, rx: 2, fill: '#fff4dc' }, 1); el('path', { d: `M${a - 2} ${b - 3} L${a + 3} ${b} L${a - 2} ${b + 3} Z`, fill: '#6a3fc0' }, q); }],
+    ]) add('btn:' + name, (s) => roundBtn(s, 0, 0, 22, color, drawIcon), [-26, -26, 52, 54], ui, true);
+    add('ui:logo', (s) => logo(s, 0, 0, 1), [-112, -78, 224, 128], ui, true);
+    add('ui:chestSmall', (s) => icon.chest(s, 0, 8, 1.4), [-20, -26, 40, 38], ui, true);
+    add('ui:trophy', (s) => { el('circle', { cx: 0, cy: 0, r: 12, fill: '#c8921c' }, s); icon.trophy(s, 0, 2, 1); }, [-14, -14, 28, 28], ui, true);
     await Promise.all(jobs);
+  }
+
+  // The main menu painting (cover-fit, cropped to the screen) at screen resolution.
+  async buildMenu(view) {
+    const key = `${view.cssW}x${view.cssH}@${view.dpr}`;
+    if (this.menuKey === key) return;
+    this.menuKey = key;
+    const sc = Math.max(view.cssW / WORLD_W, view.cssH / WORLD_H), w = view.cssW / sc, h = view.cssH / sc;
+    this.menuBg = await rasterize((s) => menuScene(s), [(WORLD_W - w) / 2, (WORLD_H - h) / 2, w, h], sc * view.dpr, { ui: true });
+  }
+
+  // The world map is wide (six regions), so it is painted in chunks the height of the screen.
+  async buildMap(view) {
+    const key = `${view.cssW}x${view.cssH}@${view.dpr}`;
+    if (this.mapKey === key) return;
+    this.mapKey = key;
+    const ms = view.cssH / WORLD_H, n = 6, cw = MAP_W / n;
+    this.map = { scale: ms, width: MAP_W * ms, chunks: await Promise.all(Array.from({ length: n }, (_, i) => rasterize((s) => mapScene(s), [i * cw, 0, cw, WORLD_H], ms * view.dpr, { ui: true }).then((r) => ({ x: i * cw * ms, w: cw * ms, canvas: r.canvas })))) };
   }
 
   // Paints exactly the part of the world the screen shows, at screen resolution.

@@ -37,8 +37,8 @@ export class WorldRenderer {
     for (const p of game.plots) {
       if (p.tower) continue;
       const sel = ui.menu && ui.menu.plotId === p.id;
-      if (p.royal) { ctx.beginPath(); ctx.ellipse(p.x, p.y, 27, 11.5, 0, 0, Math.PI * 2); ctx.strokeStyle = '#ffd25a'; ctx.lineWidth = 3; ctx.stroke(); }
-      const sprite = assets.get(!p.lock ? 'plot:open' : p.lock.type === 'gold' ? 'plot:rubble' : 'plot:timed');
+      if (p.royal && p.lock) { ctx.beginPath(); ctx.ellipse(p.x, p.y, 27, 11.5, 0, 0, Math.PI * 2); ctx.strokeStyle = '#ffd25a'; ctx.lineWidth = 3; ctx.stroke(); }
+      const sprite = assets.get(!p.lock ? (p.royal ? 'plot:special' : 'plot:open') : p.lock.type === 'gold' ? 'plot:rubble' : 'plot:timed');
       if (sprite) blit(ctx, sprite, p.x, p.y, 1);
       if (sel || ui.pointAt === p.id) {
         ctx.beginPath(); ctx.ellipse(p.x, p.y - 1, 26, 11, 0, 0, Math.PI * 2);
@@ -47,6 +47,13 @@ export class WorldRenderer {
     }
     // range of the selected tower (or the tower being previewed)
     const selTower = ui.menu && ui.menu.towerId ? game.towers.find((t) => t.id === ui.menu.towerId) : null;
+    // the fountain's holy water, always visible
+    for (const t of game.towers) if (t.def.kind === 'aura') {
+      const r = t.def.tiers[t.tier].range * t.rangeBonus, k = 0.5 + 0.5 * Math.sin(this.clock * 2 + t.id);
+      ctx.beginPath(); ctx.ellipse(t.x, t.y, r, r / 1.2 * 0.62, 0, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(110,200,255,${0.1 + 0.05 * k})`; ctx.fill();
+      ctx.strokeStyle = `rgba(160,225,255,${0.35 + 0.25 * k})`; ctx.lineWidth = 1.4; ctx.setLineDash([3, 5]); ctx.lineDashOffset = -this.clock * 8; ctx.stroke(); ctx.setLineDash([]); ctx.lineDashOffset = 0;
+    }
     if (selTower && selTower.def.kind !== 'soldiers') this.range(ctx, selTower.x, selTower.y - 6, selTower.def.tiers[selTower.tier].range * selTower.rangeBonus);
     if (selTower && selTower.rally) this.range(ctx, selTower.rally.x, selTower.rally.y, 40, true);
 
@@ -70,7 +77,9 @@ export class WorldRenderer {
       const big = e.def.boss ? 1 : 0.6;
       actors.push({ y: e.y, draw: () => {
         if (e.burn) { ctx.fillStyle = 'rgba(255,140,40,0.55)'; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.ellipse(e.x + (i - 1) * 5, e.y - 10 - ((this.clock * 30 + i * 7) % 14), 2.4, 4, 0, 0, Math.PI * 2); ctx.fill(); } }
+        if (e.slowT > 0) { ctx.fillStyle = 'rgba(120,200,255,0.35)'; ctx.beginPath(); ctx.ellipse(e.x, e.y, 10, 4, 0, 0, Math.PI * 2); ctx.fill(); }
         if (sprite) blit(ctx, sprite, e.x, e.y - bob, UNIT_SCALE, flip);
+        if (e.mark) { const my = e.y - (e.def.boss ? 60 : 30); ctx.strokeStyle = '#ffd25a'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(e.x, my, 5, 0, Math.PI * 2); ctx.moveTo(e.x - 8, my); ctx.lineTo(e.x - 3, my); ctx.moveTo(e.x + 3, my); ctx.lineTo(e.x + 8, my); ctx.stroke(); }
         if (e.stun > 0) { ctx.fillStyle = '#ffe28a'; for (let i = 0; i < 3; i++) { const a = this.clock * 5 + i * 2.1; ctx.beginPath(); ctx.arc(e.x + Math.cos(a) * 8, e.y - (e.def.boss ? 70 : 44) + Math.sin(a) * 3, 1.8, 0, Math.PI * 2); ctx.fill(); } }
         if (e.hp < e.maxHp) this.bar(ctx, e.x, e.y - (e.def.boss ? 96 : 50) * big - 6, e.hp / e.maxHp, e.def.boss ? 34 : 16);
       } });
@@ -86,6 +95,9 @@ export class WorldRenderer {
         ctx.strokeStyle = '#7a4a22'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(4, 0); ctx.stroke();
         ctx.fillStyle = '#e8ecf2'; ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(3, -2.4); ctx.lineTo(3, 2.4); ctx.fill();
         ctx.restore();
+      } else if (p.kind === 'falcon') {
+        const fs = assets.get('proj:falcon');
+        if (fs) blit(ctx, fs, p.x, p.y, 1, Math.cos(p.angle || 0) < 0);
       } else if (p.kind === 'magic') {
         const gr = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 9);
         gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.4, 'rgba(127,208,255,0.9)'); gr.addColorStop(1, 'rgba(79,107,255,0)');

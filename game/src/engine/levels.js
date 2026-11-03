@@ -8,7 +8,7 @@ const g = (type, count, every = 1.2, delay = 0, lane = 0) => ({ type, count, eve
 
 export const LEVELS = [
   {
-    id: 0, name: 'Training Grounds', region: 'aravalli', gold: 160, lives: 15, hpScale: 0.8, hero: false, spells: [],
+    id: 0, name: 'Training Grounds', story: 'New recruit? No stress. The Royal Sage will show you the basics: build towers, stop the bandits, keep the fort safe. Easy W.', region: 'aravalli', gold: 160, lives: 15, hpScale: 0.8, hero: false, spells: [],
     paths: [{ start: [-30, 200], curves: [[160, 200, 220, 120, 380, 130], [540, 140, 560, 260, 700, 250], [760, 246, 780, 238, 800, 236]] }],
     gate: { x: 800, y: 268, s: 0.82 },
     plots: [{ x: 300, y: 188 }, { x: 476, y: 104 }, { x: 598, y: 280 }, { x: 650, y: 196, lock: { type: 'gold', cost: 40 } }],
@@ -27,11 +27,11 @@ export const LEVELS = [
     ],
   },
   {
-    id: 1, name: 'Village at the Pass', region: 'aravalli', gold: 230, lives: 20, hpScale: 1, spells: ['arrowRain'],
+    id: 1, name: 'Village at the Pass', story: 'Bandits just raided the village market and ran off with the festival lamps. The whole village is counting on you. Time to lock in.', region: 'aravalli', gold: 230, lives: 20, hpScale: 1, spells: ['arrowRain'],
     paths: [{ start: [-20, 120], curves: [[120, 120, 120, 60, 250, 70], [360, 80, 330, 230, 450, 230], [560, 230, 540, 90, 640, 90], [730, 90, 720, 250, 790, 268]] }],
     gate: { x: 800, y: 300, s: 0.88 },
     plots: [
-      { x: 130, y: 136 }, { x: 280, y: 134 }, { x: 399, y: 154 }, { x: 533, y: 250 },
+      { x: 130, y: 136 }, { x: 280, y: 134, royal: true }, { x: 399, y: 154 }, { x: 533, y: 250 },
       { x: 679, y: 188, lock: { type: 'gold', cost: 50 } }, { x: 754, y: 130, lock: { type: 'wave', wave: 3 } },
     ],
     waves: [
@@ -46,11 +46,11 @@ export const LEVELS = [
     ],
   },
   {
-    id: 2, name: 'The Stepwell Road', region: 'aravalli', gold: 300, lives: 20, hpScale: 1.06, spells: ['arrowRain', 'reinforcements'],
+    id: 2, name: 'The Stepwell Road', story: "Now they want the stepwell, the only water for miles. No water, no village. Hold the road and don't let them through.", region: 'aravalli', gold: 300, lives: 20, hpScale: 1.06, spells: ['arrowRain', 'reinforcements'],
     paths: [{ start: [-20, 300], curves: [[150, 300, 160, 120, 300, 130], [440, 140, 420, 300, 560, 290], [680, 280, 640, 120, 760, 110], [780, 108, 790, 106, 800, 104]] }],
     gate: { x: 806, y: 140, s: 0.8 },
     plots: [
-      { x: 169, y: 259 }, { x: 250, y: 196 }, { x: 300, y: 74 }, { x: 391, y: 243 }, { x: 500, y: 228 },
+      { x: 169, y: 259 }, { x: 250, y: 196, royal: true }, { x: 300, y: 74 }, { x: 391, y: 243 }, { x: 500, y: 228 },
       { x: 620, y: 200, lock: { type: 'gold', cost: 40 } }, { x: 707, y: 76, lock: { type: 'wave', wave: 4 } }, { x: 560, y: 350, lock: { type: 'gold', cost: 80 }, royal: true },
     ],
     waves: [
@@ -65,11 +65,11 @@ export const LEVELS = [
     ],
   },
   {
-    id: 3, name: 'Banyan Crossing', region: 'aravalli', gold: 330, lives: 20, hpScale: 1.25, spells: ['arrowRain', 'reinforcements'],
+    id: 3, name: 'Banyan Crossing', story: 'The hill Barbarians teamed up with the bandits. Bigger, tougher, hits harder. Do not let them cross the old banyan tree.', region: 'aravalli', gold: 330, lives: 20, hpScale: 1.25, spells: ['arrowRain', 'reinforcements'],
     paths: [{ start: [-20, 60], curves: [[140, 60, 180, 210, 300, 225], [420, 240, 440, 90, 560, 100], [680, 110, 700, 300, 800, 300]] }],
     gate: { x: 806, y: 332, s: 0.82 },
     plots: [
-      { x: 79, y: 136 }, { x: 256, y: 160 }, { x: 330, y: 280 }, { x: 484, y: 176 }, { x: 560, y: 50 },
+      { x: 79, y: 136 }, { x: 256, y: 160, royal: true }, { x: 330, y: 280, royal: true }, { x: 484, y: 176 }, { x: 560, y: 50 },
       { x: 640, y: 200, lock: { type: 'gold', cost: 50 } }, { x: 738, y: 329, lock: { type: 'wave', wave: 5 } }, { x: 432, y: 99, lock: { type: 'gold', cost: 70 } },
     ],
     waves: [
@@ -83,14 +83,14 @@ export const LEVELS = [
     ],
   },
   {
-    id: 4, name: 'The Old Watchtower', region: 'aravalli', gold: 380, lives: 20, hpScale: 1.32, spells: ['arrowRain', 'reinforcements', 'holyFire'],
+    id: 4, name: 'The Old Watchtower', story: 'Two roads, one watchtower, zero chill. Bandit Archers are sniping your soldiers from the trees. Guard both paths.', region: 'aravalli', gold: 380, lives: 20, hpScale: 1.32, spells: ['arrowRain', 'reinforcements', 'holyFire'],
     paths: [
       { start: [-20, 90], curves: [[120, 90, 220, 200, 430, 210], [560, 215, 640, 140, 800, 170]] },
       { start: [-20, 330], curves: [[140, 330, 260, 230, 430, 210], [560, 215, 640, 140, 800, 170]] },
     ],
     gate: { x: 806, y: 202, s: 0.82 },
     plots: [
-      { x: 116, y: 170 }, { x: 168, y: 192 }, { x: 300, y: 150 }, { x: 327, y: 274 }, { x: 470, y: 260 }, { x: 520, y: 140 },
+      { x: 116, y: 170, royal: true }, { x: 168, y: 192, royal: true }, { x: 300, y: 150 }, { x: 327, y: 274 }, { x: 470, y: 260 }, { x: 520, y: 140 },
       { x: 650, y: 230, lock: { type: 'gold', cost: 60 } }, { x: 690, y: 110, lock: { type: 'wave', wave: 4 } }, { x: 396, y: 256, lock: { type: 'gold', cost: 80 }, royal: true },
     ],
     waves: [
@@ -105,11 +105,11 @@ export const LEVELS = [
     ],
   },
   {
-    id: 5, name: "The Bandit King's Camp", region: 'aravalli', gold: 420, lives: 20, hpScale: 1.38, spells: ['arrowRain', 'reinforcements', 'holyFire'], boss: 'banditKing',
+    id: 5, name: "The Bandit King's Camp", story: 'Boss fight. The Bandit King stole the Sun Crown, and without it spring never comes back. Go get it back. No pressure.', region: 'aravalli', gold: 420, lives: 20, hpScale: 1.38, spells: ['arrowRain', 'reinforcements', 'holyFire'], boss: 'banditKing',
     paths: [{ start: [-20, 200], curves: [[150, 200, 150, 60, 300, 60], [450, 60, 450, 330, 600, 330], [720, 330, 760, 200, 800, 190]] }],
     gate: { x: 806, y: 222, s: 0.82 },
     plots: [
-      { x: 74, y: 129 }, { x: 207, y: 139 }, { x: 260, y: 120 }, { x: 360, y: 140 }, { x: 423, y: 241 }, { x: 536, y: 247 },
+      { x: 74, y: 129 }, { x: 207, y: 139, royal: true }, { x: 260, y: 120, royal: true }, { x: 360, y: 140, royal: true }, { x: 423, y: 241 }, { x: 536, y: 247 },
       { x: 628, y: 280, lock: { type: 'gold', cost: 60 } }, { x: 700, y: 360, lock: { type: 'wave', wave: 4 } }, { x: 538, y: 363, lock: { type: 'gold', cost: 80 } },
     ],
     waves: [

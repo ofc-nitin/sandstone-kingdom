@@ -52,6 +52,30 @@ export const TOWERS = {
     ],
   },
 };
+// Royal towers: bought once with rubies (or earned by mastering a region), then
+// available in every level. Side-grades with new tactics, never must-haves.
+TOWERS.falconer = {
+  name: 'Royal Falconer', kind: 'falcon', air: true, art: 'falconer', royal: true,
+  tiers: [
+    tier(120, { label: 'Falconer', range: 96, dmg: [6, 9], rate: 0.6, mark: { mul: 1.25, t: 3 } }),
+    tier(170, { label: 'Master Falconer', range: 104, dmg: [10, 14], rate: 0.5, mark: { mul: 1.3, t: 3.5 } }),
+    tier(230, { label: 'Royal Falconer', range: 112, dmg: [15, 21], rate: 0.45, mark: { mul: 1.35, t: 4 } }),
+  ],
+  tip: 'Falcons strike fast and mark their prey: marked enemies take extra damage from everything.',
+};
+TOWERS.fountain = {
+  name: 'Stepwell Fountain', kind: 'aura', air: false, art: 'fountain', royal: true,
+  tiers: [
+    tier(110, { label: 'Stepwell', range: 58, slow: 0.35, heal: 4, rate: 0.25 }),
+    tier(160, { label: 'Sacred Stepwell', range: 64, slow: 0.45, heal: 7, rate: 0.25 }),
+    tier(220, { label: 'Stepwell Fountain', range: 70, slow: 0.55, heal: 11, rate: 0.25 }),
+  ],
+  tip: 'Holy water slows every enemy nearby and heals your soldiers standing in it.',
+};
+export const ROYAL_TOWERS = {
+  falconer: { rubies: 400, freeRegion: 2 },
+  fountain: { rubies: 500, freeRegion: 3 },
+};
 export const TOWER_ORDER = ['archer', 'barracks', 'mage', 'cannon'];
 export const SELL_REFUND = 0.6;
 
@@ -70,4 +94,11 @@ export const SPELLS = {
   reinforcements: { name: 'Reinforcements', cooldown: 24, count: 2, life: 18, stats: { hp: 80, dmg: [3, 5], rate: 1, armor: 0.1, art: 'spearman' } },
   holyFire: { name: 'Holy Fire', cooldown: 42, radius: 46, dmg: 30, burn: 10, burnTime: 4, stun: 1 },
 };
+// Power-ups: bought with coins or rubies, one of each per level.
+export const POWERUPS = {
+  freeze: { name: 'Freeze Bomb', desc: 'Freezes every enemy for 5 seconds', time: 5, coins: 150, rubies: 10 },
+  gold: { name: 'Gold Boost', desc: '+120 battle gold right now', amount: 120, coins: 120, rubies: 8 },
+  lives: { name: 'Extra Lives', desc: '+5 lives for the fort', amount: 5, coins: 180, rubies: 12 },
+};
+export const POWERUP_ORDER = ['freeze', 'gold', 'lives'];
 export const SPELL_ORDER = ['arrowRain', 'reinforcements', 'holyFire'];

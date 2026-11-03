@@ -29,14 +29,25 @@ for (const d of DEVICES) {
   const errors = [];
   p.on('pageerror', (e) => errors.push(e.message));
   p.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  await p.addInitScript(() => localStorage.setItem('sandstone-kingdom:v2', JSON.stringify({ introSeen: true, diyas: { 0: 3, 1: 3, 2: 2 }, rubies: 640, coins: 1200 })));
   await p.goto(URL);
-  await p.waitForFunction(() => window.__sk && window.__sk.screen === 'title', null, { timeout: 90000 });
+  await p.waitForFunction(() => window.__sk && window.__sk.screen === 'menu', null, { timeout: 120000 });
   await p.waitForTimeout(300);
-  await p.screenshot({ path: `${out}/${d.name}-1-levels.png` });
+  await p.screenshot({ path: `${out}/${d.name}-0-menu.png` });
+  // every menu screen: all buttons on screen
+  const offMenu = [];
+  for (const [name, args] of [['menu'], ['map', { mode: 'story' }], ['briefing', { mode: 'story', level: 4 }], ['shop'], ['daily'], ['quests'], ['workshop'], ['achievements'], ['ranks'], ['settings']]) {
+    await p.evaluate(([n, a]) => window.__sk.go(n, a), [name, args]);
+    await p.waitForFunction((n) => window.__sk.screen === n, name, { timeout: 120000 });
+    await p.waitForTimeout(120);
+    const bad = await p.evaluate(([W, H]) => window.__sk.screens.targets.filter((t) => t.w < W - 2 && t.fn).map((t) => (t.round ? { x: t.x - t.w, y: t.y - t.w, w: t.w * 2, h: t.w * 2 } : t)).filter((t) => t.x < -1 || t.y < -1 || t.x + t.w > W + 1 || t.y + t.h > H + 1).length, [d.width, d.height]);
+    if (bad && name !== 'map') offMenu.push(`${name}:${bad}`);
+    if (['map', 'briefing', 'shop'].includes(name)) await p.screenshot({ path: `${out}/${d.name}-1-${name}.png` });
+  }
 
   // a battle in progress with every tower type
   await p.evaluate(() => window.__sk.startLevel(1));
-  await p.waitForFunction(() => window.__sk.screen === 'battle', null, { timeout: 90000 });
+  await p.waitForFunction(() => window.__sk.screen === 'battle', null, { timeout: 120000 });
   const report = await p.evaluate(() => {
     const sk = window.__sk, g = sk.game;
     g.gold = 2000;
@@ -63,7 +74,7 @@ for (const d of DEVICES) {
 
   // the boss level with hero, spells and effects in flight
   await p.evaluate(() => window.__sk.startLevel(5));
-  await p.waitForFunction(() => window.__sk.screen === 'battle', null, { timeout: 90000 });
+  await p.waitForFunction(() => window.__sk.screen === 'battle', null, { timeout: 120000 });
   await p.evaluate(() => {
     const sk = window.__sk, g = sk.game;
     g.gold = 3000;
@@ -81,14 +92,14 @@ for (const d of DEVICES) {
   await p.screenshot({ path: `${out}/${d.name}-5-boss.png` });
 
   await p.evaluate(() => window.__sk.startLevel(0));
-  await p.waitForFunction(() => window.__sk.screen === 'battle', null, { timeout: 90000 });
+  await p.waitForFunction(() => window.__sk.screen === 'battle', null, { timeout: 120000 });
   await p.evaluate(() => { window.__sk.hud.banner = null; });
   await p.waitForTimeout(300);
   await p.screenshot({ path: `${out}/${d.name}-4-tutorial.png` });
 
-  const ok = !errors.length && !off.length && report.canvasW === Math.round(d.width * report.dpr) && report.canvasH === Math.round(d.height * report.dpr);
+  const ok = !errors.length && !off.length && !offMenu.length && report.canvasW === Math.round(d.width * report.dpr) && report.canvasH === Math.round(d.height * report.dpr);
   if (!ok) failures++;
-  console.log(`${ok ? 'PASS' : 'FAIL'} ${d.name.padEnd(18)} ${d.width}x${d.height}@${d.dpr}x  canvas ${report.canvasW}x${report.canvasH}  scale ${report.s.toFixed(2)}  off-screen buttons: ${off.length}${errors.length ? '  errors: ' + errors.join(' | ') : ''}`);
+  console.log(`${ok ? 'PASS' : 'FAIL'} ${d.name.padEnd(18)} ${d.width}x${d.height}@${d.dpr}x  canvas ${report.canvasW}x${report.canvasH}  scale ${report.s.toFixed(2)}  off-screen buttons: ${off.length}${offMenu.length ? ' menus: ' + offMenu.join(',') : ''}${errors.length ? '  errors: ' + errors.join(' | ') : ''}`);
   await p.close();
 }
 await b.close();

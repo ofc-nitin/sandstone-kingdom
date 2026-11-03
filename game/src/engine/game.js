@@ -1,7 +1,7 @@
 // The battle simulation. No drawing and no DOM here: the renderer reads this state and
 // the tests drive it directly. Everything advances in update(dt).
 import { makePath } from './path.js';
-import { ENEMIES, TOWERS, SELL_REFUND, HEROES, SPELLS, SPELL_ORDER } from './data.js';
+import { ENEMIES, TOWERS, TOWER_ORDER, SELL_REFUND, HEROES, SPELLS, SPELL_ORDER, POWERUPS } from './data.js';
 
 export const WAVE_GAP = 16; // seconds between the end of one wave's spawns and the next wave
 export const EARLY_CALL_GOLD_PER_SECOND = 1;
@@ -21,12 +21,27 @@ export function createRng(seed = 1) {
 }
 
 export class Game {
-  constructor(level, { seed = 1, seen = {} } = {}) {
+  // opts.rules: a map challenge ({ towers: [...], lives, noSpells, noHero }).
+  // opts.special: the royal tower chosen in the briefing; it can be built only on special spots. opts.endless: waves never stop.
+  // opts.powerups: how many of each power-up the player can use (one each per level).
+  constructor(level, { seed = 1, seen = {}, rules = null, special = null, endless = false, powerups = {}, bonus = {} } = {}) {
     this.level = level;
+    this.rules = rules || {};
+    this.bonus = bonus || {}; // Royal Workshop: { archer: 0.16, barracks: 0.24, spells: 0.08, hero: 0.1, ... }
+    this.endless = !!endless;
+    this.waves = level.waves.slice();
+    this.special = special && TOWERS[special] && TOWERS[special].royal ? special : null;
+    this.available = [...TOWER_ORDER, ...(this.special ? [this.special] : [])].filter((t) => !this.rules.towers || this.rules.towers.includes(t));
+    this.powerups = {};
+    for (const k of Object.keys(POWERUPS)) this.powerups[k] = Math.min(1, powerups[k] || 0);
+    this.stats = { kills: {}, built: {}, spells: 0, earlyCalls: 0, tier3: 0, tier3Types: [], heroSkills: 0, powerups: 0 };
+    this.score = 0;
+    this.scale = level.hpScale ?? 1;
+    this.revived = false;
     this.paths = level.paths.map((spec) => makePath(spec));
     this.rng = createRng(seed);
     this.gold = level.gold;
-    this.maxLives = level.lives ?? 20;
+    this.maxLives = this.rules.lives ?? level.lives ?? 20;
     this.lives = this.maxLives;
     this.time = 0;
     this.state = 'ready'; // ready -> playing -> won | lost
@@ -44,16 +59,16 @@ export class Game {
     this.areaEffects = [];
     // spells unlock as the campaign goes on; each level lists the ones it allows
     this.spells = {};
-    for (const name of level.spells ?? SPELL_ORDER) this.spells[name] = { cd: 0 };
+    if (!this.rules.noSpells) for (const name of level.spells ?? SPELL_ORDER) this.spells[name] = { cd: 0 };
     this.hero = null;
-    if (level.hero !== false) this.spawnHero(level.hero || 'sunKnight');
+    if (level.hero !== false && !this.rules.noHero) this.spawnHero(level.hero || 'sunKnight');
   }
 
   // ---------------------------------------------------------------- hero
   spawnHero(type) {
     const def = HEROES[type], path = this.paths[0];
     const start = this.level.heroStart || (() => { const p = path.at(path.length * 0.55); return { x: p.x, y: p.y }; })();
-    const h = { id: this.nextId++, hero: type, def, start: { ...start }, home: { ...start }, x: start.x, y: start.y, hp: def.hp, maxHp: def.hp, armor: def.armor, target: null, atkCd: 0, dead: false, respawnT: 0, facing: 1, skillCd: 0 };
+    const h = { id: this.nextId++, hero: type, def, start: { ...start }, home: { ...start }, x: start.x, y: start.y, hp: def.hp * this.mul('hero'), maxHp: def.hp * this.mul('hero'), armor: def.armor, target: null, atkCd: 0, dead: false, respawnT: 0, facing: 1, skillCd: 0 };
     this.hero = h;
     this.soldiers.push(h);
   }
@@ -76,6 +91,7 @@ export class Game {
     if (!h || h.dead || h.skillCd > 0 || this.isOver()) return false;
     const sk = h.def.skill;
     h.skillCd = sk.cooldown;
+    this.stats.heroSkills++;
     for (const e of this.enemies) {
       if (e.dead || Math.hypot(e.x - h.x, e.y - h.y) > sk.radius) continue;
       this.damage(e, sk.dmg, 'magic');
@@ -89,7 +105,7 @@ export class Game {
   castSpell(name, x, y) {
     const sp = this.spells[name], def = SPELLS[name];
     if (!sp || sp.cd > 0 || this.isOver() || this.state === 'ready') return false;
-    sp.cd = def.cooldown;
+    sp.cd = def.cooldown * (1 - (this.bonus.spells || 0));
     if (name === 'arrowRain') this.areaEffects.push({ x, y, r: def.radius, ticks: def.ticks, interval: def.interval, t: 0, dmg: def.dmg, kind: def.kind });
     if (name === 'holyFire') {
       for (const e of this.enemies) {
@@ -108,8 +124,53 @@ export class Game {
         this.soldiers.push({ id: this.nextId++, temp: true, stats: def.stats, life: def.life, home, x: home.x, y: home.y - 30, hp: def.stats.hp, maxHp: def.stats.hp, armor: def.stats.armor, target: null, atkCd: 0, dead: false, facing: 1 });
       }
     }
+    this.stats.spells++;
     this.emit({ type: 'spell', spell: name, x, y, r: def.radius || 30 });
     return true;
+  }
+
+  // ---------------------------------------------------------------- power-ups and revive
+  usePowerup(name) {
+    const def = POWERUPS[name];
+    if (!def || !(this.powerups[name] > 0) || this.isOver() || this.state === 'ready') return false;
+    this.powerups[name]--;
+    this.stats.powerups++;
+    if (name === 'freeze') for (const e of this.enemies) if (!e.dead) e.stun = Math.max(e.stun || 0, def.time);
+    if (name === 'gold') this.gold += def.amount;
+    if (name === 'lives') this.lives += def.amount;
+    this.emit({ type: 'powerup', powerup: name });
+    return true;
+  }
+
+  // A rewarded ad can bring a lost battle back once: +5 lives and the road near the gate cleared.
+  get canRevive() { return this.state === 'lost' && !this.revived && !this.endless; }
+  revive(lives = 5) {
+    if (!this.canRevive) return false;
+    this.revived = true;
+    this.lives = lives;
+    for (const e of this.enemies) if (!e.def.boss && e.d > this.paths[e.lane].length * 0.7) { e.dead = true; this.emit({ type: 'banish', x: e.x, y: e.y }); }
+    this.enemies = this.enemies.filter((e) => !e.dead);
+    this.state = 'playing';
+    this.emit({ type: 'revived' });
+    return true;
+  }
+
+  // Which towers can go on this spot (special spots also take the chosen special tower).
+  towersFor(plotId) {
+    const plot = this.plots[plotId];
+    return this.available.filter((t) => !TOWERS[t].royal || (plot && plot.royal));
+  }
+
+  // Everything the meta game needs once a battle ends: quests, achievements, rewards.
+  summary() {
+    const types = new Set(this.towers.map((t) => t.type));
+    for (const k of Object.keys(this.stats.built)) types.add(k);
+    return {
+      level: this.level.id, won: this.state === 'won', diyas: this.diyas(), livesLost: Math.max(0, this.maxLives - this.lives),
+      kills: { ...this.stats.kills }, built: { ...this.stats.built }, towerTypes: [...types], spells: this.stats.spells,
+      earlyCalls: this.stats.earlyCalls, tier3: this.stats.tier3, tier3Types: [...this.stats.tier3Types], heroSkills: this.stats.heroSkills, powerups: this.stats.powerups,
+      wave: this.waveIndex + 1, score: this.score, endless: this.endless, boss: !!this.level.boss, revived: this.revived, rules: this.rules,
+    };
   }
 
   soldierStats(s) {
@@ -118,9 +179,10 @@ export class Game {
     return s.tower.def.tiers[s.tower.tier];
   }
 
-  get waveCount() { return this.level.waves.length; }
+  get waveCount() { return this.endless ? Infinity : this.waves.length; }
   get canCallWave() { return this.state === 'ready' || (this.nextWaveTimer !== null && this.waveIndex < this.waveCount - 1); }
 
+  mul(key) { return 1 + (this.bonus[key] || 0); }
   emit(e) { this.events.push(e); }
   drainEvents() { const e = this.events; this.events = []; return e; }
   roll([lo, hi]) { return lo + (hi - lo) * this.rng(); }
@@ -128,7 +190,8 @@ export class Game {
   // ---------------------------------------------------------------- player actions
   build(plotId, type) {
     const plot = this.plots[plotId], def = TOWERS[type];
-    if (!plot || !def || plot.tower || plot.lock || this.isOver()) return false;
+    if (!plot || !def || plot.tower || plot.lock || this.isOver() || !this.available.includes(type)) return false;
+    if (def.royal && !plot.royal) return false; // the special tower only stands on special spots
     const cost = def.tiers[0].cost;
     if (this.gold < cost) return false;
     this.gold -= cost;
@@ -136,6 +199,7 @@ export class Game {
     plot.tower = tower;
     this.towers.push(tower);
     if (def.kind === 'soldiers') this.spawnSoldiers(tower);
+    this.stats.built[type] = (this.stats.built[type] || 0) + 1;
     this.emit({ type: 'built', tower });
     return true;
   }
@@ -148,9 +212,10 @@ export class Game {
     this.gold -= cost;
     tower.spent += cost;
     tower.tier++;
+    if (tower.tier === tower.def.tiers.length - 1) { this.stats.tier3++; if (!this.stats.tier3Types.includes(tower.type)) this.stats.tier3Types.push(tower.type); }
     if (tower.def.kind === 'soldiers') {
       const st = tower.def.tiers[tower.tier];
-      for (const s of this.soldiers.filter((x) => x.tower === tower)) { s.maxHp = st.hp; s.hp = st.hp; s.armor = st.armor; }
+      for (const s of this.soldiers.filter((x) => x.tower === tower)) { s.maxHp = st.hp * this.mul('barracks'); s.hp = s.maxHp; s.armor = st.armor; }
     }
     this.emit({ type: 'upgraded', tower });
     return true;
@@ -187,6 +252,8 @@ export class Game {
     if (this.state === 'playing' && this.nextWaveTimer !== null) {
       bonus = Math.ceil(this.nextWaveTimer) * EARLY_CALL_GOLD_PER_SECOND;
       this.gold += bonus;
+      this.stats.earlyCalls++;
+      if (this.endless) this.score += bonus * 5;
     }
     this.startNextWave();
     return bonus;
@@ -206,7 +273,13 @@ export class Game {
     this.waveIndex++;
     this.state = 'playing';
     this.nextWaveTimer = null;
-    const wave = this.level.waves[this.waveIndex];
+    if (this.endless && this.waveIndex >= this.waves.length) this.waves.push(this.endlessWave(this.waveIndex));
+    if (this.endless) {
+      const extra = Math.max(0, this.waveIndex - this.level.waves.length + 1);
+      this.scale = (this.level.hpScale ?? 1) * (1 + 0.09 * extra + 0.004 * extra * extra);
+      if (this.waveIndex > 0) this.score += 100 * this.waveIndex;
+    }
+    const wave = this.waves[this.waveIndex];
     for (const gr of wave) {
       for (let i = 0; i < gr.count; i++) this.spawnQueue.push({ t: this.time + (gr.delay || 0) + i * (gr.every ?? 1.2), type: gr.type, lane: gr.lane || 0, wave: this.waveIndex });
     }
@@ -220,9 +293,24 @@ export class Game {
     this.emit({ type: 'waveStart', wave: this.waveIndex });
   }
 
+  // Endless waves after the hand-made ones: bigger and more mixed every time, a boss every 10th.
+  endlessWave(n) {
+    const pool = this.level.endlessPool || Object.keys(ENEMIES).filter((k) => !ENEMIES[k].boss);
+    const lanes = this.paths.length, groups = [];
+    const size = 6 + Math.floor(n * 0.9);
+    const kinds = 2 + Math.min(3, Math.floor(n / 6));
+    for (let i = 0; i < kinds; i++) {
+      const type = pool[Math.floor(this.rng() * pool.length)], def = ENEMIES[type];
+      const count = Math.max(1, Math.round((size / kinds) * Math.min(1.6, 40 / def.hp + 0.4)));
+      groups.push({ type, count, every: 0.9 + this.rng() * 0.6, delay: i * 2.5, lane: (i + n) % lanes });
+    }
+    if ((n + 1) % 10 === 0 && this.level.boss) groups.push({ type: this.level.boss, count: 1, every: 1, delay: 4, lane: 0 });
+    return groups;
+  }
+
   spawnEnemy(type, lane, d = 0) {
     const def = ENEMIES[type], path = this.paths[lane];
-    const hp = Math.round(def.hp * (this.level.hpScale ?? 1));
+    const hp = Math.round(def.hp * this.scale);
     const e = {
       id: this.nextId++, type, def, lane, d, hp, maxHp: hp, offset: (this.rng() - 0.5) * 14,
       x: 0, y: 0, angle: 0, blocker: null, atkCd: 0, summonCd: def.summon ? def.summon.every : 0, walk: this.rng() * 10,
@@ -251,7 +339,7 @@ export class Game {
     for (let i = 0; i < st.soldiers; i++) {
       const a = c.angle + Math.PI / 2, off = (i - (st.soldiers - 1) / 2) * 9;
       const home = { x: c.x + Math.cos(a) * off + Math.cos(c.angle) * (i % 2 ? 4 : -4), y: c.y + Math.sin(a) * off };
-      this.soldiers.push({ id: this.nextId++, tower, slot: i, home, x: home.x, y: home.y, hp: st.hp, maxHp: st.hp, armor: st.armor, target: null, atkCd: 0, dead: false, respawnT: 0, facing: 1 });
+      this.soldiers.push({ id: this.nextId++, tower, slot: i, home, x: home.x, y: home.y, hp: st.hp * this.mul('barracks'), maxHp: st.hp * this.mul('barracks'), armor: st.armor, target: null, atkCd: 0, dead: false, respawnT: 0, facing: 1 });
     }
   }
 
@@ -272,12 +360,15 @@ export class Game {
 
   damage(e, amount, kind, quiet = false) {
     const resist = kind === 'magic' ? e.def.mres : kind === 'fire' ? 0 : e.def.armor;
-    const dealt = quiet ? amount : Math.max(1, amount * (1 - resist));
+    const mark = e.mark && e.mark.t > 0 ? e.mark.mul : 1;
+    const dealt = (quiet ? amount : Math.max(1, amount * (1 - resist))) * mark;
     e.hp -= dealt;
     if (!quiet) this.emit({ type: 'hit', x: e.x, y: e.y - 14, kind });
     if (e.hp <= 0 && !e.dead) {
       e.dead = true;
       this.gold += e.def.gold;
+      this.stats.kills[e.type] = (this.stats.kills[e.type] || 0) + 1;
+      if (this.endless) this.score += e.def.gold * 10;
       if (e.blocker) e.blocker.target = null;
       this.emit({ type: 'kill', x: e.x, y: e.y, gold: e.def.gold, enemy: e.type });
     }
@@ -304,6 +395,9 @@ export class Game {
     for (const e of this.enemies) {
       if (e.dead) continue;
       const path = this.paths[e.lane];
+      if (e.mark) { e.mark.t -= dt; if (e.mark.t <= 0) e.mark = null; }
+      const slow = e.slowT > 0 ? e.slowAmt : 0;
+      if (e.slowT > 0) e.slowT -= dt;
       if (e.burn) { e.burn.t -= dt; this.damage(e, e.burn.dps * dt, 'fire', true); if (e.burn.t <= 0) e.burn = null; if (e.dead) continue; }
       if (e.stun > 0) { e.stun -= dt; continue; }
       if (e.def.summon) {
@@ -335,7 +429,7 @@ export class Game {
         }
       }
       e.walk += dt;
-      e.d += e.def.speed * dt;
+      e.d += e.def.speed * (1 - slow) * dt;
       if (e.d >= path.length) {
         e.dead = true;
         e.leaked = true;
@@ -381,7 +475,7 @@ export class Game {
         if (dist <= SOLDIER_REACH) {
           if (!e.blocker) e.blocker = s;
           s.atkCd -= dt;
-          if (s.atkCd <= 0) { s.atkCd = st.rate; this.damage(e, this.roll(st.dmg), 'physical'); }
+          if (s.atkCd <= 0) { s.atkCd = st.rate; this.damage(e, this.roll(st.dmg) * (s.hero ? this.mul('hero') : 1), 'physical'); }
         }
       } else {
         const dx = s.home.x - s.x, dy = s.home.y - s.y, dist = Math.hypot(dx, dy);
@@ -408,6 +502,16 @@ export class Game {
       t.cd -= dt;
       if (t.cd > 0) continue;
       const st = t.def.tiers[t.tier], range = st.range * t.rangeBonus;
+      if (t.def.kind === 'aura') {
+        t.cd = st.rate;
+        for (const e of this.enemies) {
+          if (e.dead || e.def.flying || Math.hypot(e.x - t.x, (e.y - t.y) * 1.2) > range) continue;
+          e.slowAmt = e.slowT > 0 ? Math.max(e.slowAmt, st.slow) : st.slow;
+          e.slowT = st.rate + 0.15;
+        }
+        for (const s of this.soldiers) if (!s.dead && s.hp < s.maxHp && Math.hypot(s.x - t.x, (s.y - t.y) * 1.2) <= range) s.hp = Math.min(s.maxHp, s.hp + st.heal * st.rate);
+        continue;
+      }
       let target = null, progress = -1;
       for (const e of this.enemies) {
         if (e.dead || (e.def.flying && !t.def.air)) continue;
@@ -419,12 +523,12 @@ export class Game {
       t.cd = st.rate;
       t.aim = Math.atan2(target.y - t.y, target.x - t.x);
       const sx = t.x, sy = t.y - (t.def.kind === 'shell' ? 26 : 44);
-      const dmg = this.roll(st.dmg);
+      const dmg = this.roll(st.dmg) * this.mul(t.type);
       if (t.def.kind === 'shell') {
         const flight = Math.max(0.5, Math.hypot(target.x - sx, target.y - sy) / 170);
         this.projectiles.push({ kind: 'shell', sx, sy, tx: target.x, ty: target.y, t: 0, flight, dmg, splash: st.splash, x: sx, y: sy });
       } else {
-        this.projectiles.push({ kind: t.def.kind, x: sx, y: sy, target, dmg, speed: t.def.kind === 'magic' ? 260 : 340 });
+        this.projectiles.push({ kind: t.def.kind, x: sx, y: sy, target, dmg, speed: t.def.kind === 'magic' ? 260 : t.def.kind === 'falcon' ? 300 : 340, mark: st.mark });
       }
       this.emit({ type: 'fire', tower: t });
     }
@@ -452,7 +556,11 @@ export class Game {
       const tx = e.x, ty = e.y - 14, dx = tx - p.x, dy = ty - p.y, dist = Math.hypot(dx, dy);
       p.angle = Math.atan2(dy, dx);
       const step = p.speed * dt;
-      if (dist <= Math.max(step, HIT_RADIUS)) { p.done = true; this.damage(e, p.dmg, p.kind === 'magic' ? 'magic' : 'physical'); }
+      if (dist <= Math.max(step, HIT_RADIUS)) {
+        p.done = true;
+        this.damage(e, p.dmg, p.kind === 'magic' ? 'magic' : 'physical');
+        if (p.mark && !e.dead) e.mark = { mul: p.mark.mul, t: p.mark.t };
+      }
       else { p.x += (dx / dist) * step; p.y += (dy / dist) * step; }
     }
 

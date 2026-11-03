@@ -2,7 +2,7 @@
 // scaled by view.u so it is the same physical size on every phone.
 import { blit } from './raster.js';
 import { UNIT_SCALE } from './assets.js';
-import { TOWERS, TOWER_ORDER, ENEMIES, SELL_REFUND, SPELLS, HEROES } from '../engine/data.js';
+import { TOWERS, ENEMIES, SELL_REFUND, SPELLS, HEROES, POWERUP_ORDER, POWERUPS } from '../engine/data.js';
 
 const OUT = '#3a2414';
 const FONT = 'Martel, Georgia, serif';
@@ -117,7 +117,22 @@ export class Hud {
     blit(ctx, assets.get('ui:coin'), L + 92 * u, cy, u);
     text(ctx, String(game.gold), L + 108 * u, cy + 6 * u, 16 * u, { align: 'left' });
     blit(ctx, assets.get('ui:wave'), L + 176 * u, cy, u);
-    text(ctx, `${Math.max(0, game.waveIndex + 1)}/${game.waveCount}`, L + 192 * u, cy + 6 * u, 16 * u, { align: 'left', max: 52 * u });
+    text(ctx, game.endless ? `${Math.max(0, game.waveIndex + 1)}` : `${Math.max(0, game.waveIndex + 1)}/${game.waveCount}`, L + 192 * u, cy + 6 * u, 16 * u, { align: 'left', max: 52 * u });
+    if (game.endless) text(ctx, `Score ${Math.floor(game.score).toLocaleString('en-IN')}`, L + 6 * u, T + ph + 16 * u, 12 * u, { align: 'left', sw: 3 * u });
+    if (info.challenge) text(ctx, info.challenge.name, L + 6 * u, T + ph + 16 * u, 12 * u, { align: 'left', sw: 3 * u, fill: '#ffd66b', max: 200 * u });
+
+    // ---- power-ups (one of each per level), stacked under the plaque
+    let py = T + ph + 40 * u;
+    for (const k of POWERUP_ORDER) {
+      const n = game.powerups[k] || 0;
+      if (!n) continue;
+      const x = L + 18 * u, y = py, ready = game.state !== 'ready';
+      ctx.globalAlpha = ready ? 1 : 0.6;
+      blit(ctx, assets.get('btn:' + k), x, y, u * 0.72);
+      ctx.globalAlpha = 1;
+      this.tap(x, y, 18 * u, 0, () => this.actions.powerup(k), true);
+      py += 40 * u;
+    }
 
     // ---- top-right: pause and speed
     const br = 22 * u;
@@ -214,8 +229,11 @@ export class Hud {
     };
     this.tap(0, 0, view.cssW, view.cssH, () => { this.menu = null; }); // tap anywhere else closes
     if (m.type === 'build') {
-      const angles = [-135, -45, 135, 45];
-      TOWER_ORDER.forEach((type, i) => {
+      const types = game.towersFor(plot.id);
+      const angles = types.length <= 4 ? [-135, -45, 135, 45] : [-150, -30, 150, 30, -90];
+      if (plot.royal) text(ctx, game.special ? 'Special spot' : 'Special spot: +15% range', c.x, c.y + rad + 34 * u, 11 * u, { sw: 3 * u, fill: '#ffd66b' });
+      if (!types.length) { text(ctx, 'No tower allowed here', c.x, c.y, 12 * u, { sw: 3 * u }); return; }
+      types.forEach((type, i) => {
         const a = (angles[i] * Math.PI) / 180, cost = TOWERS[type].tiers[0].cost;
         bubble(Math.cos(a) * rad, Math.sin(a) * rad * 0.8, null, () => { this.actions.build(plot.id, type); this.menu = null; }, cost, game.gold >= cost, 'icon:' + TOWERS[type].art);
       });
@@ -261,7 +279,7 @@ export class Hud {
     const { u, cssW, cssH } = view, m = this.modal;
     ctx.fillStyle = 'rgba(12,6,2,0.55)'; ctx.fillRect(0, 0, cssW, cssH);
     this.tap(0, 0, cssW, cssH, () => {}); // swallow taps behind the panel
-    const w = Math.min(cssW - 40 * u, 380 * u), h = Math.min(cssH - 50 * u, 250 * u);
+    const w = Math.min(cssW - 40 * u, 380 * u), h = Math.min(cssH - 30 * u, m.type === 'won' || m.type === 'lost' ? 290 * u : 250 * u);
     const x = (cssW - w) / 2, y = (cssH - h) / 2 + 8 * u;
     const btn = (label, color, bx, fn, bw = 110 * u) => { const by = y + h - 52 * u; gemButton(ctx, bx, by, bw, 36 * u, label, color, u); this.tap(bx, by, bw, 36 * u, fn); };
     if (m.type === 'newEnemy') {
@@ -289,17 +307,32 @@ export class Hud {
       btn('QUIT', 'red', x + 42 * u + bw * 2, () => this.actions.quit(), bw);
     } else if (m.type === 'won' || m.type === 'lost') {
       const won = m.type === 'won';
-      woodPanel(ctx, x, y, w, h, won ? 'Victory!' : 'The fort has fallen', u);
+      woodPanel(ctx, x, y, w, h, won ? (m.challenge ? 'Challenge complete!' : 'Victory!') : m.endless ? 'The camp has fallen' : 'The fort has fallen', u);
+      const r = m.reward || {};
       if (won) {
-        for (let i = 0; i < 3; i++) blit(ctx, assets.get(i < m.diyas ? 'ui:diya' : 'ui:diyaOff'), x + w / 2 + (i - 1) * 44 * u, y + 78 * u, u * 1.5);
-        text(ctx, `${game.lives} of ${game.maxLives} lives left`, x + w / 2, y + 116 * u, 13 * u, { fill: '#3a2414', stroke: false, weight: 700 });
-      } else text(ctx, 'Try different towers or build spots.', x + w / 2, y + 90 * u, 13 * u, { fill: '#3a2414', stroke: false, weight: 700, max: w - 40 * u });
+        if (m.challenge) text(ctx, m.challenge.name, x + w / 2, y + 52 * u, 15 * u, { font: TITLE, weight: 400, fill: '#7a160a', stroke: false, max: w - 40 * u });
+        else for (let i = 0; i < 3; i++) blit(ctx, assets.get(i < m.diyas ? 'ui:diya' : 'ui:diyaOff'), x + w / 2 + (i - 1) * 44 * u, y + 66 * u, u * 1.4);
+        text(ctx, `${game.lives} of ${game.maxLives} lives left`, x + w / 2, y + 98 * u, 12 * u, { fill: '#3a2414', stroke: false, weight: 700 });
+      } else if (m.endless) {
+        text(ctx, `Wave ${m.wave} · ${Math.floor(m.score).toLocaleString('en-IN')} points`, x + w / 2, y + 64 * u, 16 * u, { font: TITLE, weight: 400, fill: '#7a160a', stroke: false, max: w - 40 * u });
+        text(ctx, m.best ? 'New personal best!' : `Best: wave ${m.bestWave}`, x + w / 2, y + 86 * u, 12 * u, { fill: '#3a2414', stroke: false, weight: 900 });
+      } else text(ctx, 'Try other towers, spots or power-ups.', x + w / 2, y + 74 * u, 13 * u, { fill: '#3a2414', stroke: false, weight: 700, max: w - 40 * u });
+      // rewards line: coins (and rubies from challenges or achievements)
+      const ry = y + 124 * u;
+      let rx = x + w / 2 - ((r.coins ? 70 : 0) + (r.rubies ? 70 : 0)) * u / 2;
+      if (r.coins) { blit(ctx, assets.get('ui:coin'), rx + 12 * u, ry, u); text(ctx, `+${r.coins * (m.doubled ? 2 : 1)}`, rx + 26 * u, ry + 5 * u, 15 * u, { align: 'left' }); rx += 70 * u; }
+      if (r.rubies) { blit(ctx, assets.get('ui:ruby'), rx + 12 * u, ry, u); text(ctx, `+${r.rubies}`, rx + 26 * u, ry + 5 * u, 15 * u, { align: 'left' }); }
+      if (r.achievements && r.achievements.length) text(ctx, `Achievement: ${r.achievements[0].name}${r.achievements.length > 1 ? ` +${r.achievements.length - 1}` : ''}`, x + w / 2, ry + 24 * u, 11 * u, { fill: '#7a160a', stroke: false, max: w - 40 * u });
+      // optional rewarded ads: double the coins, or one revive
+      if (won && r.coins && !m.doubled && info.canAd) { const bw2 = 170 * u; gemButton(ctx, x + w / 2 - bw2 / 2, y + h - 92 * u, bw2, 30 * u, 'DOUBLE COINS (AD)', 'purple', u); this.tap(x + w / 2 - bw2 / 2, y + h - 92 * u, bw2, 30 * u, () => this.actions.double()); }
+      if (!won && game.canRevive && info.canAd) { const bw2 = 170 * u; gemButton(ctx, x + w / 2 - bw2 / 2, y + h - 92 * u, bw2, 30 * u, 'REVIVE +5 LIVES (AD)', 'purple', u); this.tap(x + w / 2 - bw2 / 2, y + h - 92 * u, bw2, 30 * u, () => this.actions.revive()); }
       const bw = (w - 60 * u) / 3;
-      btn('LEVELS', 'blue', x + 18 * u, () => this.actions.quit(), bw);
+      btn(m.endless ? 'MENU' : 'MAP', 'blue', x + 18 * u, () => this.actions.quit(), bw);
       btn(won ? 'REPLAY' : 'RETRY', 'gold', x + 30 * u + bw, () => this.actions.restart(), bw);
-      if (won && info.hasNext) btn('NEXT', 'green', x + 42 * u + bw * 2, () => this.actions.next(), bw);
+      if (won && info.hasNext && !m.challenge) btn('NEXT', 'green', x + 42 * u + bw * 2, () => this.actions.next(), bw);
+      if (m.endless) btn('RANKS', 'green', x + 42 * u + bw * 2, () => this.actions.ranks(), bw);
     }
   }
 }
 
-export { gemButton, woodPanel };
+export { gemButton, woodPanel, wrap };

@@ -677,6 +677,92 @@ function cannonTower(p, x, y, s = 1) {
   flag(t, 24, -2, 28, 'url(#red)');
   return t;
 }
+// A hunting falcon, wings up or down
+function falcon(p, x, y, s = 1, up = true) {
+  const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` });
+  const wing = up ? 'M-1 -1 Q-8 -12 -15 -10 Q-9 -6 -4 2 Z' : 'M-1 0 Q-8 6 -15 9 Q-8 2 -4 -2 Z';
+  outlined(t, 'path', { d: wing, fill: '#8a5a32' }, 0.9);
+  outlined(t, 'path', { d: up ? 'M1 -1 Q8 -12 15 -10 Q9 -6 4 2 Z' : 'M1 0 Q8 6 15 9 Q8 2 4 -2 Z', fill: '#a8703e' }, 0.9);
+  outlined(t, 'path', { d: 'M-4 0 Q0 -5 5 -1 Q3 4 -2 5 L-6 8 L-5 3 Z', fill: '#c48a50' }, 0.9);
+  el('path', { d: 'M-3 2 q2 1 4 0', stroke: '#fff4dc', 'stroke-width': 0.6, fill: 'none' }, t);
+  outlined(t, 'circle', { cx: 5, cy: -3, r: 2.6, fill: '#c48a50' }, 0.8);
+  el('circle', { cx: 5.8, cy: -3.4, r: 0.7, fill: '#1a1008' }, t);
+  outlined(t, 'path', { d: 'M7.2 -3 l2.4 0.8 l-2 1.2 Z', fill: '#ffd23a' }, 0.4);
+  return t;
+}
+function falconer(p, x, y, s = 1) {
+  const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` });
+  base(t, 24);
+  outlined(t, 'path', { d: 'M-16 0 L-13 -40 H13 L16 0 Q0 6 -16 0 Z', fill: 'url(#sand)' }, 1.8);
+  stones(t, -13, -40, 26, 40);
+  el('path', { d: 'M-15 -1 L-12.4 -39 L-8 -39 L-10 -1 Z', fill: '#ffffff', opacity: 0.2 }, t);
+  el('path', { d: 'M9 -39 L13 -40 L16 0 L11 1 Z', fill: '#7a4a22', opacity: 0.28 }, t);
+  ao(t, -16, 0, 32);
+  door(t, 0, 9, 13);
+  jharokha(t, 0, -26);
+  torch(t, -9, -8); torch(t, 9, -8);
+  banner(t, 9, -40, 7, 15, 'url(#blue)', 'sun');
+  // open chhatri pavilion on top, the falcon's perch
+  outlined(t, 'rect', { x: -17, y: -45, width: 34, height: 5, rx: 1.4, fill: 'url(#sandV)' }, 1.4);
+  for (const cx of [-13, 13]) outlined(t, 'rect', { x: cx - 1.6, y: -62, width: 3.2, height: 17, fill: '#f1c98d' }, 0.9);
+  outlined(t, 'path', { d: 'M-18 -62 Q0 -84 18 -62 Z', fill: 'url(#marble)' }, 1.4);
+  el('path', { d: 'M-10 -66 Q-2 -78 4 -78', stroke: '#ffffff', 'stroke-width': 1, fill: 'none' }, t);
+  outlined(t, 'path', { d: 'M-19 -62 H19 L17 -59 H-17 Z', fill: 'url(#gold)' }, 0.9);
+  el('circle', { cx: 0, cy: -84, r: 2, fill: '#ffd23a', stroke: OUT, 'stroke-width': 0.6 }, t);
+  person(t, -2, -45, { tunic: '#2f5fc8', trim: '#ffd23a', headColor: '#ffd23a', s: 0.62, moustache: true, legs: '#6b4a2e' });
+  outlined(t, 'path', { d: 'M3 -54 h7', fill: 'none' }, 1.6);
+  falcon(t, 10, -58, 0.42, true);
+  const fly = falcon(t, 0, 0, 0.55, false);
+  fly.setAttribute('transform', 'translate(-26 -70) scale(0.55)');
+  return t;
+}
+function fountain(p, x, y, s = 1) {
+  const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` });
+  cast(t, 0, 0, 34, 10);
+  shadow(t, 0, 3, 32, 11);
+  // stepped stone basin, like a small stepwell
+  for (let i = 0; i < 3; i++) {
+    const rx = 30 - i * 6, ry = 12 - i * 2, yy = -i * 5;
+    outlined(t, 'ellipse', { cx: 0, cy: yy, rx, ry, fill: i % 2 ? '#d39a58' : '#e8b47a' }, 1.3);
+    for (let k = 0; k < 12; k++) { const a = Math.PI * (0.06 + k * 0.075); el('path', { d: `M${Math.cos(a) * rx} ${yy + Math.sin(a) * ry} l0 -3`, stroke: '#a8723e', 'stroke-width': 0.6 }, t); }
+  }
+  outlined(t, 'ellipse', { cx: 0, cy: -11, rx: 15, ry: 5.6, fill: 'url(#water)' }, 1.2);
+  const ripple = el('ellipse', { cx: 0, cy: -11, rx: 8, ry: 2.6, fill: 'none', stroke: '#e6f8fc', 'stroke-width': 0.9 }, t);
+  anim(ripple, { attributeName: 'rx', values: '4;13;4', dur: '2s' });
+  // lotus pillar with water arcs
+  outlined(t, 'rect', { x: -3.4, y: -40, width: 6.8, height: 28, rx: 2, fill: 'url(#marble)' }, 1.2);
+  el('path', { d: 'M-3 -34 H3 M-3 -26 H3 M-3 -18 H3', stroke: '#e0a21c', 'stroke-width': 0.8 }, t);
+  for (let i = -2; i <= 2; i++) outlined(t, 'path', { d: `M${i * 3.4} -40 Q${i * 3.4 - 4} -46 ${i * 3.4} -51 Q${i * 3.4 + 4} -46 ${i * 3.4} -40 Z`, fill: i % 2 ? '#ff9fc0' : '#ffbcd2' }, 0.8);
+  for (const sg of [-1, 1]) {
+    const arc = el('path', { d: `M0 -50 Q${sg * 16} -60 ${sg * 20} -14`, stroke: '#9fdcff', 'stroke-width': 2.2, fill: 'none', opacity: 0.9, 'stroke-dasharray': '4 3' }, t);
+    anim(arc, { attributeName: 'stroke-dashoffset', values: '14;0', dur: '0.8s' });
+  }
+  const glow = el('circle', { cx: 0, cy: -50, r: 9, fill: 'url(#glow)' }, t);
+  anim(glow, { attributeName: 'r', values: '8;11;8', dur: '1.8s' });
+  for (const cx of [-24, 24]) {
+    outlined(t, 'rect', { x: cx - 2.6, y: -22, width: 5.2, height: 16, fill: 'url(#sand)' }, 1);
+    outlined(t, 'path', { d: `M${cx - 5} -22 Q${cx} -31 ${cx + 5} -22 Z`, fill: '#ffffff' }, 1);
+    el('circle', { cx, cy: -31, r: 1.2, fill: '#ffd23a', stroke: OUT, 'stroke-width': 0.4 }, t);
+  }
+  moss(t, [[-22, 2, 2.4], [20, 4, 2.2], [-8, 6, 1.6]]);
+  person(t, 15, 3, { tunic: '#f4efe2', trim: '#2f8fa8', headColor: '#2f8fa8', s: 0.55, weapon: null });
+  return t;
+}
+// A special build spot: a gold-inlaid lotus platform that takes the chosen royal tower
+function specialPlot(p, x, y) {
+  const t = g(p, { transform: `translate(${x} ${y})` });
+  const halo = el('ellipse', { cx: 0, cy: 0, rx: 30, ry: 13, fill: 'url(#holy)', opacity: 0.9 }, t);
+  anim(halo, { attributeName: 'opacity', values: '0.6;1;0.6', dur: '2s' });
+  shadow(t, 0, 3, 26, 9);
+  outlined(t, 'ellipse', { cx: 0, cy: 0, rx: 24, ry: 10, fill: '#b07a3a' }, 1.8);
+  el('ellipse', { cx: 0, cy: -1.5, rx: 20.5, ry: 7.8, fill: 'url(#gold)' }, t);
+  el('ellipse', { cx: 0, cy: -1.5, rx: 16, ry: 6, fill: '#f1d9a0' }, t);
+  for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; outlined(t, 'path', { d: `M${Math.cos(a) * 6} ${Math.sin(a) * 2.4 - 1.5} Q${Math.cos(a + 0.3) * 13} ${Math.sin(a + 0.3) * 5 - 1.5} ${Math.cos(a) * 15} ${Math.sin(a) * 5.6 - 1.5} Q${Math.cos(a - 0.3) * 13} ${Math.sin(a - 0.3) * 5 - 1.5} ${Math.cos(a) * 6} ${Math.sin(a) * 2.4 - 1.5} Z`, fill: i % 2 ? '#ff9fc0' : '#ffbcd2' }, 0.5); }
+  outlined(t, 'circle', { cx: 0, cy: -1.5, r: 3, fill: '#ffd23a' }, 0.6);
+  for (const sx of [-1, 1]) { const st = sparkleAt(t, sx * 18, -12); anim(st, { attributeName: 'opacity', values: sx > 0 ? '0;1;0' : '1;0;1', dur: '1.6s' }); }
+  return t;
+}
+function sparkleAt(t, x, y) { return el('path', { d: `M${x} ${y - 4} L${x + 1} ${y - 1} L${x + 4} ${y} L${x + 1} ${y + 1} L${x} ${y + 4} L${x - 1} ${y + 1} L${x - 4} ${y} L${x - 1} ${y - 1} Z`, fill: '#fff4c0' }, t); }
 function fortGate(p, x, y, s = 1) {
   const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` });
   cast(t, 0, 0, 70, 12, 0.22);

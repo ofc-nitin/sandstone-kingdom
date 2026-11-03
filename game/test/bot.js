@@ -11,6 +11,8 @@ export function coverage(game, plot, range) {
 export function playLevel(game, { plan = ['archer', 'barracks', 'archer', 'mage', 'archer', 'cannon', 'archer', 'archer'], build = true, useAbilities = build, maxTime = 900 } = {}) {
   const dt = 1 / 30;
   let next = 0;
+  plan = plan.filter((t) => game.available.includes(t));
+  if (!plan.length) plan = game.available.slice(0, 2);
   game.callWave();
   while (!game.isOver() && game.time < maxTime) {
     if (build) {
