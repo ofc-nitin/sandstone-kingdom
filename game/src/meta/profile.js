@@ -26,7 +26,7 @@ export function newProfile(now = Date.now()) {
     stats: { wins: 0, kills: 0, played: 0, bossWins: 0, endlessBest: {}, endlessScore: {}, adsWatched: 0, peacock: 0, spells: 0, flawless: 0 },
     ads: { lastInterstitial: 0, rewardKey: null, rewardCount: 0 },
     settings: { music: 0.6, sfx: 0.9, haptics: true, textSize: 1, battery: false, quality: 'high', colorblind: false, notifications: false, lang: 'en' },
-    introSeen: false, starterOffered: false, consent: null,
+    introSeen: false, starterOffered: false, consent: null, lastSpecials: [], forgeJob: null,
   };
 }
 
@@ -204,8 +204,8 @@ export const ACHIEVEMENTS = [
   { id: 'holy_order', name: 'Holy Order', desc: 'Train Holy Knights', rubies: 5, check: (p, s) => s && s.tier3Types && s.tier3Types.includes('barracks') },
   { id: 'royal_patron', name: 'Royal Patron', desc: 'Unlock a royal tower', rubies: 10, check: (p) => Object.keys(ROYAL_TOWERS).some((t) => p.owned[t]) },
   { id: 'spell_100', name: 'Spellbinder', desc: 'Cast 100 spells', rubies: 10, check: (p) => p.stats.spells >= 100 },
-  { id: 'workshop_first', name: 'Apprentice', desc: 'Buy a Royal Workshop upgrade', rubies: 5, check: (p) => sum(p.workshop) >= 1 },
-  { id: 'workshop_max', name: 'Master Builder', desc: 'Max every Royal Workshop track', rubies: 40, check: (p) => sum(p.workshop) >= 18 },
+  { id: 'workshop_first', name: 'Apprentice', desc: 'Forge your first Royal Forge upgrade', rubies: 5, check: (p) => sum(p.workshop) >= 1 },
+  { id: 'workshop_max', name: 'Master Builder', desc: 'Max every Royal Forge track', rubies: 40, check: (p) => sum(p.workshop) >= FORGE.length * FORGE_RANKS.length },
   { id: 'survivor', name: 'Survivor', desc: 'Reach wave 25 in Endless', rubies: 15, check: (p) => Math.max(0, ...Object.values(p.stats.endlessBest)) >= 25 },
   { id: 'endless_50', name: 'Tireless', desc: 'Reach wave 50 in Endless', rubies: 30, check: (p) => Math.max(0, ...Object.values(p.stats.endlessBest)) >= 50 },
   { id: 'seasons_legend', name: 'Legend of the Seasons', desc: 'Reach wave 100 in Endless', rubies: 60, check: (p) => Math.max(0, ...Object.values(p.stats.endlessBest)) >= 100 },
@@ -231,6 +231,7 @@ export function checkAchievements(p, summary = null) {
   return fresh;
 }
 
+export const STORY_GIFT = { level: 2, tower: 'falconer' };
 // ---------------------------------------------------------------- after every battle
 export function recordBattle(p, summary, { challenge = null } = {}) {
   const out = { coins: 0, rubies: 0, first: false, newDiyas: 0, challenge: null, achievements: [] };
@@ -257,6 +258,8 @@ export function recordBattle(p, summary, { challenge = null } = {}) {
       const key = challengeKey(summary.level, challenge.id);
       if (!p.challenges[key]) { p.challenges[key] = true; p.rubies += challenge.rubies; out.rubies += challenge.rubies; out.challenge = challenge; }
     } else {
+      // story reward: the first special tower joins after the Stepwell Road
+      if (summary.level === STORY_GIFT.level && !p.owned[STORY_GIFT.tower] && !(p.diyas[summary.level] > 0)) { p.owned[STORY_GIFT.tower] = true; out.gift = STORY_GIFT.tower; }
       const before = p.diyas[summary.level] || 0;
       if (summary.diyas > before) { out.newDiyas = summary.diyas - before; p.diyas[summary.level] = summary.diyas; }
     }
@@ -271,38 +274,65 @@ export function recordBattle(p, summary, { challenge = null } = {}) {
 // Rewarded ad on the victory screen doubles the coins of that win.
 export function doubleReward(p, coins) { p.coins += coins; return coins; }
 
-// ---------------------------------------------------------------- Royal Workshop (diyas unlock ranks, coins pay for them)
-export const WORKSHOP = [
-  { id: 'archer', name: 'Archer Training', desc: '+8% Archer damage per rank' },
-  { id: 'barracks', name: 'Barracks Drill', desc: '+12% soldier health per rank' },
-  { id: 'mage', name: 'Arcane Study', desc: '+8% Mage damage per rank' },
-  { id: 'cannon', name: 'Gunpowder', desc: '+8% Cannon damage per rank' },
-  { id: 'spells', name: 'Sacred Scrolls', desc: '-8% spell cooldown per rank' },
-  { id: 'hero', name: 'Royal Armoury', desc: '+10% hero health and damage per rank' },
+// ---------------------------------------------------------------- Royal Forge: upgrades that take real time
+// Each track has 5 ranks. A rank costs coins, needs enough diyas, and takes time to forge;
+// one job runs at a time. Later levels are tuned so that skipping the Forge makes them hard.
+export const FORGE = [
+  { id: 'archer', name: 'Archer Training', desc: '+7% Archer damage per rank' },
+  { id: 'barracks', name: 'Barracks Drill', desc: '+10% soldier health per rank' },
+  { id: 'mage', name: 'Arcane Study', desc: '+7% Mage damage per rank' },
+  { id: 'cannon', name: 'Gunpowder', desc: '+7% Cannon damage per rank' },
+  { id: 'royal', name: 'Royal Engineers', desc: '+7% special tower power per rank' },
+  { id: 'hero', name: 'Royal Armoury', desc: '+8% hero health and damage per rank' },
+  { id: 'spells', name: 'Sacred Scrolls', desc: '-6% spell cooldown per rank' },
 ];
-export const WORKSHOP_RANKS = [{ diyas: 3, coins: 150 }, { diyas: 9, coins: 400 }, { diyas: 15, coins: 900 }];
-const PER_RANK = { archer: 0.08, barracks: 0.12, mage: 0.08, cannon: 0.08, spells: 0.08, hero: 0.1 };
+export const WORKSHOP = FORGE; // older name
+const MIN = 60000;
+export const FORGE_RANKS = [
+  { coins: 200, time: 3 * MIN, diyas: 0 }, { coins: 500, time: 20 * MIN, diyas: 4 }, { coins: 1200, time: 60 * MIN, diyas: 8 },
+  { coins: 2500, time: 180 * MIN, diyas: 12 }, { coins: 5000, time: 480 * MIN, diyas: 15 },
+];
+const PER_RANK = { archer: 0.07, barracks: 0.1, mage: 0.07, cannon: 0.07, royal: 0.07, hero: 0.08, spells: 0.06 };
+export const FORGE_AD_CUT = 15 * MIN; // one rewarded ad takes 15 minutes off the job
 
-export function workshopNext(p, id) {
+export function forgeNext(p, id) {
   const rank = p.workshop[id] || 0;
-  if (rank >= WORKSHOP_RANKS.length) return null;
-  const r = WORKSHOP_RANKS[rank];
-  return { rank, ...r, locked: totalDiyas(p) < r.diyas, affordable: p.coins >= r.coins };
+  if (rank >= FORGE_RANKS.length) return null;
+  const r = FORGE_RANKS[rank];
+  return { rank, ...r, locked: totalDiyas(p) < r.diyas, affordable: p.coins >= r.coins, busy: !!p.forgeJob };
 }
-export function buyWorkshop(p, id) {
-  const n = workshopNext(p, id);
-  if (!n || n.locked || !n.affordable) return false;
+export function forgeStart(p, id, now = Date.now()) {
+  const n = forgeNext(p, id);
+  if (!n || n.locked || !n.affordable || p.forgeJob) return false;
   p.coins -= n.coins;
-  p.workshop[id] = n.rank + 1;
+  p.forgeJob = { id, rank: n.rank + 1, start: now, ends: now + n.time };
   return true;
 }
-export function resetWorkshop(p) {
-  let refund = 0;
-  for (const [id, rank] of Object.entries(p.workshop)) for (let i = 0; i < rank; i++) refund += WORKSHOP_RANKS[i].coins;
-  p.workshop = {};
-  p.coins += refund;
-  return refund;
+// Finishes the job if its time is up; returns the finished job, or null.
+export function forgeTick(p, now = Date.now()) {
+  const j = p.forgeJob;
+  if (!j || now < j.ends) return null;
+  p.workshop[j.id] = Math.max(p.workshop[j.id] || 0, j.rank);
+  p.forgeJob = null;
+  return j;
 }
+export const forgeLeft = (p, now = Date.now()) => (p.forgeJob ? Math.max(0, p.forgeJob.ends - now) : 0);
+export const forgeRushCost = (p, now = Date.now()) => (p.forgeJob ? Math.max(1, Math.ceil(forgeLeft(p, now) / (4 * MIN))) : 0);
+export function forgeRush(p, now = Date.now()) {
+  const c = forgeRushCost(p, now);
+  if (!c || p.rubies < c) return null;
+  p.rubies -= c;
+  p.forgeJob.ends = now;
+  return forgeTick(p, now);
+}
+export function forgeAdCut(p, now = Date.now()) {
+  if (!p.forgeJob) return null;
+  p.forgeJob.ends -= FORGE_AD_CUT;
+  return forgeTick(p, now);
+}
+// kept for older callers and tests
+export const workshopNext = forgeNext;
+export function buyWorkshop(p, id, now = Date.now()) { if (!forgeStart(p, id, now)) return false; p.forgeJob.ends = now; forgeTick(p, now); return true; }
 export function workshopBonus(p) {
   const b = {};
   for (const [id, per] of Object.entries(PER_RANK)) b[id] = (p.workshop[id] || 0) * per;
@@ -310,10 +340,11 @@ export function workshopBonus(p) {
 }
 
 // ---------------------------------------------------------------- spending rubies and coins
-export function buyRoyalTower(p, id) {
+// Special towers unlock with rubies, or with a big pile of coins.
+export function buyRoyalTower(p, id, currency = 'rubies') {
   const t = ROYAL_TOWERS[id];
-  if (!t || p.owned[id] || p.rubies < t.rubies) return false;
-  p.rubies -= t.rubies;
+  if (!t || p.owned[id] || !['rubies', 'coins'].includes(currency) || p[currency] < t[currency]) return false;
+  p[currency] -= t[currency];
   p.owned[id] = true;
   checkAchievements(p);
   return true;

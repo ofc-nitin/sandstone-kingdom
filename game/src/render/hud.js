@@ -87,7 +87,18 @@ export class Hud {
   get pointAtPlot() { return this.pointAt; }
 
   // Each drawn control registers a tap target; taps are tested topmost first.
-  tap(x, y, w, h, fn, round = false) { this.targets.push({ x, y, w, h, fn, round }); }
+  // every tap area is at least 44 px across, even when the button is drawn smaller
+  tap(x, y, w, h, fn, round = false) {
+    if (round) w = Math.max(w, 22);
+    else if (w < 44 || h < 44) {
+      const nw = Math.max(w, 44), nh = Math.max(h, 44);
+      x -= (nw - w) / 2; y -= (nh - h) / 2; w = nw; h = nh;
+      // keep the bigger tap area on the screen
+      const SW = this.screenW || 1e9, SH = this.screenH || 1e9;
+      x = Math.max(0, Math.min(SW - w, x)); y = Math.max(0, Math.min(SH - h, y));
+    }
+    this.targets.push({ x, y, w, h, fn, round });
+  }
 
   hit(px, py) {
     for (let i = this.targets.length - 1; i >= 0; i--) {
@@ -104,6 +115,7 @@ export class Hud {
     const { dpr, u, cssW, cssH, safe } = view;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.targets = [];
+    this.screenW = cssW; this.screenH = cssH;
     const L = safe.l + 10 * u, R = cssW - safe.r - 10 * u, T = safe.t + 8 * u, B = cssH - safe.b - 8 * u;
 
     // ---- top-left: lives, gold, wave
@@ -126,7 +138,7 @@ export class Hud {
     for (const k of POWERUP_ORDER) {
       const n = game.powerups[k] || 0;
       if (!n) continue;
-      const x = L + 18 * u, y = py, ready = game.state !== 'ready';
+      const x = L + Math.max(22, 18 * u), y = py, ready = game.state !== 'ready';
       ctx.globalAlpha = ready ? 1 : 0.6;
       blit(ctx, assets.get('btn:' + k), x, y, u * 0.72);
       ctx.globalAlpha = 1;
@@ -143,19 +155,35 @@ export class Hud {
     text(ctx, info.speed === 2 ? '×2' : '×1', R - br * 3.4, T + br * 2.5, 11 * u, { sw: 2.4 * u });
 
     // ---- call the next wave, placed where enemies enter
+    // one marker at every entrance the next wave will come through, so players know where to look
     if (game.canCallWave && !this.modal) {
-      const ent = game.paths[0].at(36);
-      let p = view.toScreen(ent.x, ent.y);
-      p = { x: Math.max(L + br * 1.6, Math.min(R - br * 1.6, p.x)), y: Math.max(T + ph + br * 1.6, Math.min(B - br * 1.6, p.y)) };
-      const pulse = 1 + Math.sin(this.time * 5) * 0.06;
-      if (game.nextWaveTimer !== null) {
-        ctx.beginPath(); ctx.arc(p.x, p.y, br * 1.18, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - game.nextWaveTimer / 16));
-        ctx.strokeStyle = '#ffd66b'; ctx.lineWidth = 4 * u; ctx.stroke();
-      }
-      blit(ctx, assets.get('btn:swords'), p.x, p.y, u * pulse);
-      this.tap(p.x, p.y, br * 1.3, 0, () => this.actions.callWave(), true);
-      const label = game.state === 'ready' ? 'START' : `+${Math.ceil(game.nextWaveTimer || 0)}`;
-      text(ctx, label, p.x, p.y + br + 14 * u, 12 * u, { sw: 3 * u });
+      const lanes = game.nextLanes.length ? game.nextLanes : [0];
+      lanes.forEach((lane) => {
+        const path = game.paths[lane];
+        let d = 30;
+        for (; d < path.length * 0.5; d += 6) { const q = view.toScreen(path.at(d).x, path.at(d).y); if (q.x > L + br * 1.6 && q.x < R - br * 1.6 && q.y > T + ph + br * 1.6 && q.y < B - br * 1.6) break; }
+        const ent = path.at(d);
+        let p = view.toScreen(ent.x, ent.y);
+        p = { x: Math.max(L + br * 1.6, Math.min(R - br * 1.6, p.x)), y: Math.max(T + ph + br * 1.6, Math.min(B - br * 1.6, p.y)) };
+        const pulse = 1 + Math.sin(this.time * 5 + lane) * 0.06;
+        if (game.nextWaveTimer !== null) {
+          ctx.beginPath(); ctx.arc(p.x, p.y, br * 1.18, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - game.nextWaveTimer / 16));
+          ctx.strokeStyle = '#ffd66b'; ctx.lineWidth = 4 * u; ctx.stroke();
+        }
+        blit(ctx, assets.get('btn:swords'), p.x, p.y, u * pulse);
+        this.tap(p.x, p.y, br * 1.3, 0, () => this.actions.callWave(), true);
+        const label = game.state === 'ready' ? 'START' : `+${Math.ceil(game.nextWaveTimer || 0)}`;
+        text(ctx, label, p.x, p.y + br + 14 * u, 12 * u, { sw: 3 * u });
+        // who is coming down this road next
+        const wave = game.waves[game.waveIndex + 1] || [];
+        const types = [...new Set(wave.filter((gr) => (gr.lane || 0) === lane).map((gr) => gr.type))].slice(0, 4);
+        if (types.length) {
+          const iw = 26 * u, pw = types.length * iw + 8 * u, px = Math.max(L, Math.min(R - pw, p.x - pw / 2)), py = p.y - br - 36 * u;
+          ctx.fillStyle = 'rgba(40,22,10,0.78)'; ctx.beginPath(); ctx.roundRect(px, py, pw, 32 * u, 8 * u); ctx.fill();
+          ctx.strokeStyle = '#e0a224'; ctx.lineWidth = 1.2 * u; ctx.stroke();
+          types.forEach((tp, i) => blit(ctx, assets.get('enemy:' + ENEMIES[tp].art), px + 4 * u + iw * (i + 0.5), py + 29 * u, u * (ENEMIES[tp].boss ? 0.24 : 0.44)));
+        }
+      });
     }
 
     // ---- bottom-left: the hero portrait and his skill
@@ -210,9 +238,11 @@ export class Hud {
   }
 
   drawMenu(ctx, view, game, assets) {
-    const { u } = view, m = this.menu, plot = game.plots[m.plotId];
-    const c = view.toScreen(plot.x, plot.y - 10);
+    const { u, safe } = view, m = this.menu, plot = game.plots[m.plotId];
     const rad = 52 * u, br = 22 * u;
+    // the ring of buttons stays fully on screen even for spots near the edge
+    const c0 = view.toScreen(plot.x, plot.y - 10), pad = rad + br + 4 * u;
+    const c = { x: Math.max(safe.l + pad, Math.min(view.cssW - safe.r - pad, c0.x)), y: Math.max(safe.t + pad, Math.min(view.cssH - safe.b - pad - 18 * u, c0.y)) };
     const bubble = (dx, dy, sprite, onTap, price, enabled = true, iconSprite = null) => {
       const x = c.x + dx, y = c.y + dy;
       ctx.globalAlpha = enabled ? 1 : 0.55;
@@ -230,9 +260,9 @@ export class Hud {
     this.tap(0, 0, view.cssW, view.cssH, () => { this.menu = null; }); // tap anywhere else closes
     if (m.type === 'build') {
       const types = game.towersFor(plot.id);
-      const angles = types.length <= 4 ? [-135, -45, 135, 45] : [-150, -30, 150, 30, -90];
-      if (plot.royal) text(ctx, game.special ? 'Special spot' : 'Special spot: +15% range', c.x, c.y + rad + 34 * u, 11 * u, { sw: 3 * u, fill: '#ffd66b' });
-      if (!types.length) { text(ctx, 'No tower allowed here', c.x, c.y, 12 * u, { sw: 3 * u }); return; }
+      const angles = { 1: [-90], 2: [-135, -45], 3: [-140, -90, -40], 4: [-135, -45, 135, 45] }[types.length] || [-135, -45, 135, 45];
+      if (plot.royal) text(ctx, 'Special spot', c.x, c.y + rad * 0.5 + 18 * u, 11 * u, { sw: 3 * u, fill: '#ffd66b' });
+      if (!types.length) { text(ctx, plot.royal ? 'Bring special towers from the briefing' : 'No tower allowed here', c.x, c.y - 30 * u, 12 * u, { sw: 3 * u, max: 220 * u }); return; }
       types.forEach((type, i) => {
         const a = (angles[i] * Math.PI) / 180, cost = TOWERS[type].tiers[0].cost;
         bubble(Math.cos(a) * rad, Math.sin(a) * rad * 0.8, null, () => { this.actions.build(plot.id, type); this.menu = null; }, cost, game.gold >= cost, 'icon:' + TOWERS[type].art);
@@ -252,6 +282,10 @@ export class Hud {
       if (plot.lock && plot.lock.type === 'gold') {
         bubble(0, -rad * 0.95, 'btn:clear', () => { this.actions.clear(plot.id); this.menu = null; }, plot.lock.cost, game.gold >= plot.lock.cost);
         text(ctx, 'Clear rubble', c.x, c.y + 6 * u, 11 * u, { sw: 3 * u });
+      } else if (plot.lock && plot.lock.type === 'special') {
+        bubble(0, -rad * 0.95, 'btn:clear', () => { this.actions.clear(plot.id); this.menu = null; }, plot.lock.cost, game.gold >= plot.lock.cost);
+        text(ctx, `Special spot: opens at wave ${plot.lock.wave}`, c.x, c.y + 6 * u, 11 * u, { sw: 3 * u, max: 220 * u });
+        text(ctx, 'or pay to open it now', c.x, c.y + 20 * u, 10 * u, { sw: 2.6 * u, fill: '#ffd66b', max: 200 * u });
       } else if (plot.lock) {
         text(ctx, `Opens at wave ${plot.lock.wave}`, c.x, c.y - rad * 0.6, 13 * u, { sw: 3.4 * u, max: 180 * u });
       } else this.menu = null;
@@ -322,7 +356,8 @@ export class Hud {
       let rx = x + w / 2 - ((r.coins ? 70 : 0) + (r.rubies ? 70 : 0)) * u / 2;
       if (r.coins) { blit(ctx, assets.get('ui:coin'), rx + 12 * u, ry, u); text(ctx, `+${r.coins * (m.doubled ? 2 : 1)}`, rx + 26 * u, ry + 5 * u, 15 * u, { align: 'left' }); rx += 70 * u; }
       if (r.rubies) { blit(ctx, assets.get('ui:ruby'), rx + 12 * u, ry, u); text(ctx, `+${r.rubies}`, rx + 26 * u, ry + 5 * u, 15 * u, { align: 'left' }); }
-      if (r.achievements && r.achievements.length) text(ctx, `Achievement: ${r.achievements[0].name}${r.achievements.length > 1 ? ` +${r.achievements.length - 1}` : ''}`, x + w / 2, ry + 24 * u, 11 * u, { fill: '#7a160a', stroke: false, max: w - 40 * u });
+      if (r.gift) text(ctx, `New special tower: ${TOWERS[r.gift].name}!`, x + w / 2, ry + 24 * u, 12 * u, { fill: '#2f8f3c', stroke: false, max: w - 40 * u });
+      else if (r.achievements && r.achievements.length) text(ctx, `Achievement: ${r.achievements[0].name}${r.achievements.length > 1 ? ` +${r.achievements.length - 1}` : ''}`, x + w / 2, ry + 24 * u, 11 * u, { fill: '#7a160a', stroke: false, max: w - 40 * u });
       // optional rewarded ads: double the coins, or one revive
       if (won && r.coins && !m.doubled && info.canAd) { const bw2 = 170 * u; gemButton(ctx, x + w / 2 - bw2 / 2, y + h - 92 * u, bw2, 30 * u, 'DOUBLE COINS (AD)', 'purple', u); this.tap(x + w / 2 - bw2 / 2, y + h - 92 * u, bw2, 30 * u, () => this.actions.double()); }
       if (!won && game.canRevive && info.canAd) { const bw2 = 170 * u; gemButton(ctx, x + w / 2 - bw2 / 2, y + h - 92 * u, bw2, 30 * u, 'REVIVE +5 LIVES (AD)', 'purple', u); this.tap(x + w / 2 - bw2 / 2, y + h - 92 * u, bw2, 30 * u, () => this.actions.revive()); }

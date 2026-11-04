@@ -24,7 +24,7 @@ for the whole visible area, so wide phones and tablets see more scenery. The UI 
 and the safe area comes from CSS `env(safe-area-inset-*)`.
 
 ## Quality gates (every push)
-1. `npm test`: 51 tests, covering the rules, the meta game (rewards, quests, daily calendar, purchases, ad rules, cloud
+1. `npm test`: 60 tests, covering the rules, the meta game (rewards, quests, daily calendar, purchases, ad rules, cloud
    merge), and a **bot that must win every level and every challenge** while losing if it builds nothing.
 2. `npm run devices`: 7 screen shapes; every screen must have all buttons on screen, no errors and the right canvas size.
 3. GitHub Actions builds `app-debug.apk` and `app-release.aab` (`.github/workflows/android.yml`).

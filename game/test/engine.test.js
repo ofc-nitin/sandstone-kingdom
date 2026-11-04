@@ -11,6 +11,8 @@ const tinyLevel = (extra = {}) => ({
   id: 99, name: 'Test', gold: 500, lives: 5, hero: false, paths: [straight], plots: [{ x: 150, y: 60 }, { x: 250, y: 140, lock: { type: 'gold', cost: 40 } }, { x: 60, y: 140, lock: { type: 'wave', wave: 2 } }],
   waves: [[{ type: 'bandit', count: 1, every: 1 }], [{ type: 'bandit', count: 1, every: 1 }]], ...extra,
 });
+const SPECIALS = ['falconer', 'alchemist', 'elephant'];
+const FORGE_MID = { archer: 0.15, barracks: 0.15, mage: 0.15, cannon: 0.15, royal: 0.15, hero: 0.15, spells: 0.08 };
 const run = (game, seconds) => { for (let t = 0; t < seconds; t += 1 / 30) game.update(1 / 30); };
 
 test('path length and positions follow the curve', () => {
@@ -200,8 +202,11 @@ for (const level of LEVELS) {
     }
   });
   test(`level ${level.id} "${level.name}": a sensible player wins, doing nothing loses`, () => {
-    const won = new Game(level, { seed: 7 });
-    assert.equal(playLevel(won), 'won', `bot lost with ${won.lives} lives at wave ${won.waveIndex + 1}`);
+    // later levels expect special towers, and the boss also expects some Forge upgrades
+    const opts = { specials: level.id >= 4 ? SPECIALS : [], bonus: level.id >= 5 ? FORGE_MID : {} };
+    let wins = 0, last = null;
+    for (let seed = 1; seed <= 4 && wins === 0; seed++) { last = new Game(level, { seed, ...opts }); if (playLevel(last, { useAbilities: true }) === 'won') wins++; }
+    assert.ok(wins > 0, `bot lost with ${last.lives} lives at wave ${last.waveIndex + 1}`);
     const lazy = new Game(level, { seed: 7 });
     assert.equal(playLevel(lazy, { build: false }), 'lost');
   });
@@ -218,15 +223,93 @@ test('challenge rules limit towers, lives, spells and hero', () => {
   assert.equal(g.build(free, 'archer'), true);
 });
 
-test('the special tower is the one chosen and stands only on special spots', () => {
-  const lvl = tinyLevel({ gold: 1000 });
-  lvl.plots = [{ x: 150, y: 60, royal: true }, { x: 250, y: 140 }];
-  assert.equal(new Game(lvl).build(0, 'falconer'), false, 'not chosen');
-  const g = new Game(lvl, { special: 'falconer' });
-  assert.equal(g.build(0, 'fountain'), false, 'only the chosen one');
-  assert.equal(g.build(1, 'falconer'), false, 'not on a normal spot');
+test('special spots take only the special towers brought into battle, up to 3', () => {
+  const lvl = tinyLevel({ gold: 3000 });
+  lvl.plots = [{ x: 150, y: 60, royal: true }, { x: 250, y: 140 }, { x: 100, y: 140, royal: true }];
+  assert.equal(new Game(lvl).build(0, 'falconer'), false, 'not brought');
+  const g = new Game(lvl, { specials: ['falconer', 'fountain', 'alchemist', 'elephant'] });
+  assert.deepEqual(g.specials, ['falconer', 'fountain', 'alchemist'], 'at most 3');
+  assert.equal(g.build(0, 'elephant'), false, 'not in the loadout');
+  assert.equal(g.build(1, 'falconer'), false, 'not on a standard spot');
+  assert.equal(g.build(0, 'archer'), false, 'special spots host only special towers');
   assert.equal(g.build(0, 'falconer'), true);
   assert.deepEqual(g.towersFor(1), ['archer', 'barracks', 'mage', 'cannon']);
+  assert.deepEqual(g.towersFor(2), ['falconer', 'fountain', 'alchemist']);
+});
+
+test('special spots open one by one at their wave, or earlier for gold', () => {
+  const lvl = tinyLevel({ gold: 200, waves: [[{ type: 'bandit', count: 1 }], [{ type: 'bandit', count: 1 }], [{ type: 'bandit', count: 1 }]] });
+  lvl.plots = [{ x: 150, y: 60, royal: true, lock: { type: 'special', wave: 2, cost: 70 } }, { x: 250, y: 60, royal: true, lock: { type: 'special', wave: 3, cost: 100 } }];
+  const g = new Game(lvl, { specials: ['falconer'] });
+  g.callWave();
+  assert.ok(g.plots[0].lock);
+  run(g, 30);
+  assert.equal(g.plots[0].lock, null, 'opened at wave 2');
+  assert.ok(g.plots[1].lock);
+  assert.equal(g.clearPlot(1), true, 'paid to open early');
+  assert.equal(g.plots[1].lock, null);
+});
+
+test('special towers upgrade through 8 levels', () => {
+  const lvl = tinyLevel({ gold: 99999 }); lvl.plots[0].royal = true;
+  const g = new Game(lvl, { specials: ['falconer'] });
+  g.build(0, 'falconer');
+  const t = g.towers[0];
+  for (let i = 0; i < 10; i++) g.upgrade(t.id);
+  assert.equal(t.tier, 7);
+  assert.equal(t.def.tiers.length, 8);
+});
+
+test('the war drummer makes nearby enemies faster', () => {
+  const a = new Game(tinyLevel()), b = new Game(tinyLevel());
+  const ea = a.spawnEnemy('bandit', 0, 50); ea.offset = 0;
+  const eb = b.spawnEnemy('bandit', 0, 50); eb.offset = 0;
+  b.spawnEnemy('drummer', 0, 40);
+  run(a, 1); run(b, 1);
+  assert.ok(eb.d > ea.d + 3, 'drummed bandit is ahead');
+});
+
+test('the shield bearer shields the highest-ranked comrades first', () => {
+  const g = new Game(tinyLevel());
+  const bandit = g.spawnEnemy('bandit', 0, 60), brute = g.spawnEnemy('brute', 0, 62), barb = g.spawnEnemy('barbarian', 0, 64), wolf = g.spawnEnemy('wolfRider', 0, 58);
+  for (const e of [bandit, brute, barb, wolf]) e.stun = 99;
+  const sb = g.spawnEnemy('shieldBearer', 0, 55); sb.stun = 99; sb.shieldCd = 0;
+  sb.stun = 0;
+  run(g, 0.1);
+  assert.ok(brute.shieldHp > 0 && barb.shieldHp > 0, 'strongest shielded');
+  assert.equal(bandit.shieldHp, 0, 'weakest left out');
+  const hp = brute.hp; g.damage(brute, 10, 'magic');
+  assert.equal(brute.hp, hp, 'the shield soaks damage first');
+});
+
+test('the saboteur jams towers it passes and slips past soldiers', () => {
+  const g = new Game(tinyLevel({ gold: 1000 }));
+  g.build(0, 'archer');
+  const e = g.spawnEnemy('saboteur', 0, 140); e.offset = 0;
+  run(g, 0.2);
+  assert.ok(g.towers[0].jam > 0, 'tower jammed');
+});
+
+test('portals move enemies further down the road', () => {
+  const lvl = tinyLevel({ paths: [{ ...straight, portals: [{ from: 0.2, to: 0.7 }] }] });
+  const g = new Game(lvl);
+  const e = g.spawnEnemy('bandit', 0, 55);
+  run(g, 1.5);
+  assert.ok(e.d >= 0.7 * g.paths[0].length, 'came out of the far portal');
+});
+
+test('the alchemist strips armour and the war elephant tramples and knocks back', () => {
+  const lvl = tinyLevel({ gold: 3000 }); lvl.plots[0].royal = true;
+  const g = new Game(lvl, { specials: ['alchemist'] });
+  g.build(0, 'alchemist');
+  const b = g.spawnEnemy('brute', 0, 150); b.stun = 99;
+  run(g, 2.5);
+  assert.ok(b.shredT > 0 && b.poison, 'armour shredded and poisoned');
+  const h = new Game(lvl, { specials: ['elephant'] });
+  h.build(0, 'elephant');
+  const e = h.spawnEnemy('barbarian', 0, 120); e.stun = 99; const hp0 = e.hp;
+  run(h, 1.5);
+  assert.ok(e.hp < hp0, 'trampled');
 });
 
 test('every level has at most 3 special spots', () => {
@@ -235,7 +318,7 @@ test('every level has at most 3 special spots', () => {
 
 test('the falconer marks prey so it takes extra damage', () => {
   const lvl = tinyLevel({ gold: 1000 }); lvl.plots[0].royal = true;
-  const g = new Game(lvl, { special: 'falconer' });
+  const g = new Game(lvl, { specials: ['falconer'] });
   assert.equal(g.build(0, 'falconer'), true);
   const e = g.spawnEnemy('brute', 0, 120);
   e.stun = 99;

@@ -2,17 +2,27 @@
 // rates are seconds between attacks. Armor and magic resistance reduce damage (0..1).
 
 export const ENEMIES = {
-  bandit: { name: 'Bandit', hp: 32, speed: 24, armor: 0, mres: 0, gold: 6, lives: 1, dmg: 2, atk: 1.0, art: 'bandit',
+  bandit: { rank: 1, name: 'Bandit', hp: 32, speed: 24, armor: 0, mres: 0, gold: 6, lives: 1, dmg: 2, atk: 1.0, art: 'bandit',
     tip: 'Fast on foot and comes in groups. Archers handle them well.' },
-  wolfRider: { name: 'Wolf Rider', hp: 42, speed: 44, armor: 0, mres: 0, gold: 9, lives: 1, dmg: 3, atk: 0.9, art: 'wolfRider',
+  wolfRider: { rank: 2, name: 'Wolf Rider', hp: 42, speed: 44, armor: 0, mres: 0, gold: 9, lives: 1, dmg: 3, atk: 0.9, art: 'wolfRider',
     tip: 'Very fast. Block the road with Barracks soldiers so towers can catch them.' },
-  barbarian: { name: 'Barbarian', hp: 140, speed: 17, armor: 0.15, mres: 0, gold: 15, lives: 2, dmg: 7, atk: 1.2, art: 'barbarian',
+  barbarian: { rank: 4, name: 'Barbarian', hp: 140, speed: 17, armor: 0.15, mres: 0, gold: 15, lives: 2, dmg: 7, atk: 1.2, art: 'barbarian',
     tip: 'Tough and hits soldiers hard. Mages and Cannons wear him down.' },
-  banditArcher: { name: 'Bandit Archer', hp: 48, speed: 21, armor: 0, mres: 0, gold: 10, lives: 1, dmg: 4, atk: 1.4, art: 'banditArcher', ranged: { range: 64, dmg: 5, rate: 1.5 },
+  banditArcher: { rank: 3, name: 'Bandit Archer', hp: 48, speed: 21, armor: 0, mres: 0, gold: 10, lives: 1, dmg: 4, atk: 1.4, art: 'banditArcher', ranged: { range: 64, dmg: 5, rate: 1.5 },
     tip: 'Shoots your soldiers from range. Kill it before it reaches them.' },
-  brute: { name: 'Armored Brute', hp: 280, speed: 13, armor: 0.5, mres: 0, gold: 24, lives: 2, dmg: 10, atk: 1.4, art: 'brute',
+  brute: { rank: 6, name: 'Armored Brute', hp: 280, speed: 13, armor: 0.5, mres: 0, gold: 24, lives: 2, dmg: 10, atk: 1.4, art: 'brute',
     tip: 'Heavy armour shrugs off arrows. Magic goes straight through it.' },
-  banditKing: { name: 'The Bandit King', hp: 2600, speed: 11, armor: 0.3, mres: 0.1, gold: 250, lives: 10, dmg: 18, atk: 1.6, art: 'banditKing', boss: true,
+  // support enemies: they make the others harder to stop
+  drummer: { rank: 3, name: 'War Drummer', hp: 70, speed: 18, armor: 0.1, mres: 0, gold: 14, lives: 1, dmg: 3, atk: 1.2, art: 'drummer',
+    aura: { range: 62, speed: 0.3, dmg: 0.3 },
+    tip: 'His war drum makes every enemy around him faster and fiercer. Take him out first.' },
+  shieldBearer: { rank: 5, name: 'Shield Bearer', hp: 150, speed: 15, armor: 0.3, mres: 0, gold: 18, lives: 2, dmg: 5, atk: 1.3, art: 'shieldBearer',
+    shield: { every: 6, range: 72, amount: 45, count: 3 },
+    tip: 'Raises magic shields on his strongest comrades first. Shields soak up damage until they break.' },
+  saboteur: { rank: 2, name: 'Saboteur', hp: 46, speed: 36, armor: 0, mres: 0.2, gold: 12, lives: 1, dmg: 2, atk: 1, art: 'saboteur',
+    sabotage: { range: 64, time: 2.5 }, dodge: 0.5,
+    tip: 'Sneaks past soldiers and throws smoke bombs that jam towers for a few seconds.' },
+  banditKing: { rank: 10, name: 'The Bandit King', hp: 2600, speed: 11, armor: 0.3, mres: 0.1, gold: 250, lives: 10, dmg: 18, atk: 1.6, art: 'banditKing', boss: true,
     summon: { every: 9, type: 'bandit', count: 2 },
     tip: 'Rides a war boar and keeps calling bandits. Focus everything on him.' },
 };
@@ -54,28 +64,38 @@ export const TOWERS = {
 };
 // Royal towers: bought once with rubies (or earned by mastering a region), then
 // available in every level. Side-grades with new tactics, never must-haves.
+// Special (royal) towers: unlocked once with rubies or a big pile of coins, then up to 3 are
+// taken into each battle. They stand only on special spots and upgrade through 8 levels.
+const LV = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+const eight = (name, base, step, f) => Array.from({ length: 8 }, (_, i) => tier(Math.round(base + step * i + 6 * i * i), { label: `${name} ${LV[i]}`, ...f(i) }));
 TOWERS.falconer = {
   name: 'Royal Falconer', kind: 'falcon', air: true, art: 'falconer', royal: true,
-  tiers: [
-    tier(120, { label: 'Falconer', range: 96, dmg: [6, 9], rate: 0.6, mark: { mul: 1.25, t: 3 } }),
-    tier(170, { label: 'Master Falconer', range: 104, dmg: [10, 14], rate: 0.5, mark: { mul: 1.3, t: 3.5 } }),
-    tier(230, { label: 'Royal Falconer', range: 112, dmg: [15, 21], rate: 0.45, mark: { mul: 1.35, t: 4 } }),
-  ],
+  tiers: eight('Falconer', 120, 40, (i) => ({ range: 94 + i * 4, dmg: [6 + i * 2.6, 9 + i * 3.4], rate: 0.6 - i * 0.025, mark: { mul: 1.2 + i * 0.03, t: 3 + i * 0.3 } })),
   tip: 'Falcons strike fast and mark their prey: marked enemies take extra damage from everything.',
 };
 TOWERS.fountain = {
   name: 'Stepwell Fountain', kind: 'aura', air: false, art: 'fountain', royal: true,
-  tiers: [
-    tier(110, { label: 'Stepwell', range: 58, slow: 0.35, heal: 4, rate: 0.25 }),
-    tier(160, { label: 'Sacred Stepwell', range: 64, slow: 0.45, heal: 7, rate: 0.25 }),
-    tier(220, { label: 'Stepwell Fountain', range: 70, slow: 0.55, heal: 11, rate: 0.25 }),
-  ],
+  tiers: eight('Stepwell', 110, 35, (i) => ({ range: 56 + i * 3, slow: 0.3 + i * 0.04, heal: 4 + i * 2, rate: 0.25 })),
   tip: 'Holy water slows every enemy nearby and heals your soldiers standing in it.',
 };
-export const ROYAL_TOWERS = {
-  falconer: { rubies: 400, freeRegion: 2 },
-  fountain: { rubies: 500, freeRegion: 3 },
+TOWERS.alchemist = {
+  name: "Alchemist's Workshop", kind: 'flask', air: false, art: 'alchemist', royal: true,
+  tiers: eight('Alchemist', 130, 45, (i) => ({ range: 80 + i * 3, dmg: [8 + i * 3, 12 + i * 4], rate: 2.2 - i * 0.08, splash: 26 + i * 1.5, shred: 0.25 + i * 0.03, poison: 4 + i * 2, poisonTime: 3 })),
+  tip: 'Throws bubbling flasks: a poison cloud that eats away enemy armour and keeps hurting.',
 };
+TOWERS.elephant = {
+  name: 'War Elephant Stable', kind: 'elephant', air: false, art: 'elephantStable', royal: true,
+  tiers: eight('War Elephant', 150, 50, (i) => ({ range: 90 + i * 6, dmg: 22 + i * 9, rate: 7.5 - i * 0.35, knock: 10 + i, stun: 0.5 + i * 0.05 })),
+  tip: 'A war elephant charges down the road, trampling everything in its way and knocking enemies back.',
+};
+// how each special tower is unlocked: rubies, or a big pile of coins for players who never pay
+export const ROYAL_TOWERS = {
+  falconer: { rubies: 400, coins: 6000 },
+  fountain: { rubies: 500, coins: 7500 },
+  alchemist: { rubies: 650, coins: 9500 },
+  elephant: { rubies: 800, coins: 12000 },
+};
+export const SPECIAL_LOADOUT = 3; // special towers the player can take into one battle
 export const TOWER_ORDER = ['archer', 'barracks', 'mage', 'cannon'];
 export const SELL_REFUND = 0.6;
 

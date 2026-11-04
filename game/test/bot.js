@@ -17,15 +17,21 @@ export function playLevel(game, { plan = ['archer', 'barracks', 'archer', 'mage'
   while (!game.isOver() && game.time < maxTime) {
     if (build) {
       // mix building and upgrading: add a new tower until there are 3 + 2 per tier level, then upgrade
-      const open = game.plots.filter((p) => !p.tower && !p.lock).sort((a, b) => coverage(game, b, 90) - coverage(game, a, 90));
-      const weakest = game.towers.filter((x) => x.tier < 2).sort((a, b) => a.tier - b.tier)[0];
+      const open = game.plots.filter((p) => !p.tower && !p.lock && !p.royal).sort((a, b) => coverage(game, b, 90) - coverage(game, a, 90));
+      // special spots take the special towers brought into the battle
+      const sp = game.plots.find((p) => p.royal && !p.tower && !p.lock);
+      if (sp && game.specials.length) {
+        const t = game.specials[game.towers.filter((x) => x.def.royal).length % game.specials.length];
+        if (game.gold >= TOWERS[t].tiers[0].cost) game.build(sp.id, t);
+      }
+      const weakest = game.towers.filter((x) => x.tier < (x.def.royal ? 4 : 2)).sort((a, b) => a.tier - b.tier)[0];
       const minTier = weakest ? weakest.tier : 2;
       const wantBuild = open.length && game.towers.length < 3 + 2 * minTier;
       const type = plan[next % plan.length];
       if (wantBuild) { if (game.gold >= TOWERS[type].tiers[0].cost && game.build(open[0].id, type)) next++; }
       else if (weakest && game.gold >= weakest.def.tiers[weakest.tier + 1].cost) game.upgrade(weakest.id);
       else if (!open.length) {
-        const locked = game.plots.find((p) => p.lock && p.lock.type === 'gold' && game.gold >= p.lock.cost);
+        const locked = game.plots.find((p) => p.lock && p.lock.cost > 0 && (p.lock.type === 'gold' || game.specials.length) && game.gold >= p.lock.cost);
         if (locked) game.clearPlot(locked.id);
       }
       if (!weakest && open.length && game.gold >= TOWERS[type].tiers[0].cost && game.build(open[0].id, type)) next++;

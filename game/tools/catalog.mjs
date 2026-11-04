@@ -17,7 +17,7 @@ const save = (name, dataUrl) => writeFileSync(join(out, name + '.png'), Buffer.f
 
 const b = await pw.chromium.launch();
 const p = await b.newPage({ viewport: { width: 915, height: 412 }, deviceScaleFactor: 2 });
-await p.addInitScript(() => localStorage.setItem('sandstone-kingdom:v2', JSON.stringify({ introSeen: true, diyas: { 0: 3, 1: 3, 2: 3, 3: 2, 4: 2, 5: 1 }, rubies: 860, coins: 2400, owned: { falconer: true }, seen: { bandit: true, wolfRider: true, barbarian: true, banditArcher: true, brute: true, banditKing: true } })));
+await p.addInitScript(() => localStorage.setItem('sandstone-kingdom:v2', JSON.stringify({ introSeen: true, diyas: { 0: 3, 1: 3, 2: 3, 3: 2, 4: 2, 5: 1 }, rubies: 860, coins: 2400, owned: { falconer: true, alchemist: true, elephant: true }, seen: { bandit: true, wolfRider: true, barbarian: true, banditArcher: true, brute: true, banditKing: true, drummer: true, shieldBearer: true, saboteur: true } })));
 await p.goto('http://localhost:8090/');
 await p.waitForFunction(() => window.__sk && window.__sk.screen === 'menu', null, { timeout: 120000 });
 
@@ -37,6 +37,9 @@ const pieces = await p.evaluate(async () => {
     // Region 1 enemies (in the game now)
     ['enemy-bandit', T({ ...BANDIT, s: 1.6 })], ['enemy-bandit-archer', T({ ...BANDIT, weapon: 'bow', quiver: true, s: 1.6 })],
     ['enemy-wolf-rider', (s) => wolfRider(s, 0, 0, 1.5)], ['enemy-barbarian', T({ ...BARBARIAN, s: 1.4 })], ['enemy-armored-brute', T({ ...BRUTE, s: 1.4 })],
+    ['enemy-war-drummer', T({ ...DRUMMER, s: 1.6 })], ['enemy-shield-bearer', T({ ...SHIELD_BEARER, s: 1.5 })], ['enemy-saboteur', T({ ...SABOTEUR, s: 1.6 })],
+    ['anim-bandit-walk-1', T({ ...BANDIT, s: 1.6, step: 1 })], ['anim-bandit-walk-2', T({ ...BANDIT, s: 1.6, step: -1 })], ['anim-bandit-attack', T({ ...BANDIT, s: 1.6, swing: 1 })],
+    ['anim-knight-attack', T({ ...KNIGHT, s: 1.6, swing: 1 })], ['anim-archer-loose', T({ ...ARCHER, s: 1.6, loose: true })],
     ['boss-bandit-king', (s) => banditKing(s, 0, 0, 1.4)],
     // later regions (art ready, levels come in updates)
     ['r2-scorpion', (s) => scorpion(s, 0, 0, 1.5)], ['r2-camel-raider', (s) => camel(s, 0, 0, 1.15)], ['r2-sand-burrower', (s) => burrower(s, 0, 0, 1.5)], ['r2-boss-dune-colossus', (s) => colossus(s, 0, 0, 1.2)],
@@ -45,8 +48,8 @@ const pieces = await p.evaluate(async () => {
     ['r5-crocodile', (s) => crocodile(s, 0, 0, 1.15)], ['r5-river-pirate', T({ ...RIVER_PIRATE, s: 1.4 })], ['r5-swamp-witch', T({ ...SWAMP_WITCH, s: 1.4 })], ['r5-boss-crocodile-warlord', (s) => crocodile(s, 0, 0, 1.85, false, { armor: true, crown: true, eyes: '#ff4a2a', color: '#3f5f2e' })],
     ['r6-ice-wolf', (s) => iceWolf(s, 0, 0, 1.25)], ['r6-frost-mage', T({ ...FROST_MAGE, s: 1.4 })], ['r6-yeti-brute', (s) => yeti(s, 0, 0, 1.2)], ['r6-boss-shadow-emperor', (s) => shadowEmperor(s, 0, 0, 1.25)],
     // buildings: every tower at every tier, the royal towers, the fort, build spots
-    ...[['archer', archerTower], ['barracks', barracks], ['mage', mageTower], ['cannon', cannonTower]].flatMap(([n, fn]) => [0, 1, 2].map((t) => [`tower-${n}-tier${t + 1}`, (s) => { fn(s, 0, 0, 1); tier(s, t); }])),
     ['royal-falconer', (s) => falconer(s, 0, 0, 1)], ['royal-stepwell-fountain', (s) => fountain(s, 0, 0, 1)],
+    ['royal-alchemist', (s) => alchemist(s, 0, 0, 1)], ['royal-war-elephant-stable', (s) => elephantStable(s, 0, 0, 1)], ['unit-war-elephant', (s) => { elephant(s, 0, 0, 1, false, false); person(s, 8, -38, { ...SPEAR, s: 0.8, shield: null }); }],
     ['building-fort-gate', (s) => fortGate(s, 0, 0, 1)],
     ['spot-open', (s) => plot(s, 0, 0)], ['spot-special', (s) => specialPlot(s, 0, 0)],
     ['spot-rubble', (s) => { plot(s, 0, 0); for (const [x, y, r] of [[-10, -2, 0.42], [8, 0, 0.5], [0, -6, 0.36]]) rock(s, x, y, r); moss(s, [[-14, -4, 3], [14, -2, 2.6]]); }],
@@ -74,6 +77,11 @@ const pieces = await p.evaluate(async () => {
     const r = await rasterize(draw, [-130, -190, 260, 230], 3, { ui: name.startsWith('ui-') });
     res[name] = trim(r.canvas);
   }
+  // towers at every stage, exactly as the game draws them
+  const A = window.__sk.assets;
+  for (const [file, art, n] of [['archer', 'archerTower', 3], ['barracks', 'barracks', 3], ['mage', 'mageTower', 3], ['cannon', 'cannonTower', 3], ['falconer', 'falconer', 4], ['fountain', 'fountain', 4], ['alchemist', 'alchemist', 4], ['elephant', 'elephantStable', 4]]) {
+    for (let st = 0; st < n; st++) { const sp = A.get(`tower:${art}:${st}`); if (sp) res[n === 3 ? `tower-${file}-tier${st + 1}` : `royal-${file}-stage${st + 1}`] = trim(sp.canvas); }
+  }
   return res;
 });
 for (const [n, d] of Object.entries(pieces)) save(n, d);
@@ -82,15 +90,15 @@ console.log('art pieces:', Object.keys(pieces).length);
 // ---- every battlefield, mid-battle
 const { LEVELS } = await p.evaluate(async () => ({ LEVELS: (await import('/src/engine/levels.js')).LEVELS.map((l) => ({ id: l.id, name: l.name })) }));
 for (const lv of LEVELS) {
-  await p.evaluate((id) => window.__sk.app.startBattle({ mode: 'story', level: id, special: 'falconer' }), lv.id);
+  await p.evaluate((id) => window.__sk.app.startBattle({ mode: 'story', level: id, specials: ['falconer', 'alchemist', 'elephant'] }), lv.id);
   await p.waitForFunction(() => window.__sk.screen === 'battle', null, { timeout: 120000 });
   await p.evaluate(() => {
     const sk = window.__sk, g = sk.game;
     for (const k of Object.keys(g.seen)) g.seen[k] = true;
-    for (const k of ['bandit', 'wolfRider', 'barbarian', 'banditArcher', 'brute', 'banditKing']) g.seen[k] = true;
+    for (const k of ['bandit', 'wolfRider', 'barbarian', 'banditArcher', 'brute', 'banditKing', 'drummer', 'shieldBearer', 'saboteur']) g.seen[k] = true;
     g.gold = 3000;
     const types = ['archer', 'barracks', 'mage', 'cannon'];
-    g.plots.forEach((pl, i) => { if (i % 3 === 2) return; if (pl.lock && pl.lock.type === 'gold') g.clearPlot(pl.id); if (!pl.lock) { g.build(pl.id, pl.royal && g.special ? g.special : types[i % 4]); if (i % 2) g.upgrade(g.towers[g.towers.length - 1].id); } });
+    g.plots.forEach((pl, i) => { if (i % 3 === 2) return; if (pl.lock && pl.lock.cost) g.clearPlot(pl.id); if (!pl.lock) { const ts = g.towersFor(pl.id); if (!ts.length) return; g.build(pl.id, pl.royal ? ts[i % ts.length] : types[i % 4]); for (let k = 0; k < i % 3; k++) g.upgrade(g.towers[g.towers.length - 1].id); } });
     g.callWave(); for (let i = 0; i < 60 * 9; i++) g.update(1 / 60);
     if (g.canCallWave) g.callWave(); for (let i = 0; i < 60 * 5; i++) g.update(1 / 60);
   });
@@ -105,6 +113,7 @@ console.log('levels:', LEVELS.length);
 const screens = [['screen-menu', 'menu'], ['screen-map-story', 'map', { mode: 'story' }], ['screen-map-challenge', 'map', { mode: 'challenge' }], ['screen-briefing', 'briefing', { mode: 'story', level: 4 }],
   ['screen-briefing-challenge', 'briefing', { mode: 'challenge', level: 2, challenge: null }], ['screen-briefing-endless', 'briefing', { mode: 'endless', level: 5 }],
   ['screen-shop', 'shop'], ['screen-daily', 'daily'], ['screen-quests', 'quests'], ['screen-workshop', 'workshop'], ['screen-achievements', 'achievements'], ['screen-ranks', 'ranks'], ['screen-settings', 'settings']];
+await p.evaluate(() => { const pr = window.__sk.store.profile; pr.workshop = { archer: 2, barracks: 1, royal: 1 }; pr.forgeJob = { id: 'mage', rank: 1, start: Date.now() - 60000, ends: Date.now() + 2 * 60000 }; pr.daily = { day: 2, lastKey: '2000-01-01' }; });
 for (const [file, name, args] of screens) {
   await p.evaluate(async ([n, a]) => {
     if (a && a.mode === 'challenge' && n === 'briefing') { const M = await import('/src/meta/profile.js'); a.challenge = M.CHALLENGES[a.level][2]; }

@@ -9,9 +9,10 @@ export const BLEED_Y = 170;
 export function computeView(cssW, cssH, dpr, safe = { l: 0, r: 0, t: 0, b: 0 }) {
   const s = Math.min(cssW / WORLD_W, cssH / WORLD_H);
   const ox = (cssW - WORLD_W * s) / 2, oy = (cssH - WORLD_H * s) / 2;
-  // UI scale follows the screen height (landscape), clamped so buttons stay tappable
-  // on small phones and don't get huge on tablets.
-  const u = Math.max(0.82, Math.min(1.6, Math.min(cssW / WORLD_W, cssH / WORLD_H) * 1.02));
+  // UI scale follows the screen size, a little smaller than the battlefield so the HUD stays out
+  // of the way; clamped so it never gets tiny on small phones or huge on tablets and desktops.
+  // Tap areas keep a 44 px minimum on their own (see the tap helpers).
+  const u = Math.max(0.74, Math.min(1.25, Math.min(cssW / WORLD_W, cssH / WORLD_H) * 0.88));
   return {
     cssW, cssH, dpr, s, ox, oy, u, safe,
     toWorld: (x, y) => ({ x: (x - ox) / s, y: (y - oy) / s }),

@@ -3,28 +3,38 @@
 /* global seed:writable, el, g, outlined, anim, rnd, OUT, fortGate, banyan, palm, tuft, marigold, person, SUN, ARCHER, SPEAR, peacock, shrine,
    camel, scorpion, rock, golem, crocodile, boat, yeti, blobCluster, ribbon, icon */
 /* eslint-disable no-unused-vars */
-function menuScene(svg) {
+// The main menu, painted in layers so it can move: 'sky' (sky and sun), 'land' (hills, fort,
+// trees) and the heroes, which the game animates separately. menuScene draws all of it at once.
+const MENU_HEROES = [
+  { id: 'spear', x: 84, y: 376, o: () => ({ ...SPEAR, s: 2.4 }) },
+  { id: 'sun', x: 150, y: 382, o: () => ({ ...SUN, s: 3.4 }) },
+  { id: 'archer', x: 236, y: 372, o: () => ({ ...ARCHER, s: 2.2 }) },
+];
+const MENU_SUN = { x: 470, y: 168 };
+function menuLayer(svg, layer) {
   seed = 11; // same painting every time
-  el('rect', { x: 0, y: 0, width: 844, height: 390, fill: 'url(#skyDawn)' }, svg);
-  el('circle', { cx: 470, cy: 168, r: 120, fill: 'url(#sunDisc)' }, svg);
+  if (layer === 'sky') {
+    el('rect', { x: 0, y: 0, width: 844, height: 390, fill: 'url(#skyDawn)' }, svg);
+    el('circle', { cx: MENU_SUN.x, cy: MENU_SUN.y, r: 120, fill: 'url(#sunDisc)' }, svg);
+    return;
+  }
+  if (layer === 'land') {
+    el('path', { d: 'M0 230 Q90 170 190 210 Q290 150 400 200 Q520 140 640 196 Q740 160 844 200 V390 H0 Z', fill: 'url(#hillFar)', opacity: 0.85 }, svg);
+    el('path', { d: 'M0 262 Q120 222 240 252 Q380 216 520 250 Q660 222 844 250 V390 H0 Z', fill: 'url(#hillMid)' }, svg);
+    el('path', { d: 'M0 300 Q200 270 422 292 Q640 272 844 296 V390 H0 Z', fill: '#7fb145' }, svg);
+    fortGate(svg, 470, 300, 1.55);
+    banyan(svg, 690, 318, 1.5); palm(svg, 760, 300, 1.3); banyan(svg, 300, 312, 1.2);
+    for (let i = 0; i < 120; i++) tuft(svg, rnd() * 844, 300 + rnd() * 90);
+    [[620, 360], [340, 372], [760, 372]].forEach(([a, b]) => marigold(svg, a, b));
+  }
+}
+function menuScene(svg) {
+  menuLayer(svg, 'sky');
   for (let i = 0; i < 20; i++) { const a = Math.PI + (i / 19) * Math.PI; el('path', { d: `M470 168 L${470 + Math.cos(a - 0.03) * 520} ${168 + Math.sin(a - 0.03) * 520} L${470 + Math.cos(a + 0.03) * 520} ${168 + Math.sin(a + 0.03) * 520} Z`, fill: '#fff3c8', opacity: 0.12 }, svg); }
-  // clouds
   [[120, 70, 1], [690, 52, 1.2], [330, 40, 0.8]].forEach(([cx, cy, s]) => { const c = g(svg, { opacity: 0.9 }); [[0, 0, 22], [24, -6, 18], [44, 2, 16], [-20, 4, 14]].forEach(([a, b, r]) => el('circle', { cx: cx + a * s, cy: cy + b * s, r: r * s, fill: '#fff4e4' }, c)); el('rect', { x: cx - 34 * s, y: cy, width: 94 * s, height: 16 * s, fill: '#fff4e4' }, c); });
-  // birds
   for (let i = 0; i < 7; i++) el('path', { d: `M${560 + i * 18 + (i % 2) * 6} ${80 + (i % 3) * 9} q3 -3 6 0 q3 -3 6 0`, stroke: '#4a2a3a', 'stroke-width': 1.2, fill: 'none' }, svg);
-  // far hills and mid hills
-  el('path', { d: 'M0 230 Q90 170 190 210 Q290 150 400 200 Q520 140 640 196 Q740 160 844 200 V390 H0 Z', fill: 'url(#hillFar)', opacity: 0.85 }, svg);
-  el('path', { d: 'M0 262 Q120 222 240 252 Q380 216 520 250 Q660 222 844 250 V390 H0 Z', fill: 'url(#hillMid)' }, svg);
-  el('path', { d: 'M0 300 Q200 270 422 292 Q640 272 844 296 V390 H0 Z', fill: '#7fb145' }, svg);
-  // the fort on the hill
-  fortGate(svg, 470, 300, 1.55);
-  banyan(svg, 690, 318, 1.5); palm(svg, 760, 300, 1.3); banyan(svg, 300, 312, 1.2);
-  for (let i = 0; i < 120; i++) tuft(svg, rnd() * 844, 300 + rnd() * 90);
-  [[620, 360], [340, 372], [760, 372]].forEach(([a, b]) => marigold(svg, a, b));
-  // the hero in the foreground
-  person(svg, 150, 382, { ...SUN, s: 3.4 });
-  person(svg, 236, 372, { ...ARCHER, s: 2.2 });
-  person(svg, 84, 376, { ...SPEAR, s: 2.4 });
+  menuLayer(svg, 'land');
+  for (const h of MENU_HEROES) person(svg, h.x, h.y, h.o());
   el('rect', { x: 0, y: 0, width: 844, height: 390, fill: 'url(#vignette)' }, svg);
 }
 

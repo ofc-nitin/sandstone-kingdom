@@ -165,6 +165,8 @@ async function go(name, params = {}) {
   screen = name;
   if (MENU_MUSIC.has(name)) sound.playMusic('menu');
   platform.ads.banner(name === 'map' && !store.profile.removeAds && M.levelsWon(store.profile) >= 3);
+  // the daily reward greets the player on the menu once per day, until it is claimed
+  if (name === 'menu' && M.dailyStatus(store.profile).canClaim && dailyShown !== M.dayKey()) { dailyShown = M.dayKey(); screens.modal = { type: 'daily' }; }
   if (name === 'map' && pendingOffer) { pendingOffer = false; screens.modal = { type: 'offer' }; store.profile.starterOffered = true; store.save(); }
 }
 function back() {
@@ -175,27 +177,29 @@ function back() {
   go(prev && prev !== 'loading' && prev !== 'briefing' ? prev : 'menu', { mode: screens.mapMode });
 }
 
-let pendingOffer = false;
+let pendingOffer = false, dailyShown = null, slowmo = null, pendingResult = null;
 async function startBattle(b) {
   const p = store.profile, lv = LEVELS[b.level];
   if (!lv) return go('map', { mode: 'story' });
-  if (b.special && p.owned[b.special]) { p.lastSpecial = b.special; store.save(); }
+  const specials = b.specials || (b.special ? [b.special] : []);
+  if (specials.length) { p.lastSpecials = specials.filter((t) => p.owned[t]); store.save(); }
   screen = 'loading-battle';
   currentLevel = lv;
   platform.ads.banner(false);
   await layout();
   const endless = b.mode === 'endless';
   game = new Game(lv, {
-    seed: (Date.now() % 100000) + 1, seen: p.seen, rules: b.challenge ? b.challenge.rules : null, special: b.special || null,
+    seed: (Date.now() % 100000) + 1, seen: p.seen, rules: b.challenge ? b.challenge.rules : null, specials,
     endless, powerups: p.powerups, bonus: M.workshopBonus(p),
   });
   battle = { brief: { ...b }, finished: false, lost: false, result: null };
-  world.effects = [];
+  world.reset();
   hud.menu = null; hud.modal = null; hud.targeting = null; hud.heroSelected = false;
   hud.banner = { text: lv.name, sub: endless ? 'Endless mode' : b.challenge ? b.challenge.name : lv.id === 0 ? 'Tutorial' : `Level ${lv.id}`, t: 0, life: 2.2, big: true };
   modalQueue = [];
   tutorialStep = 0;
   speed = 1;
+  slowmo = null; pendingResult = null;
   screen = 'battle';
   sound.playMusic(lv.boss ? 'boss' : 'battle');
 }
@@ -233,7 +237,7 @@ async function cloudSync() {
   platform.games.submit('totalDiyas', M.totalDiyas(store.profile));
 }
 
-const SFX = { built: 'build', kill: 'kill', leak: 'leak', explosion: 'explosion', volley: 'volley', summon: 'boss', soldierDown: 'soldierDown', heroDown: 'soldierDown', powerup: 'powerup', revived: 'powerup' };
+const SFX = { built: 'build', kill: 'kill', leak: 'leak', explosion: 'explosion', volley: 'volley', summon: 'boss', soldierDown: 'soldierDown', heroDown: 'soldierDown', powerup: 'powerup', revived: 'powerup', shieldUp: 'shieldUp', shieldBreak: 'shieldBreak', jam: 'jam', portalIn: 'portal', charge: 'trumpet', poisonCloud: 'bubble', plotOpened: 'reward', upgraded: 'upgrade' };
 function processEvents() {
   const p = store.profile;
   for (const e of game.drainEvents()) {
@@ -247,10 +251,16 @@ function processEvents() {
     const step = currentLevel.tutorial && battle.brief.mode === 'story' && currentLevel.tutorial[tutorialStep];
     if (step && e.type === step.until) tutorialStep++;
     if (e.type === 'newEnemy') { p.seen[e.enemy] = true; store.save(); sound.play('newEnemy'); const m = { type: 'newEnemy', enemy: e.enemy }; if (hud.modal) modalQueue.push(m); else hud.modal = m; }
-    if (e.type === 'bossArrives') { sound.play('boss'); hud.banner = { text: `${e.enemy.def.name} approaches!`, sub: game.endless ? 'Boss wave' : 'Defeat him to unlock Endless mode', t: 0, life: 3, big: true }; }
-    if (e.type === 'waveStart') { sound.play('wave'); if (e.wave > 0) hud.banner = { text: `Wave ${e.wave + 1}`, t: 0, life: 1.2 }; }
+    if (e.type === 'bossArrives') { slowmo = { t: 1.6, k: 0.3 }; sound.play('boss'); hud.banner = { text: `${e.enemy.def.name} approaches!`, sub: game.endless ? 'Boss wave' : 'Defeat him to unlock Endless mode', t: 0, life: 3, big: true }; }
+    if (e.type === 'waveStart') {
+      sound.play('wave'); sound.play('horn'); if (e.wave > 0) sound.play('cry');
+      const final = !game.endless && e.wave === game.waveCount - 1;
+      if (final) { hud.banner = { text: 'FINAL WAVE!', sub: 'Hold the line', t: 0, life: 2, big: true }; sound.play('finalWave'); }
+      else if (e.wave > 0) hud.banner = { text: `Wave ${e.wave + 1}`, t: 0, life: 1.2 };
+    }
     if (e.type === 'leak') livesFlash = 0.6;
-    if (e.type === 'won') { const res = finishBattle(); hud.menu = null; hud.modal = { type: 'won', diyas: e.diyas, reward: res, challenge: battle.brief.challenge }; sound.play('win'); sound.stopMusic(); }
+    // victory: a golden moment on the battlefield first, then the results
+    if (e.type === 'won') { const res = finishBattle(); hud.menu = null; hud.targeting = null; pendingResult = { t: 1.3, modal: { type: 'won', diyas: e.diyas, reward: res, challenge: battle.brief.challenge } }; hud.banner = { text: 'VICTORY!', t: 0, life: 1.3, big: true }; sound.play('win'); sound.stopMusic(); slowmo = { t: 1.2, k: 0.35 }; }
     if (e.type === 'lost') {
       hud.menu = null; sound.play('lose');
       if (game.endless) {
@@ -352,8 +362,15 @@ function drawToasts(dt) {
 }
 
 let last = performance.now(), acc = 0, skip = false;
+let forgeCheck = 0;
 function frame(now) {
   requestAnimationFrame(frame);
+  // a forge job finishing while you play or browse is announced wherever you are
+  if (now - forgeCheck > 1000) {
+    forgeCheck = now;
+    const done = M.forgeTick(store.profile, Date.now());
+    if (done) { const t = M.FORGE.find((x) => x.id === done.id); app.toast(`Royal Forge: ${t.name} rank ${done.rank} is ready`); syncAchievements(M.checkAchievements(store.profile)); store.save(); }
+  }
   if (store.profile.settings.battery) { skip = !skip; if (skip) return; } // battery saver: 30 fps
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
@@ -361,12 +378,29 @@ function frame(now) {
   if (view.cssH > view.cssW) { drawRotate(); return; }
   if (screen.startsWith('loading')) { drawLoading(); drawToasts(dt); return; }
   if (screen === 'battle') {
+    // slow motion for big moments: the boss walking in, the last enemy falling
+    let k = 1;
+    if (slowmo) { slowmo.t -= dt; k = slowmo.t > 0 ? slowmo.k : 1; if (slowmo.t <= 0) slowmo = null; }
     if (!hud.modal) {
-      acc += dt * speed;
+      acc += dt * speed * k;
       while (acc >= 1 / 60) { game.update(1 / 60); acc -= 1 / 60; processEvents(); }
     } else acc = 0;
-    world.update(dt); hud.update(dt); livesFlash -= dt;
+    if (pendingResult) { pendingResult.t -= dt; if (pendingResult.t <= 0) { hud.modal = pendingResult.modal; pendingResult = null; } }
+    // the music follows the battle: calm before the first wave, tense when the fort is in danger,
+    // on the final wave or when a boss is out; a heartbeat when only a few lives are left
+    const danger = game.lives <= Math.max(3, game.maxLives * 0.25);
+    const boss = game.enemies.some((en) => en.def.boss);
+    const final = !game.endless && game.waveIndex === game.waveCount - 1;
+    sound.setIntensity(game.state === 'ready' ? 0 : boss ? 3 : danger || final || game.enemies.length > 24 ? 2 : 1, danger && game.state === 'playing');
+    world.update(dt * k); hud.update(dt); livesFlash -= dt;
     world.draw(ctx, view, game, assets, hud);
+    if (danger && game.state === 'playing') {
+      ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+      const a = 0.22 + 0.16 * Math.sin(performance.now() / 260);
+      const vg = ctx.createRadialGradient(view.cssW / 2, view.cssH / 2, Math.min(view.cssW, view.cssH) * 0.35, view.cssW / 2, view.cssH / 2, Math.max(view.cssW, view.cssH) * 0.7);
+      vg.addColorStop(0, 'rgba(160,0,0,0)'); vg.addColorStop(1, `rgba(160,10,0,${a})`);
+      ctx.fillStyle = vg; ctx.fillRect(0, 0, view.cssW, view.cssH);
+    }
     const step = currentLevel.tutorial && battle.brief.mode === 'story' && currentLevel.tutorial[tutorialStep];
     hud.draw(ctx, view, game, assets, { speed, livesFlash, tutorial: step, hasNext: !!LEVELS[game.level.id + 1], challenge: battle.brief.challenge, canAd: app.rewardedLeft() > 0 });
   } else screens.draw(ctx, view, screen, dt);
@@ -388,6 +422,7 @@ window.__sk = {
   await layout();
   requestAnimationFrame(frame);
   app.applySettings();
+  sound.setAmbience('spring'); // birdsong of the Aravalli hills
   // platform services start in the background; the game never waits on the network
   platform.device.init({ onPause: () => { sound.pause(); store.save(true); if (screen === 'battle' && !hud.modal) hud.modal = { type: 'pause' }; }, onResume: () => sound.resume(), onBack });
   platform.billing.init({
@@ -398,6 +433,6 @@ window.__sk = {
   platform.ads.init().catch(() => {}); // runs with Remove Ads too: optional rewarded ads stay available
   M.refreshQuests(store.profile);
   // first launch goes straight into the training level; afterwards, the main menu
-  if (!store.profile.introSeen) { store.profile.introSeen = true; store.save(); await go('menu'); startBattle({ mode: 'story', level: 0 }); }
+  if (!store.profile.introSeen) { store.profile.introSeen = true; store.save(); await go('menu'); screens.modal = null; dailyShown = null; startBattle({ mode: 'story', level: 0 }); }
   else await go('menu');
 })();

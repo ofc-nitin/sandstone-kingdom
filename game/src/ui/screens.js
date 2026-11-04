@@ -5,13 +5,14 @@
 import { blit } from '../render/raster.js';
 import { text, wrap, gemButton, woodPanel } from '../render/hud.js';
 import { LEVELS } from '../engine/levels.js';
-import { ENEMIES, TOWERS, ROYAL_TOWERS, POWERUPS, POWERUP_ORDER } from '../engine/data.js';
+import { ENEMIES, TOWERS, ROYAL_TOWERS, POWERUPS, POWERUP_ORDER, SPECIAL_LOADOUT } from '../engine/data.js';
 import * as M from '../meta/profile.js';
 import { LINKS, APP_VERSION } from '../platform/config.js';
 
 const TITLE = '"Rozha One", Georgia, serif';
 const INK = '#3a2414', RED_INK = '#7a160a';
 const fmt = (n) => Math.floor(n).toLocaleString('en-IN');
+const clock = (ms) => { const m = Math.ceil(ms / 60000); if (m < 60) return `${m} min`; const h = Math.floor(m / 60), r = m % 60; return r ? `${h} h ${r} min` : `${h} h`; };
 const REGION_NAMES = ['Aravalli Hills', 'Thar Desert', 'Western Ghats', 'Deccan Ruins', 'Sundarbans', 'Himalayas'];
 
 function card(ctx, x, y, w, h, u, { glow = false, dim = false, dark = false } = {}) {
@@ -60,7 +61,18 @@ export class Screens {
   }
 
   get p() { return this.app.store.profile; }
-  tap(x, y, w, h, fn, round = false) { this.targets.push({ x, y, w, h, fn, round }); }
+  // every tap area is at least 44 px across, even when the button is drawn smaller
+  tap(x, y, w, h, fn, round = false) {
+    if (round) w = Math.max(w, 22);
+    else if (w < 44 || h < 44) {
+      const nw = Math.max(w, 44), nh = Math.max(h, 44);
+      x -= (nw - w) / 2; y -= (nh - h) / 2; w = nw; h = nh;
+      // keep the bigger tap area on the screen
+      const SW = this.screenW || 1e9, SH = this.screenH || 1e9;
+      x = Math.max(0, Math.min(SW - w, x)); y = Math.max(0, Math.min(SH - h, y));
+    }
+    this.targets.push({ x, y, w, h, fn, round });
+  }
   hit(px, py) {
     for (let i = this.targets.length - 1; i >= 0; i--) {
       const t = this.targets[i];
@@ -122,6 +134,7 @@ export class Screens {
   draw(ctx, view, name, dt) {
     this.time += dt;
     this.targets = [];
+    this.screenW = view.cssW; this.screenH = view.cssH;
     ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
     const f = this.frame(view);
     const fn = this['draw_' + name];
@@ -132,9 +145,8 @@ export class Screens {
   // ---------------------------------------------------------------- main menu
   draw_menu(ctx, view, f) {
     const { u, W, H, L, R, T, B } = f, p = this.p, a = this.app;
-    const bg = a.assets.menuBg;
-    if (bg) ctx.drawImage(bg.canvas, 0, 0, W, H);
-    const vig = ctx.createLinearGradient(W * 0.5, 0, W, 0); vig.addColorStop(0, 'rgba(20,10,4,0)'); vig.addColorStop(1, 'rgba(20,10,4,0.45)');
+    this.drawLiveMenu(ctx, f);
+    const vig = ctx.createLinearGradient(W * 0.55, 0, W, 0); vig.addColorStop(0, 'rgba(20,10,4,0)'); vig.addColorStop(1, 'rgba(20,10,4,0.5)');
     ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
     // logo, gently breathing
     const lk = Math.min(1.25, (W * 0.42) / 224 / u) * (1 + Math.sin(this.time * 1.6) * 0.012);
@@ -159,17 +171,77 @@ export class Screens {
     M.refreshQuests(p);
     const quests = M.questsReady(p);
     const row = [['settings', 'Settings', () => a.go('settings')], ['trophy', 'Awards', () => a.go('achievements')], ['ranks', 'Ranks', () => a.go('ranks')],
-      ['daily', 'Daily', () => a.go('daily'), daily], ['quests', 'Quests', () => a.go('quests'), quests], ['workshop', 'Workshop', () => a.go('workshop')]];
-    const k = 0.82, step = 50 * u;
-    row.forEach(([name, label, fn, badge], i) => this.round(ctx, name, L + 22 * u + i * step, B - 30 * u, k, fn, u, badge || 0, label));
+      ['daily', 'Daily', () => a.go('daily'), daily], ['quests', 'Quests', () => a.go('quests'), quests], ['workshop', 'Forge', () => a.go('workshop')]];
+    // the round buttons sit in a wooden dock at the bottom right, clear of the heroes
+    const k = 0.78, step = 48 * u, dw = step * row.length + 12 * u, dh = 64 * u, dx = R - dw, dy = B - dh;
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 8 * u; ctx.shadowOffsetY = 3 * u;
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.roundRect(dx, dy, dw, dh, 14 * u); ctx.fill(); ctx.restore();
+    const dock = ctx.createLinearGradient(0, dy, 0, dy + dh); dock.addColorStop(0, '#7a4c2a'); dock.addColorStop(1, '#3f2614');
+    ctx.fillStyle = dock; ctx.beginPath(); ctx.roundRect(dx + 2.5 * u, dy + 2.5 * u, dw - 5 * u, dh - 5 * u, 12 * u); ctx.fill();
+    ctx.strokeStyle = '#e0a224'; ctx.lineWidth = 1.6 * u; ctx.beginPath(); ctx.roundRect(dx + 5 * u, dy + 5 * u, dw - 10 * u, dh - 10 * u, 10 * u); ctx.stroke();
+    row.forEach(([name, label, fn, badge], i) => this.round(ctx, name, dx + 6 * u + step / 2 + i * step, dy + 24 * u, k, fn, u, badge || 0, label));
     // Google Play Games sign-in, the reason to sign in shown right there
     const g = a.platform.games;
     if (g.available) {
-      const gy = B - 30 * u - 46 * u;
+      const gy = B - 82 * u;
       if (!g.signedIn) {
         this.btn(ctx, L, gy - 12 * u, 168 * u, 28 * u, 'SIGN IN · +20% DAILY', 'green', () => a.signIn(), u);
       } else text(ctx, `Signed in as ${g.player ? g.player.name : 'player'}`, L, gy + 6 * u, 11 * u, { align: 'left', sw: 2.6 * u, max: 200 * u });
     }
+  }
+  // The main menu as a living painting: turning sun rays, drifting clouds, birds, breathing
+  // heroes, floating petals and specks of light. Falls back to the still painting.
+  drawLiveMenu(ctx, f) {
+    const { W, H } = f, live = this.app.assets.menuLive, t = this.time;
+    if (!live) { const bg = this.app.assets.menuBg; if (bg) ctx.drawImage(bg.canvas, 0, 0, W, H); return; }
+    const sc = live.sc, X = (x) => (x - live.x0) * sc, Y = (y) => (y - live.y0) * sc;
+    ctx.drawImage(live.sky.canvas, 0, 0, W, H);
+    // sun rays turning slowly, and the sun breathing
+    const sx = X(live.sun.x), sy = Y(live.sun.y), R = 560 * sc;
+    ctx.save(); ctx.translate(sx, sy); ctx.rotate(t * 0.03);
+    ctx.fillStyle = 'rgba(255,243,200,0.10)';
+    for (let i = 0; i < 24; i++) { const a = (i / 24) * Math.PI * 2; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a - 0.035) * R, Math.sin(a - 0.035) * R); ctx.lineTo(Math.cos(a + 0.035) * R, Math.sin(a + 0.035) * R); ctx.fill(); }
+    ctx.restore();
+    const pulse = 1 + Math.sin(t * 0.8) * 0.06, gl = ctx.createRadialGradient(sx, sy, 10 * sc, sx, sy, 170 * sc * pulse);
+    gl.addColorStop(0, 'rgba(255,250,215,0.55)'); gl.addColorStop(1, 'rgba(255,220,140,0)');
+    ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(sx, sy, 170 * sc * pulse, 0, Math.PI * 2); ctx.fill();
+    // clouds drifting right, wrapping around
+    ctx.fillStyle = 'rgba(255,244,228,0.92)';
+    for (const [cx0, cy, k, v] of [[120, 70, 1, 6], [690, 52, 1.2, 4], [330, 40, 0.8, 8], [900, 110, 0.9, 5]]) {
+      const cx = ((cx0 + t * v + 100) % 1080) - 100;
+      for (const [a, b, r] of [[0, 0, 22], [24, -6, 18], [44, 2, 16], [-20, 4, 14]]) { ctx.beginPath(); ctx.arc(X(cx + a * k), Y(cy + b * k), r * k * sc, 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillRect(X(cx - 34 * k), Y(cy), 94 * k * sc, 16 * k * sc);
+    }
+    // a flock of birds crossing every so often
+    const fl = (t % 26) / 26, bx = -60 + fl * 1000;
+    ctx.strokeStyle = '#4a2a3a'; ctx.lineWidth = 1.3 * sc; ctx.lineCap = 'round';
+    for (let i = 0; i < 6; i++) {
+      const x = X(bx - i * 16 - (i % 2) * 6), y = Y(80 + (i % 3) * 9 + Math.sin(t * 1.5 + i) * 3), w = Math.sin(t * 9 + i) * 3 * sc;
+      ctx.beginPath(); ctx.moveTo(x - 6 * sc, y - w); ctx.quadraticCurveTo(x - 3 * sc, y - 3 * sc, x, y); ctx.quadraticCurveTo(x + 3 * sc, y - 3 * sc, x + 6 * sc, y - w); ctx.stroke();
+    }
+    ctx.lineCap = 'butt';
+    ctx.drawImage(live.land.canvas, 0, 0, W, H);
+    // torch glow on the fort gate
+    for (const [tx, ty] of [[452, 262], [488, 262]]) { const fl2 = 0.6 + 0.4 * Math.sin(t * 11 + tx); const g2 = ctx.createRadialGradient(X(tx), Y(ty), 0, X(tx), Y(ty), 16 * sc); g2.addColorStop(0, `rgba(255,200,90,${0.45 * fl2})`); g2.addColorStop(1, 'rgba(255,160,60,0)'); ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(X(tx), Y(ty), 16 * sc, 0, Math.PI * 2); ctx.fill(); }
+    // the heroes breathe and shift their weight
+    live.heroes.forEach((h, i) => {
+      const br = Math.sin(t * 1.8 + i * 1.7);
+      ctx.save(); ctx.translate(X(h.x), Y(h.y)); ctx.scale(1 - br * 0.006, 1 + br * 0.014); ctx.rotate(Math.sin(t * 0.9 + i) * 0.012);
+      blit(ctx, h.sprite, 0, 0, sc);
+      ctx.restore();
+    });
+    // a glint runs along the Sun Knight's sword now and then
+    const gt = (t % 5) / 5;
+    if (gt < 0.12) { const k = gt / 0.12, gx = X(150 + 36 + k * 30), gy = Y(382 - 44 - k * 54); ctx.fillStyle = `rgba(255,255,240,${Math.sin(k * Math.PI)})`; ctx.beginPath(); ctx.arc(gx, gy, 4 * sc, 0, Math.PI * 2); ctx.fill(); }
+    // petals and specks of light in the air
+    for (let i = 0; i < 18; i++) {
+      const px = ((i * 97 + t * (10 + (i % 5) * 3)) % 900) - 30, py = ((i * 53 + t * (8 + (i % 3) * 4)) % 420) - 20;
+      if (i % 3) { ctx.fillStyle = 'rgba(255,190,210,0.85)'; ctx.beginPath(); ctx.ellipse(X(px), Y(py), 2.6 * sc, 1.3 * sc, t + i, 0, Math.PI * 2); ctx.fill(); }
+      else { ctx.fillStyle = `rgba(255,245,200,${0.4 + 0.4 * Math.sin(t * 3 + i)})`; ctx.beginPath(); ctx.arc(X(px), Y(py), 1.6 * sc, 0, Math.PI * 2); ctx.fill(); }
+    }
+    const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+    vg.addColorStop(0, 'rgba(20,10,4,0)'); vg.addColorStop(1, 'rgba(20,10,4,0.4)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
   }
   lockOn(ctx, x, y, u) { blit(ctx, this.app.assets.get('ui:lock'), x, y, u * 0.9); }
 
@@ -255,9 +327,11 @@ export class Screens {
     const p = this.p, lv = LEVELS[params.level];
     const allowed = (t) => !params.challenge || !params.challenge.rules.towers || params.challenge.rules.towers.includes(t);
     const owned = M.ownedRoyal(p).filter(allowed);
-    let special = p.lastSpecial && owned.includes(p.lastSpecial) ? p.lastSpecial : (owned[0] || null);
-    if (!lv.plots.some((pl) => pl.royal)) special = null;
-    this.brief = { ...params, special, trial: null };
+    // the special towers taken last time are chosen again by default
+    let specials = (p.lastSpecials || []).filter((t) => owned.includes(t));
+    if (!specials.length) specials = owned.slice(0, SPECIAL_LOADOUT);
+    if (!lv.plots.some((pl) => pl.royal)) specials = [];
+    this.brief = { ...params, specials: specials.slice(0, SPECIAL_LOADOUT), trial: null };
   }
 
   draw_briefing(ctx, view, f) {
@@ -293,8 +367,9 @@ export class Screens {
     head('Enemies', x1, y + 4 * u);
     const types = [...new Set(lv.waves.flat().map((gr) => gr.type))];
     const ex = x1, ey = y + 62 * u;
-    types.slice(0, 6).forEach((t, i) => {
-      const def = ENEMIES[t], spr = a.assets.get('enemy:' + def.art), cx = ex + 24 * u + i * 52 * u;
+    const ew = Math.min(52 * u, (colW - 10 * u) / Math.max(1, types.length));
+    types.slice(0, 9).forEach((t, i) => {
+      const def = ENEMIES[t], spr = a.assets.get('enemy:' + def.art), cx = ex + ew / 2 + i * ew;
       if (cx > x1 + colW) return;
       ctx.fillStyle = 'rgba(90,58,34,0.18)'; ctx.beginPath(); ctx.ellipse(cx, ey, 20 * u, 6 * u, 0, 0, Math.PI * 2); ctx.fill();
       if (spr) blit(ctx, spr, cx, ey, u * (def.boss ? 0.45 : 0.85));
@@ -303,34 +378,36 @@ export class Screens {
     // ---- the battlefield: build spots
     let ry = c.y + 38 * u;
     head('Battlefield', x2, ry);
-    const free = lv.plots.filter((pl) => !pl.lock).length, locked = lv.plots.filter((pl) => pl.lock).length, sp = lv.plots.filter((pl) => pl.royal).length;
     const row = (sprite, label, yy) => { blit(ctx, a.assets.get(sprite), x2 + 16 * u, yy + 6 * u, u * 0.5); text(ctx, label, x2 + 36 * u, yy + 8 * u, 12 * u, { align: 'left', weight: 700, fill: INK, stroke: false, max: w2 - 40 * u }); };
-    row('plot:open', `${free} open build spots`, ry + 12 * u);
-    row('plot:rubble', `${locked} locked (gold or time)`, ry + 32 * u);
-    row('plot:special', `${sp} special spots (max 3)`, ry + 52 * u);
+    const std = lv.plots.filter((pl) => !pl.royal && !pl.lock).length, locked = lv.plots.filter((pl) => !pl.royal && pl.lock).length, sp = lv.plots.filter((pl) => pl.royal).length;
+    row('plot:open', `${std} build spots`, ry + 12 * u);
+    row('plot:rubble', `${locked} spots to clear with gold`, ry + 32 * u);
+    row('plot:special', sp ? `${sp} special spot${sp > 1 ? 's' : ''}, opening during the battle` : 'No special spots here', ry + 52 * u);
     ry += 78 * u;
-    // ---- special tower picker
-    head('Special tower', x2, ry);
-    if (!sp) text(ctx, 'No special spots on this map.', x2, ry + 18 * u, 11 * u, { align: 'left', weight: 700, fill: INK, stroke: false, max: w2 });
+    // ---- special towers to bring (up to 3)
+    head('Special towers', x2, ry);
+    if (!sp) text(ctx, 'Special towers sit this one out.', x2, ry + 18 * u, 11 * u, { align: 'left', weight: 700, fill: INK, stroke: false, max: w2 });
     else {
-      text(ctx, 'Builds only on special spots. +15% range there.', x2, ry + 15 * u, 10 * u, { align: 'left', weight: 700, fill: '#6a4a2a', stroke: false, max: w2 });
-      const ids = Object.keys(ROYAL_TOWERS), cw = Math.min(120 * u, (w2 - 8 * u) / ids.length), ch = Math.max(80 * u, Math.min(104 * u, c.y + c.h - 50 * u - (ry + 22 * u)));
+      text(ctx, `Pick up to ${SPECIAL_LOADOUT}. They stand only on special spots.`, x2, ry + 15 * u, 10 * u, { align: 'left', weight: 700, fill: '#6a4a2a', stroke: false, max: w2 });
+      const ids = Object.keys(ROYAL_TOWERS), gap = 6 * u, cw = Math.min(104 * u, (w2 - gap * (ids.length - 1)) / ids.length), ch = Math.max(80 * u, Math.min(104 * u, c.y + c.h - 50 * u - (ry + 22 * u)));
       ids.forEach((id, i) => {
-        const cx = x2 + i * (cw + 8 * u), cy = ry + 22 * u, def = TOWERS[id], own = !!p.owned[id] || b.trial === id;
+        const cx = x2 + i * (cw + gap), cy = ry + 22 * u, def = TOWERS[id], own = !!p.owned[id] || b.trial === id;
         const allowed = !b.challenge || !b.challenge.rules.towers || b.challenge.rules.towers.includes(id);
-        const sel = b.special === id;
+        const sel = b.specials.includes(id);
         card(ctx, cx, cy, cw, ch, u, { glow: sel, dim: !allowed });
-        blit(ctx, a.assets.get('card:' + def.art), cx + cw / 2, cy + ch - 34 * u, u * 0.5);
+        blit(ctx, a.assets.get('card:' + def.art), cx + cw / 2, cy + ch - 34 * u, u * 0.45);
         text(ctx, def.name, cx + cw / 2, cy + ch - 20 * u, 9.5 * u, { weight: 900, fill: INK, stroke: false, max: cw - 10 * u });
         if (!allowed) text(ctx, 'Not allowed', cx + cw / 2, cy + ch - 8 * u, 9 * u, { fill: '#8a1a0a', stroke: false, weight: 900, max: cw - 8 * u });
         else if (own) text(ctx, sel ? 'SELECTED' : 'Tap to choose', cx + cw / 2, cy + ch - 8 * u, 9 * u, { fill: sel ? '#2f8f3c' : '#6a4a2a', stroke: false, weight: 900, max: cw - 8 * u });
         else {
-          blit(ctx, a.assets.get('ui:ruby'), cx + cw / 2 - 24 * u, cy + ch - 11 * u, u * 0.55);
-          text(ctx, `${ROYAL_TOWERS[id].rubies} · or try`, cx + cw / 2 + 4 * u, cy + ch - 7.5 * u, 9 * u, { fill: INK, stroke: false, weight: 900, max: cw - 30 * u });
+          blit(ctx, a.assets.get('ui:lock'), cx + cw / 2 - 18 * u, cy + ch - 11 * u, u * 0.6);
+          text(ctx, 'Unlock', cx + cw / 2 + 4 * u, cy + ch - 7.5 * u, 9 * u, { fill: INK, stroke: false, weight: 900, max: cw - 30 * u });
         }
         if (allowed) this.tap(cx, cy, cw, ch, () => {
-          if (own) { b.special = sel ? null : id; return; }
-          this.modal = { type: 'royal', id };
+          if (!own) { this.modal = { type: 'royal', id }; return; }
+          if (sel) b.specials = b.specials.filter((t) => t !== id);
+          else if (b.specials.length < SPECIAL_LOADOUT) b.specials.push(id);
+          else a.toast(`You can bring ${SPECIAL_LOADOUT} special towers`);
         });
       });
     }
@@ -371,7 +448,7 @@ export class Screens {
     } else if (this.shopTab === 'royal') {
       for (const [id, rt] of Object.entries(ROYAL_TOWERS)) {
         const own = p.owned[id];
-        items.push({ title: TOWERS[id].name, lines: [TOWERS[id].tip.split(':')[0], 'Yours forever, every level'], icon: 'icon:' + TOWERS[id].art, iconK: 0.9, btn: own ? 'OWNED' : `${rt.rubies} RUBIES`, color: 'red', enabled: !own, fn: () => { this.modal = { type: 'royal', id }; } });
+        items.push({ title: TOWERS[id].name, lines: [`${rt.rubies} rubies or ${fmt(rt.coins)} coins`, 'Yours forever, 8 levels'], icon: 'icon:' + TOWERS[id].art, iconK: 0.9, btn: own ? 'OWNED' : 'UNLOCK', color: 'red', enabled: !own, fn: () => { this.modal = { type: 'royal', id }; } });
       }
     } else {
       for (const k of POWERUP_ORDER) {
@@ -379,7 +456,7 @@ export class Screens {
         items.push({ title: d.name, lines: [d.desc, `You have ${p.powerups[k] || 0}`], icon: 'btn:' + k, btn: `${d.coins} COINS`, color: 'gold', enabled: p.coins >= d.coins, fn: () => { if (M.buyPowerup(p, k, 'coins')) { a.save(); a.sound.play('coin'); } }, btn2: `${d.rubies} RUBIES`, fn2: () => { if (M.buyPowerup(p, k, 'rubies')) { a.save(); a.sound.play('coin'); } else a.toast('Not enough rubies'); } });
       }
     }
-    const n = Math.max(1, items.length), cols = Math.min(n, this.shopTab === 'rubies' ? 5 : 3), gap = 10 * u;
+    const n = Math.max(1, items.length), cols = Math.min(n, this.shopTab === 'rubies' ? 5 : this.shopTab === 'royal' ? 4 : 3), gap = 10 * u;
     const cw = (c.w - gap * (cols - 1)) / cols, chh = h;
     items.forEach((it, i) => {
       const x = c.x + i * (cw + gap), y = top;
@@ -410,6 +487,11 @@ export class Screens {
     this.backButton(ctx, f);
     this.wallet(ctx, f);
     const c = this.panel(ctx, f, 'Daily Royal Reward', 56);
+    this.calendar(ctx, f, c);
+  }
+  // the 7-day calendar, shared by the Daily screen and the pop-up on the main menu
+  calendar(ctx, f, c, onClaim = null) {
+    const { u } = f, a = this.app, p = this.p;
     const st = M.dailyStatus(p), signed = a.platform.games.signedIn;
     text(ctx, st.missed ? 'You missed a day, so the calendar starts again. Come back tomorrow to keep the streak!' : 'Come back every day. Day 7 is the big royal chest.', c.x + c.w / 2, c.y + 10 * u, 12 * u, { weight: 700, fill: INK, stroke: false, max: c.w });
     const gap = 6 * u, cw = (c.w - gap * 6) / 7, ch = Math.min(150 * u, c.h - 90 * u), y = c.y + 24 * u;
@@ -426,7 +508,7 @@ export class Screens {
       if (claimed) this.check(ctx, x + cw / 2, y + ch * 0.45, u);
     });
     const by = c.y + c.h - 40 * u;
-    if (st.canClaim) this.btn(ctx, c.x + c.w / 2 - 90 * u, by, 180 * u, 40 * u, signed ? 'CLAIM +20%' : 'CLAIM', 'green', () => a.claimDaily(), u);
+    if (st.canClaim) this.btn(ctx, c.x + c.w / 2 - 90 * u, by, 180 * u, 40 * u, signed ? 'CLAIM +20%' : 'CLAIM', 'green', () => { a.claimDaily(); if (onClaim) onClaim(); }, u);
     else text(ctx, 'Claimed today. See you tomorrow!', c.x + c.w / 2, by + 24 * u, 14 * u, { font: TITLE, weight: 400, fill: RED_INK, stroke: false });
     if (!signed && a.platform.games.available) text(ctx, 'Sign in with Google Play for +20% and a streak that follows you to any phone.', c.x + c.w / 2, by - 6 * u, 10 * u, { weight: 700, fill: INK, stroke: false, max: c.w });
   }
@@ -468,27 +550,53 @@ export class Screens {
 
   // ---------------------------------------------------------------- Royal Workshop
   draw_workshop(ctx, view, f) {
-    const { u } = f, a = this.app, p = this.p;
+    const { u } = f, a = this.app, p = this.p, now = Date.now();
     this.backdrop(ctx, view);
     this.backButton(ctx, f);
     this.wallet(ctx, f);
-    const c = this.panel(ctx, f, 'Royal Workshop', 56);
-    const total = M.totalDiyas(p);
+    const c = this.panel(ctx, f, 'Royal Forge', 56);
+    const done = M.forgeTick(p, now);
+    if (done) { a.reward(`${M.FORGE.find((t) => t.id === done.id).name} rank ${done.rank} is ready!`); a.afterReward(); }
+    const total = M.totalDiyas(p), job = p.forgeJob;
     blit(ctx, a.assets.get('ui:diya'), c.x + 10 * u, c.y + 8 * u, u * 0.8);
-    text(ctx, `${total} diyas earned · ranks unlock at 3, 9 and 15 diyas`, c.x + 26 * u, c.y + 14 * u, 12 * u, { align: 'left', weight: 900, fill: INK, stroke: false, max: c.w - 160 * u });
-    this.btn(ctx, c.x + c.w - 120 * u, c.y, 120 * u, 26 * u, 'RESET (FREE)', 'grey', () => { const r = M.resetWorkshop(p); if (r) { a.toast(`Refunded ${fmt(r)} coins`); a.save(); } }, u, Object.keys(p.workshop).length > 0);
-    const cols = 3, gap = 10 * u, cw = (c.w - gap * 2) / cols, ch = (c.h - 44 * u - gap) / 2;
-    M.WORKSHOP.forEach((t, i) => {
-      const x = c.x + (i % cols) * (cw + gap), y = c.y + 38 * u + Math.floor(i / cols) * (ch + gap);
-      const rank = p.workshop[t.id] || 0, nx = M.workshopNext(p, t.id);
-      card(ctx, x, y, cw, ch, u);
-      text(ctx, t.name, x + cw / 2, y + 22 * u, 13 * u, { font: TITLE, weight: 400, fill: RED_INK, stroke: false, max: cw - 12 * u });
-      text(ctx, t.desc, x + cw / 2, y + 38 * u, 10 * u, { weight: 700, fill: INK, stroke: false, max: cw - 12 * u });
-      for (let k = 0; k < 3; k++) blit(ctx, a.assets.get(k < rank ? 'ui:diya' : 'ui:diyaOff'), x + cw / 2 + (k - 1) * 24 * u, y + 66 * u, u * 0.9);
-      if (!nx) text(ctx, 'MASTERED', x + cw / 2, y + ch - 14 * u, 12 * u, { fill: '#2f8f3c', stroke: false });
-      else if (nx.locked) text(ctx, `Needs ${nx.diyas} diyas`, x + cw / 2, y + ch - 14 * u, 11 * u, { fill: '#8a1a0a', stroke: false });
-      else this.btn(ctx, x + 12 * u, y + ch - 36 * u, cw - 24 * u, 28 * u, `${fmt(nx.coins)} COINS`, 'gold', () => { if (M.buyWorkshop(p, t.id)) { a.sound.play('upgrade'); M.checkAchievements(p); a.afterReward(); } }, u, nx.affordable);
+    text(ctx, `${total} diyas · upgrades take time to forge, one at a time`, c.x + 26 * u, c.y + 14 * u, 12 * u, { align: 'left', weight: 900, fill: INK, stroke: false, max: c.w * 0.5 });
+    const cols = 4, gap = 8 * u, rows = Math.ceil(M.FORGE.length / cols), cw = (c.w - gap * (cols - 1)) / cols, ch = (c.h - 44 * u - gap * (rows - 1)) / rows;
+    M.FORGE.forEach((t, i) => {
+      const x = c.x + (i % cols) * (cw + gap), y = c.y + 36 * u + Math.floor(i / cols) * (ch + gap);
+      const rank = p.workshop[t.id] || 0, nx = M.forgeNext(p, t.id), busy = job && job.id === t.id;
+      card(ctx, x, y, cw, ch, u, { glow: busy });
+      text(ctx, t.name, x + cw / 2, y + 20 * u, 12 * u, { font: TITLE, weight: 400, fill: RED_INK, stroke: false, max: cw - 12 * u });
+      text(ctx, t.desc, x + cw / 2, y + 34 * u, 9 * u, { weight: 700, fill: INK, stroke: false, max: cw - 10 * u });
+      for (let k = 0; k < M.FORGE_RANKS.length; k++) {
+        const px = x + cw / 2 + (k - 2) * 14 * u, py = y + 50 * u;
+        ctx.fillStyle = k < rank ? '#e0a224' : busy && k === rank ? '#f6d77a' : '#cbb89a'; ctx.strokeStyle = INK; ctx.lineWidth = 1.2 * u;
+        ctx.beginPath(); ctx.moveTo(px, py - 5 * u); ctx.lineTo(px + 5 * u, py); ctx.lineTo(px, py + 5 * u); ctx.lineTo(px - 5 * u, py); ctx.closePath(); ctx.fill(); ctx.stroke();
+      }
+      const by = y + ch - 32 * u;
+      if (!nx) text(ctx, 'MASTERED', x + cw / 2, by + 20 * u, 12 * u, { fill: '#2f8f3c', stroke: false });
+      else if (busy) text(ctx, 'On the anvil…', x + cw / 2, by + 20 * u, 11 * u, { fill: RED_INK, stroke: false });
+      else if (nx.locked) text(ctx, `Needs ${nx.diyas} diyas`, x + cw / 2, by + 20 * u, 11 * u, { fill: '#8a1a0a', stroke: false });
+      else {
+        text(ctx, clock(nx.time), x + cw / 2, by - 4 * u, 9.5 * u, { weight: 900, fill: '#6a4a2a', stroke: false });
+        this.btn(ctx, x + 8 * u, by, cw - 16 * u, 26 * u, `${fmt(nx.coins)} COINS`, 'gold', () => { if (M.forgeStart(p, t.id, Date.now())) { a.sound.play('build'); a.save(); } }, u, nx.affordable && !job);
+      }
     });
+    // the anvil: the job being forged, in the last slot of the grid
+    {
+      const i = M.FORGE.length, x = c.x + (i % cols) * (cw + gap), y = c.y + 36 * u + Math.floor(i / cols) * (ch + gap);
+      card(ctx, x, y, cw, ch, u, { dark: true });
+      text(ctx, 'The Anvil', x + cw / 2, y + 20 * u, 12 * u, { font: TITLE, weight: 400, fill: '#ffd66b', max: cw - 12 * u });
+      if (!job) text(ctx, 'Pick an upgrade to forge', x + cw / 2, y + ch / 2 + 4 * u, 10 * u, { weight: 700, fill: '#fff4dc', stroke: false, max: cw - 16 * u });
+      else {
+        const left = M.forgeLeft(p, now), full = job.ends - job.start, track = M.FORGE.find((q) => q.id === job.id);
+        text(ctx, `${track.name} ${job.rank}`, x + cw / 2, y + 36 * u, 10 * u, { weight: 900, fill: '#fff4dc', stroke: false, max: cw - 12 * u });
+        progressBar(ctx, x + 12 * u, y + 44 * u, cw - 24 * u, 11 * u, 1 - left / full, u, '#e0a224');
+        text(ctx, `${clock(left)} left`, x + cw / 2, y + 68 * u, 10 * u, { weight: 900, fill: '#ffd66b', stroke: false });
+        const rc = M.forgeRushCost(p, now), half = (cw - 22 * u) / 2, by = y + ch - 32 * u;
+        this.btn(ctx, x + 8 * u, by, a.rewardedLeft() > 0 ? half : cw - 16 * u, 26 * u, `${rc} ${rc === 1 ? 'RUBY' : 'RUBIES'}`, 'red', () => { const r = M.forgeRush(p, Date.now()); if (r) { a.reward(`${track.name} rank ${r.rank} is ready!`); a.afterReward(); } else a.toast('Not enough rubies'); }, u);
+        if (a.rewardedLeft() > 0) this.btn(ctx, x + 14 * u + half, by, half, 26 * u, '-15 MIN AD', 'purple', async () => { if (await a.rewarded()) { const r = M.forgeAdCut(p, Date.now()); if (r) { a.reward(`${track.name} rank ${r.rank} is ready!`); a.afterReward(); } else a.save(); } }, u);
+      }
+    }
   }
 
   // ---------------------------------------------------------------- achievements
@@ -613,7 +721,12 @@ export class Screens {
     ctx.fillStyle = 'rgba(12,6,2,0.6)'; ctx.fillRect(0, 0, W, H);
     this.tap(0, 0, W, H, () => {}); // swallow taps behind the panel
     const close = () => { this.modal = null; };
-    if (m.type === 'challenges') {
+    if (m.type === 'daily') {
+      const w = Math.min(W - 30 * u, 720 * u), h = Math.min(H - 30 * u, 300 * u), x = (W - w) / 2, y = (H - h) / 2 + 8 * u;
+      woodPanel(ctx, x, y, w, h, 'Daily Royal Reward', u);
+      this.round(ctx, 'close', x + w - 6 * u, y + 6 * u, 0.7, close, u);
+      this.calendar(ctx, f, { x: x + 18 * u, y: y + 28 * u, w: w - 36 * u, h: h - 44 * u }, () => { this.modal = null; });
+    } else if (m.type === 'challenges') {
       const lv = LEVELS[m.level], list = M.CHALLENGES[m.level] || [];
       const w = Math.min(W - 40 * u, 560 * u), h = Math.min(H - 40 * u, 300 * u), x = (W - w) / 2, y = (H - h) / 2 + 10 * u;
       woodPanel(ctx, x, y, w, h, `${lv.name}`, u);
@@ -640,8 +753,11 @@ export class Screens {
       lines.slice(0, 4).forEach((ln, i) => text(ctx, ln, x + 160 * u, y + 52 * u + i * 16 * u, 12 * u, { align: 'left', weight: 700, fill: INK, stroke: false }));
       text(ctx, 'Unlock forever, for every level.', x + 160 * u, y + 52 * u + Math.min(4, lines.length) * 16 * u + 4 * u, 11 * u, { align: 'left', weight: 900, fill: RED_INK, stroke: false, max: w - 180 * u });
       const by = y + h - 56 * u, bw = (w - 190 * u) / 2;
-      this.btn(ctx, x + 160 * u, by, bw + 20 * u, 34 * u, `${rt.rubies} RUBIES`, 'red', () => { if (M.buyRoyalTower(p, m.id)) { a.reward(`${def.name} unlocked!`); if (this.brief) this.brief.special = m.id; this.modal = null; a.afterReward(); } else a.toast('Not enough rubies: try the shop'); }, u);
-      if (this.brief && a.rewardedLeft() > 0) this.btn(ctx, x + 170 * u + bw + 20 * u, by, bw - 10 * u, 34 * u, 'TRY (AD)', 'purple', async () => { if (await a.rewarded()) { this.brief.trial = m.id; this.brief.special = m.id; this.modal = null; a.toast('Yours for this battle!'); } }, u);
+      const take = () => { if (this.brief && !this.brief.specials.includes(m.id) && this.brief.specials.length < SPECIAL_LOADOUT) this.brief.specials.push(m.id); };
+      const buy = (cur) => { if (M.buyRoyalTower(p, m.id, cur)) { a.reward(`${def.name} unlocked!`); take(); this.modal = null; a.afterReward(); } else a.toast(cur === 'rubies' ? 'Not enough rubies: try the shop' : 'Not enough coins yet'); };
+      this.btn(ctx, x + 160 * u, by, bw, 34 * u, `${rt.rubies} RUBIES`, 'red', () => buy('rubies'), u);
+      this.btn(ctx, x + 168 * u + bw, by, bw, 34 * u, `${fmt(rt.coins)} COINS`, 'gold', () => buy('coins'), u, p.coins >= rt.coins);
+      if (this.brief && a.rewardedLeft() > 0) this.btn(ctx, x + 160 * u, by - 40 * u, bw * 2 + 8 * u, 30 * u, 'TRY FOR ONE BATTLE (AD)', 'purple', async () => { if (await a.rewarded()) { this.brief.trial = m.id; take(); this.modal = null; a.toast('Yours for this battle!'); } }, u);
     } else if (m.type === 'confirm') {
       const w = Math.min(W - 40 * u, 400 * u), h = 170 * u, x = (W - w) / 2, y = (H - h) / 2;
       woodPanel(ctx, x, y, w, h, 'Are you sure?', u);

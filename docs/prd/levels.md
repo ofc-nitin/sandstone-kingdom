@@ -4,12 +4,12 @@ Generated from `game/src/engine/levels.js` by `node tools/levels-doc.mjs`, so th
 
 | # | Level | Start gold | Lives | Enemy HP | Waves | Spots (open / locked / special) | Spells | New enemy |
 |---|---|---|---|---|---|---|---|---|
-| 0 | Training Grounds | 160 | 15 | ×0.80 | 3 | 3 / 1 / 0 | 0 | Bandit |
-| 1 | Village at the Pass | 230 | 20 | ×1.00 | 6 | 4 / 2 / 1 | 1 | - |
-| 2 | The Stepwell Road | 300 | 20 | ×1.06 | 7 | 5 / 3 / 2 | 2 | Wolf Rider |
-| 3 | Banyan Crossing | 330 | 20 | ×1.25 | 8 | 5 / 3 / 2 | 2 | Barbarian |
-| 4 | The Old Watchtower | 380 | 20 | ×1.32 | 9 | 6 / 3 / 3 | 3 | Bandit Archer, Armored Brute |
-| 5 | The Bandit King's Camp | 420 | 20 | ×1.38 | 10 | 6 / 3 / 3 | 3 | The Bandit King |
+| 0 | Training Grounds | 170 | 15 | ×0.80 | 3 | 5 / 1 / 0 | 0 | Bandit |
+| 1 | Village at the Pass | 230 | 20 | ×1.00 | 6 | 6 / 2 / 0 | 1 | Wolf Rider |
+| 2 | The Stepwell Road | 280 | 20 | ×1.32 | 7 | 7 / 2 / 0 | 2 | Bandit Archer, Saboteur |
+| 3 | Banyan Crossing | 340 | 20 | ×1.18 | 8 | 6 / 4 / 1 | 2 | Barbarian, War Drummer |
+| 4 | The Old Watchtower | 400 | 20 | ×1.02 | 9 | 6 / 5 / 2 | 3 | Armored Brute, Shield Bearer |
+| 5 | The Bandit King's Camp | 440 | 20 | ×0.98 | 10 | 6 / 6 / 3 | 3 | The Bandit King |
 
 ## Tutorial: Training Grounds
 
@@ -37,16 +37,16 @@ Generated from `game/src/engine/levels.js` by `node tools/levels-doc.mjs`, so th
 
 **Roads:** 1 · **Hero:** Sun Knight · **Spells:** Arrow Rain
 
-**Locked spots:** rubble (50 gold), opens at wave 3
+**Locked spots:** rubble (40 gold), rubble (55 gold)
 
 | Wave | Enemies |
 |---|---|
 | 1 | 6 × Bandit |
 | 2 | 9 × Bandit |
-| 3 | 12 × Bandit |
-| 4 | 10 × Bandit, 6 × Bandit |
-| 5 | 16 × Bandit |
-| 6 | 22 × Bandit |
+| 3 | 3 × Wolf Rider |
+| 4 | 10 × Bandit, 3 × Wolf Rider |
+| 5 | 6 × Wolf Rider, 8 × Bandit |
+| 6 | 16 × Bandit, 6 × Wolf Rider |
 
 **Challenges (unlock after completing the level, each pays rubies once):**
 
@@ -62,17 +62,17 @@ Generated from `game/src/engine/levels.js` by `node tools/levels-doc.mjs`, so th
 
 **Roads:** 1 · **Hero:** Sun Knight · **Spells:** Arrow Rain, Reinforcements
 
-**Locked spots:** rubble (40 gold), opens at wave 4, rubble (80 gold)
+**Locked spots:** rubble (40 gold), rubble (55 gold)
 
 | Wave | Enemies |
 |---|---|
 | 1 | 8 × Bandit |
-| 2 | 3 × Wolf Rider |
+| 2 | 3 × Bandit Archer |
 | 3 | 10 × Bandit, 3 × Wolf Rider |
-| 4 | 6 × Wolf Rider |
-| 5 | 12 × Bandit, 4 × Wolf Rider |
-| 6 | 7 × Wolf Rider, 10 × Bandit |
-| 7 | 14 × Bandit, 8 × Wolf Rider |
+| 4 | 4 × Saboteur |
+| 5 | 12 × Bandit, 4 × Bandit Archer |
+| 6 | 7 × Wolf Rider, 4 × Saboteur |
+| 7 | 14 × Bandit, 6 × Bandit Archer, 5 × Saboteur |
 
 **Challenges (unlock after completing the level, each pays rubies once):**
 
@@ -86,20 +86,20 @@ Generated from `game/src/engine/levels.js` by `node tools/levels-doc.mjs`, so th
 
 **Why we fight:** The hill Barbarians teamed up with the bandits. Bigger, tougher, hits harder. Do not let them cross the old banyan tree.
 
-**Roads:** 1 · **Hero:** Sun Knight · **Spells:** Arrow Rain, Reinforcements
+**Roads:** 2 · **Hero:** Sun Knight · **Spells:** Arrow Rain, Reinforcements
 
-**Locked spots:** rubble (50 gold), opens at wave 5, rubble (70 gold)
+**Locked spots:** opens at wave 2, rubble (40 gold), rubble (55 gold), rubble (70 gold)
 
 | Wave | Enemies |
 |---|---|
-| 1 | 10 × Bandit |
-| 2 | 5 × Wolf Rider |
-| 3 | 2 × Barbarian |
-| 4 | 12 × Bandit, 2 × Barbarian |
-| 5 | 8 × Wolf Rider, 8 × Bandit |
-| 6 | 4 × Barbarian, 10 × Bandit |
-| 7 | 10 × Wolf Rider, 3 × Barbarian |
-| 8 | 18 × Bandit, 5 × Barbarian, 6 × Wolf Rider |
+| 1 | 10 × Bandit (road 1) |
+| 2 | 5 × Wolf Rider (road 2) |
+| 3 | 2 × Barbarian (road 1) |
+| 4 | 10 × Bandit (road 1), 2 × Barbarian (road 2) |
+| 5 | 1 × War Drummer (road 1), 10 × Bandit (road 1) |
+| 6 | 3 × Barbarian (road 2), 5 × Saboteur (road 1) |
+| 7 | 2 × War Drummer (road 1), 10 × Wolf Rider (road 2), 5 × Bandit Archer (road 1) |
+| 8 | 16 × Bandit (road 1), 4 × Barbarian (road 2), 2 × War Drummer (road 2), 6 × Wolf Rider (road 1) |
 
 **Challenges (unlock after completing the level, each pays rubies once):**
 
@@ -115,19 +115,19 @@ Generated from `game/src/engine/levels.js` by `node tools/levels-doc.mjs`, so th
 
 **Roads:** 2 · **Hero:** Sun Knight · **Spells:** Arrow Rain, Reinforcements, Holy Fire
 
-**Locked spots:** rubble (60 gold), opens at wave 4, rubble (80 gold)
+**Locked spots:** rubble (40 gold), rubble (55 gold), opens at wave 4, opens at wave 2, rubble (70 gold)
 
 | Wave | Enemies |
 |---|---|
 | 1 | 8 × Bandit (road 1), 8 × Bandit (road 2) |
-| 2 | 4 × Bandit Archer (road 1) |
+| 2 | 4 × Bandit Archer (road 1), 3 × Saboteur (road 2) |
 | 3 | 6 × Wolf Rider (road 1), 3 × Bandit Archer (road 2) |
-| 4 | 1 × Armored Brute (road 1) |
+| 4 | 1 × Armored Brute (road 1), 1 × War Drummer (road 1) |
 | 5 | 3 × Barbarian (road 1), 10 × Bandit (road 2) |
-| 6 | 6 × Bandit Archer (road 1), 1 × Armored Brute (road 2) |
-| 7 | 10 × Wolf Rider (road 2), 4 × Barbarian (road 1) |
-| 8 | 2 × Armored Brute (road 1), 6 × Bandit Archer (road 2), 14 × Bandit (road 1) |
-| 9 | 3 × Armored Brute (road 2), 5 × Barbarian (road 1), 12 × Wolf Rider (road 1) |
+| 6 | 1 × Shield Bearer (road 1), 3 × Barbarian (road 1), 1 × Armored Brute (road 2) |
+| 7 | 10 × Wolf Rider (road 2), 4 × Barbarian (road 1), 1 × War Drummer (road 1) |
+| 8 | 2 × Armored Brute (road 1), 1 × Shield Bearer (road 1), 6 × Bandit Archer (road 2), 14 × Bandit (road 1) |
+| 9 | 3 × Armored Brute (road 2), 2 × Shield Bearer (road 2), 5 × Barbarian (road 1), 2 × War Drummer (road 1), 6 × Saboteur (road 1) |
 
 **Challenges (unlock after completing the level, each pays rubies once):**
 
@@ -141,22 +141,22 @@ Generated from `game/src/engine/levels.js` by `node tools/levels-doc.mjs`, so th
 
 **Why we fight:** Boss fight. The Bandit King stole the Sun Crown, and without it spring never comes back. Go get it back. No pressure.
 
-**Roads:** 1 · **Hero:** Sun Knight · **Spells:** Arrow Rain, Reinforcements, Holy Fire
+**Roads:** 3 · **Hero:** Sun Knight · **Spells:** Arrow Rain, Reinforcements, Holy Fire
 
-**Locked spots:** rubble (60 gold), opens at wave 4, rubble (80 gold)
+**Locked spots:** rubble (40 gold), opens at wave 4, rubble (55 gold), opens at wave 6, rubble (70 gold), opens at wave 2
 
 | Wave | Enemies |
 |---|---|
-| 1 | 12 × Bandit |
-| 2 | 8 × Wolf Rider |
-| 3 | 5 × Bandit Archer, 8 × Bandit |
-| 4 | 4 × Barbarian |
-| 5 | 2 × Armored Brute, 6 × Wolf Rider |
-| 6 | 8 × Bandit Archer, 3 × Barbarian |
-| 7 | 20 × Bandit, 2 × Armored Brute |
-| 8 | 14 × Wolf Rider, 6 × Bandit Archer |
-| 9 | 6 × Barbarian, 3 × Armored Brute |
-| 10 | 10 × Bandit, 1 × The Bandit King, 4 × Barbarian, 8 × Wolf Rider |
+| 1 | 10 × Bandit (road 1), 6 × Bandit (road 2) |
+| 2 | 8 × Wolf Rider (road 3) |
+| 3 | 5 × Bandit Archer (road 2), 5 × Saboteur (road 1) |
+| 4 | 4 × Barbarian (road 1), 1 × War Drummer (road 1) |
+| 5 | 2 × Armored Brute (road 3), 1 × Shield Bearer (road 3), 6 × Wolf Rider (road 2) |
+| 6 | 8 × Bandit Archer (road 1), 3 × Barbarian (road 2), 1 × War Drummer (road 2) |
+| 7 | 20 × Bandit (road 1), 2 × Armored Brute (road 3), 6 × Saboteur (road 2) |
+| 8 | 14 × Wolf Rider (road 2), 6 × Bandit Archer (road 3), 2 × Shield Bearer (road 1) |
+| 9 | 6 × Barbarian (road 1), 3 × Armored Brute (road 2), 2 × War Drummer (road 3), 2 × Shield Bearer (road 1) |
+| 10 | 10 × Bandit (road 1), 1 × The Bandit King (road 1), 2 × Shield Bearer (road 1), 4 × Barbarian (road 2), 8 × Wolf Rider (road 3), 2 × War Drummer (road 1) |
 
 **Challenges (unlock after completing the level, each pays rubies once):**
 

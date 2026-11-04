@@ -9,6 +9,9 @@ export class Sound {
   constructor() {
     this.ctx = null; this.music = 0.6; this.sfx = 0.9; this.track = null; this.nextBeat = 0; this.step = 0;
     this.last = {}; this.timer = null; this.paused = false; this.seed = 7;
+    // battle tension, 0..3: 0 getting ready, 1 fighting, 2 the fort is in danger or it is the
+    // final wave, 3 boss. The music speeds up and adds layers as it rises.
+    this.intensity = 0; this.heartbeat = false; this.ambience = null; this.ambT = 0;
   }
 
   // Browsers only allow audio after a tap, so this is called on the first pointer press.
@@ -100,6 +103,15 @@ export class Sound {
       case 'win': this.fanfare(t, true); break;
       case 'lose': this.fanfare(t, false); break;
       case 'newEnemy': this.drum(t, 'dhol'); this.tone(t + 0.1, midi(62), 0.5, { type: 'sawtooth', vol: 0.06, slideTo: midi(65) }); break;
+      case 'horn': this.tone(t, 147, 0.9, { type: 'sawtooth', vol: 0.12, attack: 0.08, slideTo: 165 }); this.tone(t, 220, 0.9, { type: 'sawtooth', vol: 0.06, attack: 0.1, slideTo: 247 }); break;
+      case 'cry': for (let i = 0; i < 4; i++) this.noise(t + i * 0.05, 0.35, { vol: 0.06, freq: 700 + i * 180, q: 4, slideTo: 500 + i * 150 }); break;
+      case 'shieldUp': [0, 4, 7].forEach((n, i) => this.tone(t + i * 0.05, midi(79 + n), 0.3, { vol: 0.05 })); break;
+      case 'shieldBreak': this.noise(t, 0.25, { vol: 0.2, freq: 4200, q: 2, slideTo: 1800 }); this.tone(t, 1320, 0.2, { type: 'square', vol: 0.03, slideTo: 660 }); break;
+      case 'jam': this.noise(t, 0.5, { vol: 0.18, freq: 900, q: 0.8, slideTo: 300 }); break;
+      case 'portal': this.tone(t, 300, 0.5, { vol: 0.09, slideTo: 1200 }); this.noise(t, 0.4, { vol: 0.08, freq: 1500, q: 1, slideTo: 3500 }); break;
+      case 'trumpet': this.tone(t, 330, 0.6, { type: 'sawtooth', vol: 0.12, attack: 0.04, slideTo: 520 }); this.tone(t + 0.05, 495, 0.55, { type: 'sawtooth', vol: 0.05, slideTo: 700 }); break;
+      case 'bubble': this.tone(t, 380 * j, 0.1, { vol: 0.08, slideTo: 760 }); this.tone(t + 0.08, 520 * j, 0.08, { vol: 0.06, slideTo: 900 }); break;
+      case 'finalWave': this.fanfare(t, false); this.drum(t, 'dhol'); this.drum(t + 0.2, 'dhol'); this.drum(t + 0.4, 'dhol'); break;
       case 'soldierDown': this.tone(t, 300, 0.2, { type: 'triangle', vol: 0.07, slideTo: 150 }); break;
       default: break;
     }
@@ -136,10 +148,29 @@ export class Sound {
   }
   rand() { this.seed = (this.seed * 16807) % 2147483647; return this.seed / 2147483647; }
 
+  setIntensity(level, heartbeat = false) { this.intensity = level; this.heartbeat = heartbeat; }
+
+  // background sound of the place: birdsong and wind in the spring hills
+  setAmbience(kind) { this.ambience = kind; }
+  ambienceTick(t) {
+    if (!this.ambience || this.sfx <= 0) return;
+    if (t < this.ambT) return;
+    this.ambT = t + 1.5 + this.rand() * 3.5;
+    const b = this.sfxBus;
+    if (this.ambience === 'spring') {
+      // a bird call: two or three quick chirps sliding up
+      const f0 = 2400 + this.rand() * 1600, n = 2 + Math.floor(this.rand() * 3);
+      for (let i = 0; i < n; i++) this.tone(t + i * 0.11, f0, 0.08, { vol: 0.025, slideTo: f0 * 1.35, bus: b });
+      if (this.rand() > 0.6) this.noise(t, 2.4, { vol: 0.02, freq: 500, q: 0.4, type: 'lowpass', bus: b });
+    }
+  }
+
   schedule() {
     if (!this.ctx || !this.track || this.paused) return;
     const battle = this.track === 'battle' || this.track === 'boss';
-    const bpm = this.track === 'boss' ? 104 : battle ? 92 : 66, beat = 60 / bpm / 2; // eighth notes
+    const I = battle ? Math.max(this.intensity, this.track === 'boss' ? 1 : 0) : 0;
+    const bpm = battle ? [78, 92, 104, 112][I] : 66, beat = 60 / bpm / 2; // eighth notes
+    this.ambienceTick(this.ctx.currentTime + 0.1);
     while (this.nextBeat < this.ctx.currentTime + 0.25) {
       const t = this.nextBeat, s = this.step, bar = s % 16, root = this.track === 'boss' ? 45 : 50; // D (or A for the boss)
       const mb = this.musicBus;
@@ -156,16 +187,23 @@ export class Sound {
           const k = pat[bar];
           if (k) this.drum(t, k === 'dhin' ? 'dha' : k === 'ta' ? 'na' : k, mb, 0.55);
           if (bar === 0 && (s / 16) % 2 === 1) this.drum(t, 'ge', mb, 0.6);
+          // tension layers: a low dhol pulse on every beat, then a war-horn drone
+          if (I >= 2 && s % 2 === 0) this.drum(t, 'ge', mb, 0.35);
+          if (I >= 2 && bar === 0) this.tone(t, midi(root - 24), beat * 15, { type: 'sawtooth', vol: 0.03, attack: 0.3, bus: mb, verb: true });
+          if (I >= 3 && bar % 4 === 2) this.drum(t, 'dhol', mb, 0.45);
+          if (I === 0 && bar % 8 !== 0) { /* getting ready: only the drone, the odd stroke and the flute */ }
         } else if (bar === 0 || bar === 10) this.drum(t, bar ? 'na' : 'dha', mb, 0.4);
+        // heartbeat when the fort is nearly lost
+        if (this.heartbeat && s % 8 === 0) { this.tone(t, 60, 0.18, { vol: 0.32, slideTo: 42, bus: this.sfxBus }); this.tone(t + 0.22, 56, 0.16, { vol: 0.22, slideTo: 40, bus: this.sfxBus }); }
         // bansuri: a random walk on the raga scale, phrases rest every other bar
-        const phraseRest = battle ? bar >= 14 : (Math.floor(s / 16) % 2 === 1 && bar > 6);
-        const every = battle ? 2 : 4;
+        const phraseRest = battle ? (I === 0 ? bar % 8 > 4 : bar >= 14) : (Math.floor(s / 16) % 2 === 1 && bar > 6);
+        const every = battle ? (I >= 2 ? 1 : 2) : 4;
         if (!phraseRest && s % every === 0 && this.rand() > (battle ? 0.15 : 0.25)) {
           this.note = Math.max(-2, Math.min(9, this.note + Math.round((this.rand() - 0.5) * 3)));
           const n = this.note, oct = Math.floor(n / 5), deg = ((n % 5) + 5) % 5;
           const f = midi(root + 12 + SCALE[deg] + 12 * oct);
           const dur = beat * every * (this.rand() > 0.7 ? 2 : 1.1);
-          this.flute(t, f, dur);
+          this.flute(t, f, dur, battle && I >= 3);
         }
       }
       this.nextBeat += beat;
@@ -173,9 +211,10 @@ export class Sound {
     }
   }
 
-  flute(t, f, dur) {
+  flute(t, f, dur, reed = false) {
     const c = this.ctx, o = c.createOscillator(), o2 = c.createOscillator(), gn = c.createGain(), lfo = c.createOscillator(), lg = c.createGain();
-    o.type = 'sine'; o2.type = 'triangle'; o.frequency.value = f; o2.frequency.value = f * 2;
+    // reed = a shehnai-like sound for boss fights: brighter, buzzier
+    o.type = reed ? 'sawtooth' : 'sine'; o2.type = reed ? 'square' : 'triangle'; o.frequency.value = f; o2.frequency.value = f * 2;
     lfo.frequency.value = 5.2; lg.gain.value = f * 0.006; lfo.connect(lg); lg.connect(o.frequency);
     const g2 = c.createGain(); g2.gain.value = 0.15; o2.connect(g2); g2.connect(gn);
     o.frequency.setValueAtTime(f * 0.985, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.06); // the slide into a note (meend)

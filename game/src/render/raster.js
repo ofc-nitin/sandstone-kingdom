@@ -53,6 +53,7 @@ export async function rasterize(draw, box, scale, { ui = false } = {}) {
 // Draw a rasterized sprite so its art-space origin lands on (x, y) in the current
 // canvas transform, at `size` art units per world unit.
 export function blit(ctx, sprite, x, y, size = 1, flip = false, alpha = 1) {
+  if (!sprite) return; // not built yet (or a typo): draw nothing rather than stop the frame
   const [bx, by, bw, bh] = sprite.box;
   ctx.save();
   ctx.translate(x, y);

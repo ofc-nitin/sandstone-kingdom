@@ -14,10 +14,20 @@ Names are in plain English (Archers, Knights, Holy Knights, Magic Caster).
 <tr><td align="center" valign="bottom"><img src="img/hero-sun-knight.png" width="130" alt="The Sun Knight"><br><b>The Sun Knight</b><br><sub>Hero · moves on tap · Sun Strike stuns</sub></td><td align="center" valign="bottom"><img src="img/ally-spearman.png" width="130" alt="Spearmen"><br><b>Spearmen</b><br><sub>Barracks tier 1</sub></td><td align="center" valign="bottom"><img src="img/ally-knight.png" width="130" alt="Knights"><br><b>Knights</b><br><sub>Barracks tier 2</sub></td><td align="center" valign="bottom"><img src="img/ally-holy-knight.png" width="130" alt="Holy Knights"><br><b>Holy Knights</b><br><sub>Barracks tier 3</sub></td><td align="center" valign="bottom"><img src="img/ally-archer.png" width="130" alt="Archers"><br><b>Archers</b><br><sub>on the Archer Tower</sub></td><td align="center" valign="bottom"><img src="img/ally-magic-caster.png" width="130" alt="Magic Caster"><br><b>Magic Caster</b><br><sub>on the Mage Tower</sub></td></tr>
 </table>
 
-## Enemies in the game now: Region 1, Aravalli Hills
+## Enemies in the game now: Region 1, Aravalli Hills (8 + boss)
 
 <table>
-<tr><td align="center" valign="bottom"><img src="img/enemy-bandit.png" width="130" alt="Bandit"><br><b>Bandit</b><br><sub>fast, comes in groups</sub></td><td align="center" valign="bottom"><img src="img/enemy-wolf-rider.png" width="130" alt="Wolf Rider"><br><b>Wolf Rider</b><br><sub>very fast</sub></td><td align="center" valign="bottom"><img src="img/enemy-barbarian.png" width="130" alt="Barbarian"><br><b>Barbarian</b><br><sub>tough, hits soldiers hard</sub></td><td align="center" valign="bottom"><img src="img/enemy-bandit-archer.png" width="130" alt="Bandit Archer"><br><b>Bandit Archer</b><br><sub>shoots soldiers from range</sub></td><td align="center" valign="bottom"><img src="img/enemy-armored-brute.png" width="130" alt="Armored Brute"><br><b>Armored Brute</b><br><sub>heavy armour, weak to magic</sub></td><td align="center" valign="bottom"><img src="img/boss-bandit-king.png" width="130" alt="The Bandit King"><br><b>The Bandit King</b><br><sub>boss · calls bandits</sub></td></tr>
+<tr><td align="center" valign="bottom"><img src="img/enemy-bandit.png" width="120" alt="Bandit"><br><b>Bandit</b><br><sub>fast, comes in groups</sub></td><td align="center" valign="bottom"><img src="img/enemy-wolf-rider.png" width="120" alt="Wolf Rider"><br><b>Wolf Rider</b><br><sub>very fast</sub></td><td align="center" valign="bottom"><img src="img/enemy-bandit-archer.png" width="120" alt="Bandit Archer"><br><b>Bandit Archer</b><br><sub>shoots soldiers from range</sub></td><td align="center" valign="bottom"><img src="img/enemy-saboteur.png" width="120" alt="Saboteur"><br><b>Saboteur</b><br><sub>slips past soldiers, jams towers</sub></td><td align="center" valign="bottom"><img src="img/enemy-barbarian.png" width="120" alt="Barbarian"><br><b>Barbarian</b><br><sub>tough, hits soldiers hard</sub></td></tr>
+<tr><td align="center" valign="bottom"><img src="img/enemy-war-drummer.png" width="120" alt="War Drummer"><br><b>War Drummer</b><br><sub>enhancer: speeds up and strengthens allies</sub></td><td align="center" valign="bottom"><img src="img/enemy-armored-brute.png" width="120" alt="Armored Brute"><br><b>Armored Brute</b><br><sub>heavy armour, weak to magic</sub></td><td align="center" valign="bottom"><img src="img/enemy-shield-bearer.png" width="120" alt="Shield Bearer"><br><b>Shield Bearer</b><br><sub>shields comrades, strongest first</sub></td><td align="center" valign="bottom"><img src="img/boss-bandit-king.png" width="120" alt="The Bandit King"><br><b>The Bandit King</b><br><sub>boss · calls bandits</sub></td></tr>
+</table>
+
+## Animation
+
+Every soldier, hero and enemy has five frames: idle, two walking steps (legs swing from the hip,
+the body bobs) and two attack poses (wind-up and strike). Archers on the towers loose their arrows.
+
+<table>
+<tr><td align="center" valign="bottom"><img src="img/anim-bandit-walk-1.png" width="120" alt="Walk, step 1"><br><b>Walk, step 1</b></td><td align="center" valign="bottom"><img src="img/anim-bandit-walk-2.png" width="120" alt="Walk, step 2"><br><b>Walk, step 2</b></td><td align="center" valign="bottom"><img src="img/anim-bandit-attack.png" width="120" alt="Attack"><br><b>Attack</b></td><td align="center" valign="bottom"><img src="img/anim-knight-attack.png" width="120" alt="Knight strike"><br><b>Knight strike</b></td><td align="center" valign="bottom"><img src="img/anim-archer-loose.png" width="120" alt="Archer looses"><br><b>Archer looses</b></td></tr>
 </table>
 
 ## Enemies ready for the next regions (free updates)
@@ -32,27 +42,39 @@ Each region brings new enemies and a boss on every 5th level.
 | **Sundarbans** · pre-winter | <img src="img/r5-crocodile.png" height="90" alt="Crocodile" title="Crocodile"> <img src="img/r5-river-pirate.png" height="90" alt="River Pirate" title="River Pirate"> <img src="img/r5-swamp-witch.png" height="90" alt="Swamp Witch" title="Swamp Witch"> <img src="img/r5-boss-crocodile-warlord.png" height="90" alt="Boss: Crocodile Warlord" title="Boss: Crocodile Warlord"><br>Crocodile · River Pirate · Swamp Witch · **Boss: Crocodile Warlord** |
 | **Himalayas** · winter | <img src="img/r6-ice-wolf.png" height="90" alt="Ice Wolf" title="Ice Wolf"> <img src="img/r6-frost-mage.png" height="90" alt="Frost Mage" title="Frost Mage"> <img src="img/r6-yeti-brute.png" height="90" alt="Yeti Brute" title="Yeti Brute"> <img src="img/r6-boss-shadow-emperor.png" height="90" alt="Final boss: Shadow Emperor" title="Final boss: Shadow Emperor"><br>Ice Wolf · Frost Mage · Yeti Brute · **Final boss: Shadow Emperor** |
 
-## Towers: three tiers each
+## Towers: three tiers, each clearly different
 
-Each upgrade shows on the building: gold trim at tier 2, then a holy glow and crest at tier 3.
+Tier 1 is a small outpost behind a wooden palisade; tier 2 a taller tower with gold studs and
+pennants; tier 3 a grand tower on a marble plinth with domed pavilions, banners and a crest.
+Upgrading plays a pillar of golden light and "UPGRADED!".
 
 <table>
-<tr><td align="center" valign="bottom"><img src="img/tower-archer-tier1.png" width="150" alt="Archer Tower · tier 1"><br><b>Archer Tower · tier 1</b><br><sub>Archers</sub></td><td align="center" valign="bottom"><img src="img/tower-archer-tier2.png" width="150" alt="Archer Tower · tier 2"><br><b>Archer Tower · tier 2</b><br><sub>Marksmen</sub></td><td align="center" valign="bottom"><img src="img/tower-archer-tier3.png" width="150" alt="Archer Tower · tier 3"><br><b>Archer Tower · tier 3</b><br><sub>Royal Longbows</sub></td></tr>
-<tr><td align="center" valign="bottom"><img src="img/tower-barracks-tier1.png" width="150" alt="Barracks · tier 1"><br><b>Barracks · tier 1</b><br><sub>Spearmen</sub></td><td align="center" valign="bottom"><img src="img/tower-barracks-tier2.png" width="150" alt="Barracks · tier 2"><br><b>Barracks · tier 2</b><br><sub>Knights</sub></td><td align="center" valign="bottom"><img src="img/tower-barracks-tier3.png" width="150" alt="Barracks · tier 3"><br><b>Barracks · tier 3</b><br><sub>Holy Knights</sub></td></tr>
-<tr><td align="center" valign="bottom"><img src="img/tower-mage-tier1.png" width="150" alt="Mage Tower · tier 1"><br><b>Mage Tower · tier 1</b><br><sub>Magic Caster</sub></td><td align="center" valign="bottom"><img src="img/tower-mage-tier2.png" width="150" alt="Mage Tower · tier 2"><br><b>Mage Tower · tier 2</b><br><sub>Arcane Sage</sub></td><td align="center" valign="bottom"><img src="img/tower-mage-tier3.png" width="150" alt="Mage Tower · tier 3"><br><b>Mage Tower · tier 3</b><br><sub>Sun Mage</sub></td></tr>
-<tr><td align="center" valign="bottom"><img src="img/tower-cannon-tier1.png" width="150" alt="Cannon Tower · tier 1"><br><b>Cannon Tower · tier 1</b><br><sub>Cannon</sub></td><td align="center" valign="bottom"><img src="img/tower-cannon-tier2.png" width="150" alt="Cannon Tower · tier 2"><br><b>Cannon Tower · tier 2</b><br><sub>Bombard</sub></td><td align="center" valign="bottom"><img src="img/tower-cannon-tier3.png" width="150" alt="Cannon Tower · tier 3"><br><b>Cannon Tower · tier 3</b><br><sub>Thunder Cannon</sub></td></tr>
+<tr><td align="center" valign="bottom"><img src="img/tower-archer-tier1.png" width="140" alt="Archer Tower · tier 1"><br><b>Archer Tower · tier 1</b><br><sub>Archers</sub></td><td align="center" valign="bottom"><img src="img/tower-archer-tier2.png" width="140" alt="Archer Tower · tier 2"><br><b>Archer Tower · tier 2</b><br><sub>Marksmen</sub></td><td align="center" valign="bottom"><img src="img/tower-archer-tier3.png" width="140" alt="Archer Tower · tier 3"><br><b>Archer Tower · tier 3</b><br><sub>Royal Longbows</sub></td></tr>
+<tr><td align="center" valign="bottom"><img src="img/tower-barracks-tier1.png" width="140" alt="Barracks · tier 1"><br><b>Barracks · tier 1</b><br><sub>Spearmen</sub></td><td align="center" valign="bottom"><img src="img/tower-barracks-tier2.png" width="140" alt="Barracks · tier 2"><br><b>Barracks · tier 2</b><br><sub>Knights</sub></td><td align="center" valign="bottom"><img src="img/tower-barracks-tier3.png" width="140" alt="Barracks · tier 3"><br><b>Barracks · tier 3</b><br><sub>Holy Knights</sub></td></tr>
+<tr><td align="center" valign="bottom"><img src="img/tower-mage-tier1.png" width="140" alt="Mage Tower · tier 1"><br><b>Mage Tower · tier 1</b><br><sub>Magic Caster</sub></td><td align="center" valign="bottom"><img src="img/tower-mage-tier2.png" width="140" alt="Mage Tower · tier 2"><br><b>Mage Tower · tier 2</b><br><sub>Arcane Sage</sub></td><td align="center" valign="bottom"><img src="img/tower-mage-tier3.png" width="140" alt="Mage Tower · tier 3"><br><b>Mage Tower · tier 3</b><br><sub>Sun Mage</sub></td></tr>
+<tr><td align="center" valign="bottom"><img src="img/tower-cannon-tier1.png" width="140" alt="Cannon Tower · tier 1"><br><b>Cannon Tower · tier 1</b><br><sub>Cannon</sub></td><td align="center" valign="bottom"><img src="img/tower-cannon-tier2.png" width="140" alt="Cannon Tower · tier 2"><br><b>Cannon Tower · tier 2</b><br><sub>Bombard</sub></td><td align="center" valign="bottom"><img src="img/tower-cannon-tier3.png" width="140" alt="Cannon Tower · tier 3"><br><b>Cannon Tower · tier 3</b><br><sub>Thunder Cannon</sub></td></tr>
 </table>
 
-## Royal towers (unlocked with rubies, built on special spots)
+## Special towers: 8 levels, up to 3 per battle, only on special spots
+
+Unlocked with rubies or a big pile of coins (the Royal Falconer is a free story reward). Their look
+changes every two levels; gold pips under the tower show its level.
 
 <table>
-<tr><td align="center" valign="bottom"><img src="img/royal-falconer.png" width="190" alt="Royal Falconer"><br><b>Royal Falconer</b><br><sub>400 rubies · marks prey for +25–35% damage</sub></td><td align="center" valign="bottom"><img src="img/royal-stepwell-fountain.png" width="190" alt="Stepwell Fountain"><br><b>Stepwell Fountain</b><br><sub>500 rubies · slows enemies, heals soldiers</sub></td><td align="center" valign="bottom"><img src="img/building-fort-gate.png" width="190" alt="The Fort"><br><b>The Fort</b><br><sub>what you defend; also the menu and icon art</sub></td></tr>
+<tr><td align="center" valign="bottom"><img src="img/royal-falconer-stage1.png" width="150" alt="Royal Falconer"><br><b>Royal Falconer</b><br><sub>levels 1–2</sub></td><td align="center" valign="bottom"><img src="img/royal-falconer-stage4.png" width="150" alt="Royal Falconer"><br><b>Royal Falconer</b><br><sub>levels 7–8</sub></td><td align="center" valign="bottom"><img src="img/royal-fountain-stage1.png" width="150" alt="Stepwell Fountain"><br><b>Stepwell Fountain</b><br><sub>levels 1–2</sub></td><td align="center" valign="bottom"><img src="img/royal-fountain-stage4.png" width="150" alt="Stepwell Fountain"><br><b>Stepwell Fountain</b><br><sub>levels 7–8</sub></td></tr>
+</table>
+<table>
+<tr><td align="center" valign="bottom"><img src="img/royal-alchemist-stage1.png" width="150" alt="Alchemist's Workshop"><br><b>Alchemist's Workshop</b><br><sub>poison flasks, strips armour</sub></td><td align="center" valign="bottom"><img src="img/royal-alchemist-stage4.png" width="150" alt="Alchemist's Workshop"><br><b>Alchemist's Workshop</b><br><sub>levels 7–8</sub></td><td align="center" valign="bottom"><img src="img/royal-elephant-stage1.png" width="150" alt="War Elephant Stable"><br><b>War Elephant Stable</b><br><sub>an elephant charges</sub></td><td align="center" valign="bottom"><img src="img/unit-war-elephant.png" width="150" alt="The War Elephant"><br><b>The War Elephant</b><br><sub>tramples and knocks back</sub></td></tr>
+</table>
+
+<table>
+<tr><td align="center" valign="bottom"><img src="img/building-fort-gate.png" width="190" alt="The Fort"><br><b>The Fort</b><br><sub>what you defend; also the menu and icon art</sub></td></tr>
 </table>
 
 ## Build spots
 
-Up to 3 **special spots** per level: +15% range, and the only place the chosen royal tower can stand.
-**Rubble** costs battle gold to clear. **Sundial** spots open by themselves at a set wave.
+**Standard** spots take the four basic towers. **Rubble** costs battle gold to clear. **Special** spots (1 to 3 per level)
+open one by one during the battle, or earlier for gold, and take only special towers.
 
 <table>
 <tr><td align="center" valign="bottom"><img src="img/spot-open.png" width="120" alt="Open spot"><br><b>Open spot</b></td><td align="center" valign="bottom"><img src="img/spot-special.png" width="120" alt="Special spot"><br><b>Special spot</b><br><sub>max 3 per level</sub></td><td align="center" valign="bottom"><img src="img/spot-rubble.png" width="120" alt="Rubble"><br><b>Rubble</b><br><sub>clear with gold</sub></td><td align="center" valign="bottom"><img src="img/spot-timed.png" width="120" alt="Sundial"><br><b>Sundial</b><br><sub>opens at wave N</sub></td></tr>

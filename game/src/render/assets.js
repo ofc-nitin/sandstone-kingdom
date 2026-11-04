@@ -1,8 +1,8 @@
 // Builds every bitmap the battle needs, sized for the current screen.
-/* global person, wolfRider, banditKing, archerTower, barracks, mageTower, cannonTower, falconer, fountain, falcon, specialPlot, fortGate, plot,
+/* global person, wolfRider, banditKing, archerTower, barracks, mageTower, cannonTower, falconer, fountain, alchemist, elephantStable, elephant, falcon, specialPlot, fortGate, plot,
    banyan, palm, rock, marigold, pond, peacock, tent, campfire, cart, stepwell, shrine, haystack, pots, fence,
    tuft, coinIcon, rubyIcon, icon, roundBtn, button, panel, ribbon, royalChest, el, g, outlined, shadow, moss, rnd,
-   BANDIT, BARBARIAN, BRUTE, SPEAR, KNIGHT, HOLY, SUN, ARCHER, MAGE, OUT, logo, menuScene, mapScene, MAP_W */
+   BANDIT, BARBARIAN, BRUTE, SPEAR, KNIGHT, HOLY, SUN, ARCHER, MAGE, OUT, DRUMMER, SHIELD_BEARER, SABOTEUR, logo, menuScene, menuLayer, MENU_HEROES, MENU_SUN, mapScene, MAP_W */
 import { rasterize } from './raster.js';
 import { WORLD_W, WORLD_H } from './view.js';
 
@@ -13,26 +13,74 @@ const PERSON_BOX = [-30, -64, 64, 72];
 const BIG_BOX = [-40, -84, 84, 94];
 const TOWER_BOX = [-56, -118, 112, 132];
 
+// Animation frames: idle, two walking steps (legs swing opposite ways) and two attack poses.
+// Riders and big beasts walk by tilting and bobbing instead.
+export const FRAMES = ['idle', 'w1', 'w2', 'a1', 'a2'];
+const POSE = { idle: {}, w1: { step: 1 }, w2: { step: -1 }, a1: { swing: 0.55 }, a2: { swing: 1 } };
+const humanoid = (o) => (s, f) => person(s, 0, 0, { ...o, ...POSE[f] });
+const rider = (fn) => (s, f) => {
+  const tilt = { idle: 0, w1: -4, w2: 4, a1: -6, a2: 6 }[f], up = f === 'w1' || f === 'a1' ? -1.6 : 0;
+  fn(g(s, { transform: `translate(0 ${up}) rotate(${tilt} 0 -4)` }));
+};
 const ENEMY_ART = {
-  bandit: { box: PERSON_BOX, draw: (s) => person(s, 0, 0, { ...BANDIT }) },
-  wolfRider: { box: [-36, -62, 74, 70], draw: (s) => wolfRider(s, 0, 0, 1) },
-  barbarian: { box: BIG_BOX, draw: (s) => person(s, 0, 0, { ...BARBARIAN }) },
-  banditArcher: { box: PERSON_BOX, draw: (s) => person(s, 0, 0, { ...BANDIT, weapon: 'bow', quiver: true }) },
-  brute: { box: BIG_BOX, draw: (s) => person(s, 0, 0, { ...BRUTE }) },
-  banditKing: { box: [-56, -118, 112, 128], draw: (s) => banditKing(s, 0, 0, 1) },
+  bandit: { box: PERSON_BOX, draw: humanoid(BANDIT) },
+  wolfRider: { box: [-36, -62, 74, 70], draw: rider((s) => wolfRider(s, 0, 0, 1)) },
+  barbarian: { box: BIG_BOX, draw: humanoid(BARBARIAN) },
+  banditArcher: { box: PERSON_BOX, draw: humanoid({ ...BANDIT, weapon: 'bow', quiver: true }) },
+  brute: { box: BIG_BOX, draw: humanoid(BRUTE) },
+  drummer: { box: PERSON_BOX, draw: humanoid(DRUMMER) },
+  shieldBearer: { box: [-38, -72, 76, 80], draw: humanoid(SHIELD_BEARER) },
+  saboteur: { box: PERSON_BOX, draw: humanoid(SABOTEUR) },
+  banditKing: { box: [-56, -118, 112, 128], draw: rider((s) => banditKing(s, 0, 0, 1)) },
 };
 const SOLDIER_ART = { spearman: SPEAR, knight: KNIGHT, holyKnight: { ...HOLY, aura: false } };
-const TOWER_ART = { archerTower, barracks, mageTower, cannonTower, falconer, fountain };
+const TOWER_ART = { archerTower, barracks, mageTower, cannonTower, falconer, fountain, alchemist, elephantStable };
+const BASE_TOWERS = ['archerTower', 'barracks', 'mageTower', 'cannonTower'];
+export const ROYAL_STAGES = 4; // looks across a special tower's 8 levels: levels 1-2, 3-4, 5-6, 7-8
+export const stageOf = (tower) => (tower.def.royal ? Math.min(ROYAL_STAGES - 1, Math.floor(tower.tier / 2)) : tower.tier);
 
-// Tier 2 adds gold trim, tier 3 a golden glow and banner: the upgrade shows on the building.
-function tierDressing(s, tier) {
-  if (tier >= 1) {
-    for (const x of [-16, 16]) outlined(s, 'path', { d: `M${x - 3} -2 l3 -6 l3 6 Z`, fill: 'url(#gold)' }, 0.7);
+// A small domed pavilion (chhatri) that flanks a top-tier tower.
+function chhatri(t, x, y, k = 1) {
+  const c = g(t, { transform: `translate(${x} ${y}) scale(${k})` });
+  outlined(c, 'rect', { x: -6, y: -2, width: 12, height: 3, rx: 1, fill: 'url(#sandV)' }, 0.9);
+  for (const px of [-4, 4]) outlined(c, 'rect', { x: px - 1, y: -12, width: 2, height: 10, fill: '#f6dcae' }, 0.6);
+  outlined(c, 'path', { d: 'M-6.4 -12 Q0 -22 6.4 -12 Z', fill: 'url(#marble)' }, 0.9);
+  outlined(c, 'path', { d: 'M-6.8 -12 H6.8 L6 -10.6 H-6 Z', fill: 'url(#gold)' }, 0.5);
+  el('circle', { cx: 0, cy: -21.6, r: 1.2, fill: '#ffd23a', stroke: OUT, 'stroke-width': 0.4 }, c);
+}
+// Each upgrade changes the building so it is obvious at a glance:
+//  stage 0 small with a wooden palisade, 1 taller with gold studs and pennants,
+//  2 grand on a marble plinth with domed pavilions, banners, a halo and a crest; 3 (special only) adds a sacred aura.
+function dressTower(s, fn, stage, o = {}) {
+  const sc = [0.84, 0.93, 1, 1.04][stage];
+  const back = g(s);
+  if (stage >= 2) {
+    const halo = el('ellipse', { cx: 0, cy: -4, rx: 40, ry: 14, fill: 'url(#holy)', opacity: stage >= 3 ? 1 : 0.75 }, back);
+    void halo;
+    outlined(back, 'ellipse', { cx: 0, cy: 3, rx: 36, ry: 12, fill: '#efe6d6' }, 1.4);
+    outlined(back, 'ellipse', { cx: 0, cy: 1, rx: 32, ry: 10, fill: '#fff7ea' }, 0.8);
+    el('path', { d: 'M-30 3 Q0 11 30 3', stroke: '#e0a21c', 'stroke-width': 1, fill: 'none' }, back);
+    chhatri(back, -31, -2, 0.9); chhatri(back, 31, -2, 0.9);
   }
-  if (tier >= 2) {
-    const halo = el('ellipse', { cx: 0, cy: -2, rx: 34, ry: 12, fill: 'url(#holy)', opacity: 0.8 }, s);
-    s.insertBefore(halo, s.firstChild.nextSibling);
-    outlined(s, 'path', { d: 'M-4 -8 l4 -8 l4 8 Z', fill: 'url(#gold)' }, 0.8);
+  if (stage >= 3) for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; el('path', { d: `M${Math.cos(a) * 20} ${-60 + Math.sin(a) * 20} l1 -3 l1 3 l3 1 l-3 1 l-1 3 l-1 -3 l-3 -1 Z`, fill: '#fff4c0', opacity: 0.9 }, back); }
+  const mid = g(s, { transform: `scale(${sc})` });
+  fn(mid, 0, 0, 1, o);
+  const front = g(s);
+  if (stage === 0) {
+    // a wooden palisade: the outpost before it is built in stone
+    for (let i = -5; i <= 5; i++) {
+      const x = i * 4.6, yy = 6 - Math.abs(i) * 0.5;
+      outlined(front, 'path', { d: `M${x - 1.8} ${yy} V${yy - 8} L${x} ${yy - 11} L${x + 1.8} ${yy - 8} V${yy} Z`, fill: i % 2 ? '#a8703e' : '#8a5a32' }, 0.7);
+    }
+    el('path', { d: 'M-25 1 Q0 6 25 1', stroke: '#5a3a22', 'stroke-width': 1.2, fill: 'none' }, front);
+  }
+  if (stage >= 1) {
+    for (const x of [-18, -9, 9, 18]) outlined(front, 'path', { d: `M${x - 2.4} 1 l2.4 -5 l2.4 5 Z`, fill: 'url(#gold)' }, 0.6);
+    for (const x of [-27, 27]) { el('path', { d: `M${x} 4 V-22`, stroke: OUT, 'stroke-width': 1.6 }, front); outlined(front, 'path', { d: `M${x} -22 L${x + (x < 0 ? -9 : 9)} -18.5 L${x} -15 Z`, fill: stage >= 2 ? 'url(#gold)' : 'url(#red)' }, 0.6); }
+  }
+  if (stage >= 2) {
+    outlined(front, 'path', { d: 'M-5 6 l5 -9 l5 9 Z', fill: 'url(#gold)' }, 0.8);
+    el('circle', { cx: 0, cy: 2.6, r: 1.6, fill: '#e2342a' }, front);
   }
 }
 
@@ -50,7 +98,7 @@ function sundialPlot(s) {
 export class Assets {
   constructor() { this.sprites = {}; this.key = ''; this.bg = null; }
 
-  get(name) { return this.sprites[name]; }
+  get(name) { const sp = this.sprites[name]; if (!sp && this.key && !(this.missing || (this.missing = new Set())).has(name)) { this.missing.add(name); console.warn('missing sprite', name); } return sp; }
 
   async build(view, level, paths) {
     const key = `${view.cssW}x${view.cssH}@${view.dpr}:${level.id}`;
@@ -58,11 +106,23 @@ export class Assets {
     this.key = key;
     const jobs = [];
     const add = (name, draw, box, k, ui = false) => jobs.push(rasterize(draw, box, view.px(k), { ui }).then((r) => { this.sprites[name] = r; }));
-    for (const [name, a] of Object.entries(ENEMY_ART)) add('enemy:' + name, a.draw, a.box, UNIT_SCALE);
-    for (const [name, o] of Object.entries(SOLDIER_ART)) add('soldier:' + name, (s) => person(s, 0, 0, o), PERSON_BOX, UNIT_SCALE);
-    add('hero:sunKnight', (s) => person(s, 0, 0, { ...SUN, s: 1.15 }), [-36, -80, 76, 90], UNIT_SCALE);
+    for (const f of FRAMES) {
+      const sfx = f === 'idle' ? '' : ':' + f;
+      for (const [name, a] of Object.entries(ENEMY_ART)) add('enemy:' + name + sfx, (s) => a.draw(s, f), a.box, UNIT_SCALE);
+      for (const [name, o] of Object.entries(SOLDIER_ART)) add('soldier:' + name + sfx, (s) => humanoid(o)(s, f), PERSON_BOX, UNIT_SCALE);
+      add('hero:sunKnight' + sfx, (s) => humanoid({ ...SUN, s: 1.15 })(s, f), [-36, -80, 76, 90], UNIT_SCALE);
+    }
+    for (const f of ['idle', 'w1']) add('beast:elephant' + (f === 'idle' ? '' : ':' + f), (s) => rider((q) => { elephant(q, 0, 0, 0.62, false, false); person(q, 4, -24, { ...SPEAR, s: 0.5, shield: null }); })(s, f), [-40, -72, 80, 80], UNIT_SCALE);
     add('ui:heroFace', (s) => { el('circle', { cx: 0, cy: -2, r: 22, fill: 'url(#holy)' }, s); person(s, 0, 30, { ...SUN, s: 1.6, weapon: null, shield: null, aura: false, cape: null }); }, [-24, -26, 48, 48], view.u * 1.1, true);
-    for (const [name, fn] of Object.entries(TOWER_ART)) for (let t = 0; t < 3; t++) add(`tower:${name}:${t}`, (s) => { fn(s, 0, 0, 1); tierDressing(s, t); }, TOWER_BOX, TOWER_SCALE);
+    for (const [name, fn] of Object.entries(TOWER_ART)) {
+      const stages = BASE_TOWERS.includes(name) ? 3 : ROYAL_STAGES;
+      for (let t = 0; t < stages; t++) {
+        add(`tower:${name}:${t}`, (s) => dressTower(s, fn, t), TOWER_BOX, TOWER_SCALE);
+        // archers loose their arrows: a second frame shown for a moment after each shot
+        if (name === 'archerTower') add(`tower:${name}:${t}:fire`, (s) => dressTower(s, fn, t, { loose: true }), TOWER_BOX, TOWER_SCALE);
+      }
+    }
+    add('plot:specialLocked', (s) => { specialPlot(s, 0, 0); el('ellipse', { cx: 0, cy: -1, rx: 24, ry: 10, fill: '#2a1a10', opacity: 0.45 }, s); icon.lock(s, 0, -2, 1.1); }, [-34, -30, 68, 46], 1, true);
     add('plot:open', (s) => plot(s, 0, 0), [-32, -28, 64, 44], 1);
     add('plot:rubble', rubble, [-32, -30, 64, 46], 1);
     add('plot:timed', sundialPlot, [-32, -28, 64, 44], 1);
@@ -93,7 +153,7 @@ export class Assets {
       ['sunStrike', 'purple', (q, a, b) => { for (let i = 0; i < 8; i++) { const t = (i / 8) * Math.PI * 2; el('path', { d: `M${a + Math.cos(t) * 5} ${b + Math.sin(t) * 5} L${a + Math.cos(t) * 10} ${b + Math.sin(t) * 10}`, stroke: '#ffe28a', 'stroke-width': 2 }, q); } el('circle', { cx: a, cy: b, r: 4, fill: '#ffe28a' }, q); }],
     ]) add('btn:' + name, (s) => roundBtn(s, 0, 0, 22, color, drawIcon), [-26, -26, 52, 54], ui, true);
     for (const [name, fn] of Object.entries(TOWER_ART)) add('icon:' + name, (s) => fn(s, 0, 0, 1), TOWER_BOX, ui * 0.36, true);
-    for (const name of ['falconer', 'fountain']) add('card:' + name, (s) => TOWER_ART[name](s, 0, 0, 1), TOWER_BOX, ui * 0.5, true);
+    for (const name of ['falconer', 'fountain', 'alchemist', 'elephantStable']) add('card:' + name, (s) => TOWER_ART[name](s, 0, 0, 1), TOWER_BOX, ui * 0.5, true);
     add('chest', (s) => royalChest(s, 0, 0, 1), [-44, -82, 88, 90], ui, true);
     // menu icons and power-ups
     for (const [name, color, drawIcon] of [
@@ -126,7 +186,16 @@ export class Assets {
     if (this.menuKey === key) return;
     this.menuKey = key;
     const sc = Math.max(view.cssW / WORLD_W, view.cssH / WORLD_H), w = view.cssW / sc, h = view.cssH / sc;
-    this.menuBg = await rasterize((s) => menuScene(s), [(WORLD_W - w) / 2, (WORLD_H - h) / 2, w, h], sc * view.dpr, { ui: true });
+    const box = [(WORLD_W - w) / 2, (WORLD_H - h) / 2, w, h];
+    // the full painting backs the other menu screens; the live main menu is drawn from layers
+    const [bg, sky, land, ...heroes] = await Promise.all([
+      rasterize((s) => menuScene(s), box, sc * view.dpr, { ui: true }),
+      rasterize((s) => menuLayer(s, 'sky'), box, sc * view.dpr, { ui: true }),
+      rasterize((s) => menuLayer(s, 'land'), box, sc * view.dpr, { ui: true }),
+      ...MENU_HEROES.map((hr) => rasterize((s) => person(s, 0, 0, hr.o()), [-110, -230, 220, 250], sc * view.dpr, { ui: true })),
+    ]);
+    this.menuBg = bg;
+    this.menuLive = { sc, x0: box[0], y0: box[1], sky, land, sun: MENU_SUN, heroes: MENU_HEROES.map((hr, i) => ({ ...hr, sprite: heroes[i] })) };
   }
 
   // The world map is wide (six regions), so it is painted in chunks the height of the screen.

@@ -8,7 +8,7 @@
 | **Version** | 1.0 (launch: Region 1, Aravalli Hills) · document of 3 November 2026 |
 | **Status** | Built and playable. The Android APK/AAB is built by CI; it waits on the Founder's store setup ([release-setup.md](../release-setup.md)) |
 
-**Related docs:** [Art bible](art-bible.md) (every character, building and place) · [Level design](levels.md) · [Screens and flows](screens.md) · [Technical design](tech.md) · [QA test plan](qa-test-plan.md) · [Game design document](../game-design.md) · [Release setup](../release-setup.md)
+**Related docs:** [Making it feel alive](alive-ideas.md) · [Art bible](art-bible.md) (every character, building and place) · [Level design](levels.md) · [Screens and flows](screens.md) · [Technical design](tech.md) · [QA test plan](qa-test-plan.md) · [Game design document](../game-design.md) · [Release setup](../release-setup.md)
 
 ![Sandstone Kingdom key art](../../game/store/feature-graphic-1024x500.png)
 
@@ -57,16 +57,16 @@ market. Prices are set so players in India can easily pay, with fair local price
 
 ![A battle in progress](img/level-5.png)
 
-- **Build spots** sit along the road. Tap one to choose a tower; tap a tower to upgrade it (3 tiers) or sell it (60% refund).
-- **Locked spots:** rubble costs battle gold to clear; sundial spots open by themselves at a set wave.
-- **Special spots** (up to 3 per level, gold lotus): +15% range, and the only place the royal tower chosen in the briefing can be built.
-- **Towers:** Archer (fast, hits flying), Barracks (3 soldiers block the road), Mage (magic ignores armour), Cannon (splash).
-- **Royal towers** (rubies, permanent): **Royal Falconer** (fast, marks prey for extra damage) and **Stepwell Fountain** (slows enemies, heals soldiers). Two more arrive with later regions.
+- **Roads get more complex level by level:** the tutorial and Levels 1–2 have one winding road (a hairpin loop, then a road that crosses itself); Level 3 has two entrances meeting at a crossroads; Level 4 has two roads crossing in an X; Level 5 has three entrances and a **bandit portal** that teleports enemies further down the road.
+- **Entrance markers** show where the next wave comes from, with icons of who is coming; tap any marker to call the wave early for bonus gold.
+- **Three kinds of build spot:** standard spots; **rubble** spots you clear with battle gold; and **special spots** (gold lotus) that **open one by one during the battle** (or earlier for gold) and take **only special towers**. Levels have 1 to 3 special spots (the number is a design rule, not shown to players).
+- **Towers:** Archer (fast, hits flying), Barracks (3 soldiers block the road), Mage (magic ignores armour), Cannon (splash). Three tiers each, and **each tier looks clearly different**: a wooden outpost, a stone tower with pennants, then a grand tower on a marble plinth with domed pavilions. Upgrading plays a golden light pillar and "UPGRADED!".
+- **Special towers** (4, **8 levels each**; up to **3 per battle**, chosen in the briefing): **Royal Falconer** (fast, marks prey for extra damage; free story reward after Level 2), **Stepwell Fountain** (slows, heals soldiers), **Alchemist's Workshop** (poison flasks that strip armour), **War Elephant Stable** (an elephant charges down the road, trampling and knocking enemies back). Unlock with rubies (400–800) or a big pile of coins (6,000–12,000).
+- **Enemies (8 + boss in Region 1):** Bandit, Wolf Rider, Bandit Archer, Saboteur (slips past soldiers, jams towers with smoke), Barbarian, War Drummer (**enhancer**: speeds up and strengthens everyone near him), Armored Brute, Shield Bearer (**shields comrades, strongest first**), and the Bandit King.
 - **Hero:** the Sun Knight fights on the road. Tap him, then tap the road to move him. **Sun Strike** damages and stuns a crowd.
-- **Spells:** Arrow Rain (area volleys), Reinforcements (2 temporary soldiers), Holy Fire (burn and stun). They unlock as the story goes on.
-- **Power-ups** (one of each per level, bought with coins or rubies): Freeze Bomb, Gold Boost, Extra Lives.
-- **Waves:** call the next wave early for bonus gold. A "New enemy!" card introduces every new enemy once.
-- **Difficulty:** every level adds a new enemy or a harder mix, and enemy health rises (×0.8 in the tutorial to ×1.38 at the boss). Balance is checked by a test bot on every build (see [tech.md](tech.md)).
+- **Spells:** Arrow Rain, Reinforcements, Holy Fire. **Power-ups** (one of each per level): Freeze Bomb, Gold Boost, Extra Lives.
+- **Difficulty:** every level adds new enemies or a harder mix. Levels 4–5 are tuned so that special towers and **Royal Forge** upgrades matter: skipping them makes the boss very hard. Balance is checked by a test bot on every build (see [tech.md](tech.md)).
+- **Feel:** walk and attack animation for every unit, archers loosing on the towers, cannon recoil, hit flashes, enemies falling, slow motion for the boss entrance and the final kill, a red pulse when the fort is in danger. See [alive-ideas.md](alive-ideas.md) for everything that makes the game feel alive, done and planned.
 
 Full numbers per level: [levels.md](levels.md). Every unit and building: [art-bible.md](art-bible.md).
 
@@ -78,8 +78,8 @@ Before each battle the player sees:
 1. **Mode line**: Story level, Challenge name and rule, or Endless with best wave and score.
 2. **Why we fight**: one or two casual lines of story.
 3. **Enemies** on this map, with **NEW** tags on ones not met yet.
-4. **Battlefield**: how many open, locked and special spots (special: max 3).
-5. **Special tower picker**: royal towers on cards. The **default is the one used last time**. A royal tower not owned yet can be bought with rubies, or **tried for one battle with a rewarded ad**. Towers a challenge forbids are greyed out.
+4. **Battlefield**: how many standard, rubble and special spots this map has.
+5. **Special towers to bring**: pick **up to 3** on cards; the **default is the set used last time**. A special tower not owned yet can be unlocked with rubies or coins, or **tried for one battle with a rewarded ad**. Towers a challenge forbids are greyed out.
 6. Power-ups owned, then **Back** and **Start**.
 
 ## 7. Meta game and economy
@@ -87,13 +87,14 @@ Before each battle the player sees:
 | Currency | Earned by | Spent on |
 |---|---|---|
 | Battle gold (per level) | Kills, early waves | Towers, upgrades, clearing rubble |
-| Coins | Story wins (first win full; replays 40%), daily login, endless | Power-ups, Royal Workshop |
-| Rubies (premium) | **Challenges and daily quests (rubies only)**, achievements, daily login, ad chest, purchases | Royal towers, power-ups |
-| Diyas | Level ratings | Unlock Royal Workshop ranks (3, 9 and 15 diyas) |
+| Coins | Story wins (first win full; replays 40%), daily login, endless | Power-ups, Royal Forge, special towers (high cost) |
+| Rubies (premium) | **Challenges and daily quests (rubies only)**, achievements, daily login, ad chest, purchases | Special towers, power-ups, finishing Forge jobs early |
+| Diyas | Level ratings | Unlock Royal Forge ranks (4, 8, 12 and 15 diyas) |
 
 - **Daily login:** a 7-day calendar (day 7 is a big royal chest). It works offline for guests; signed-in players get +20%. Missing a day restarts the calendar; turning the phone's clock back gives nothing.
 - **Daily quests:** 3 a day (for example "Defeat 60 Bandits", "Win a level using only Archer Towers"), rubies only, plus a 15-ruby bonus chest for finishing all 3.
-- **Royal Workshop:** 6 tracks × 3 ranks (+8% archer damage, +12% soldier health, −8% spell cooldown, and so on). Reset is free at any time.
+- **Royal Forge** (upgrades that take real time): 7 tracks (Archer, Barracks, Mage, Cannon, special towers, hero, spells) × 5 ranks. Each rank costs coins, needs enough diyas, and takes **3 minutes to 8 hours**; one job at a time. Finish early with rubies (1 per 4 minutes left) or watch an ad for −15 minutes. Later levels are tuned around these upgrades.
+- **Daily reward pop-up**: the calendar opens by itself on the main menu once a day, until it is claimed.
 - **Achievements:** 32, each paying rubies, mirrored to Google Play Games (1 secret: the peacock).
 
 ## 8. Monetisation
@@ -107,7 +108,7 @@ Before each battle the player sees:
 | Remove Ads (once) | ₹99 | $2.99 | Removes interstitials and banner; optional reward ads stay |
 
 **Ads (AdMob), with player-friendly rules built into the code:**
-- **Rewarded (always optional):** double a win's coins, revive once (+5 lives), try a royal tower for a battle, the free ruby chest (3 a day). At most 12 a day.
+- **Rewarded (always optional):** double a win's coins, revive once (+5 lives), try a special tower for a battle, −15 minutes on a Forge job, the free ruby chest (3 a day). At most 12 a day.
 - **Interstitial:** only between levels, never before level 4, never right after a loss, at most once every 3 minutes, never with Remove Ads.
 - **Banner:** only on the world map, small, top centre, and only after the first 3 wins.
 - **Consent:** Google's UMP form where the law needs it. Ads are limited to Teen content or lower.
@@ -130,13 +131,15 @@ Every screen with images, contents and flows: [screens.md](screens.md).
 ## 11. Audio
 
 All music and sound are **synthesised in code**: no recordings, so nothing to license.
-- **Music:** raga Bhupali scale. A tanpura drone, a bansuri-like flute with slides, and a tabla groove in battle (faster for bosses).
+- **Music:** raga Bhupali scale: a tanpura drone, a bansuri-like flute with slides and a tabla groove. **It follows the battle:** calm before the first wave, faster while fighting, then a war-horn drone and pounding dhol when the fort is in danger or on the final wave, a shehnai-like lead for the boss, and a heartbeat when only a few lives are left.
+- **Ambience:** birdsong and wind in the Aravalli hills; a war horn and battle cries as each wave starts.
 - **Sound effects:** a distinct sound for each tower, a dhol hit at wave start, coin chinks, the boss roar, spell sounds, and victory and defeat fanfares.
 - Separate music and effects volume sliders; audio pauses when the app goes to the background.
 
 ## 12. Works on every Android phone
 
 - Landscape only. The battlefield (844×390) scales to fit **without stretching**; wider phones and tablets see extra scenery instead of black bars.
+- The HUD and menus are drawn a little smaller than the battlefield (scale 0.74–1.25) so they do not feel big; every tap area stays at least 44 px.
 - The HUD is pinned to the real screen edges and avoids notches; touch targets are 44 pt or more; text shrinks to fit its box.
 - Sharp art at the phone's real pixel density (up to 3×). Battery saver (30 fps). Large-text option.
 - **Checked automatically** on 7 screen shapes (16:9 to 21:9 phones, 16:10 and 4:3 tablets) on every screen.
@@ -151,10 +154,10 @@ All music and sound are **synthesised in code**: no recordings, so nothing to li
 
 | Version | Contents |
 |---|---|
-| **1.0** | Region 1 (tutorial + 5 levels + boss), Story, Challenges (15), Endless, 2 royal towers, full meta game, ads, purchases, Play Games |
+| **1.0** | Region 1 (tutorial + 5 levels + boss, 8 enemy types), Story, Challenges (15), Endless, 4 special towers (8 levels each), Royal Forge, full meta game, ads, purchases, Play Games |
 | 1.1 | Region 2: Thar Desert (levels 6–10), sandstorm weather, Dune Colossus boss, endless leaderboard 2 |
-| 1.2 | Region 3: Western Ghats (monsoon, river paths), Storm Serpent boss, 3rd royal tower (Alchemist) |
-| 1.3 to 1.5 | Regions 4 to 6, War Elephant Stable, the Shadow Emperor finale, more heroes and tier-3 specialisations |
+| 1.2 | Region 3: Western Ghats (monsoon, river paths), Storm Serpent boss, more special towers |
+| 1.3 to 1.5 | Regions 4 to 6, the Shadow Emperor finale, more heroes and tier-3 specialisations |
 | Later | Weekly challenge and live events, translations (Hindi first), cutscenes, the encyclopedia |
 
 Release steps: internal testing, then closed testing (12+ testers for 14 days), then production with a 10% / 50% / 100% staged rollout.

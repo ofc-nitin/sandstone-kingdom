@@ -18,7 +18,7 @@ Android back button: closes a pop-up, pauses a battle, goes back a screen, or as
 ![Main menu](img/screen-menu.png)
 
 The fort at sunrise, the logo, three modes (Story, Challenges, Endless) and the Shop. Locks show on
-modes that are not open yet. The corner buttons are Settings, Awards, Ranks, Daily, Quests and Workshop,
+modes that are not open yet. The round buttons, in a wooden dock at the bottom right, are Settings, Awards, Ranks, Daily, Quests and Forge,
 with red badges when something can be claimed. A Google Play sign-in button appears in the Android app.
 
 ## World map: story mode
@@ -63,10 +63,12 @@ picker (the last one used is chosen by default; buy, or try with an ad), the pow
 Four tabs: Offers (Starter Pack, Remove Ads, free ruby chest), Rubies, Royal Towers and Power-ups.
 Prices come from Google Play in the player's currency. Restore purchases is at the bottom.
 
-## Daily reward, quests and workshop
+## Daily reward, quests and the Royal Forge
 ![Daily reward](img/screen-daily.png)
 ![Daily quests](img/screen-quests.png)
-![Royal Workshop](img/screen-workshop.png)
+![Royal Forge](img/screen-workshop.png)
+
+Forge upgrades take real time (3 minutes to 8 hours), one at a time; finish early with rubies or take 15 minutes off with an ad.
 
 ## Achievements, rankings and settings
 ![Achievements](img/screen-achievements.png)

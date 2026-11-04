@@ -122,16 +122,40 @@ test('interstitials: never before level 4, never after a loss, at most every 3 m
   assert.equal(M.shouldShowInterstitial(p, { level: 5, now: 2e9 }), false);
 });
 
-test('workshop: ranks need diyas, cost coins, give bonuses, and reset for a full refund', () => {
+test('Royal Forge: ranks cost coins, need diyas, take real time, one at a time', () => {
   const p = M.newProfile();
-  p.coins = 2000;
-  assert.equal(M.buyWorkshop(p, 'archer'), false, 'needs 3 diyas');
-  p.diyas = { 1: 3, 2: 3, 3: 3 };
-  assert.equal(M.buyWorkshop(p, 'archer'), true);
-  assert.equal(M.buyWorkshop(p, 'archer'), true);
-  assert.ok(Math.abs(M.workshopBonus(p).archer - 0.16) < 1e-9);
-  assert.equal(M.resetWorkshop(p), 550);
-  assert.equal(p.coins, 2000);
+  p.coins = 10000;
+  const t0 = 1e12;
+  assert.equal(M.forgeStart(p, 'archer', t0), true);
+  assert.equal(p.coins, 9800);
+  assert.equal(M.forgeStart(p, 'mage', t0), false, 'one job at a time');
+  assert.equal(M.forgeTick(p, t0 + 60000), null, 'not ready yet');
+  assert.equal(M.forgeTick(p, t0 + 3 * 60000).id, 'archer');
+  assert.equal(p.workshop.archer, 1);
+  assert.equal(M.forgeStart(p, 'archer', t0), false, 'rank 2 needs 4 diyas');
+  p.diyas = { 1: 3, 2: 1 };
+  assert.equal(M.forgeStart(p, 'archer', t0), true);
+  const cost = M.forgeRushCost(p, t0);
+  assert.equal(cost, 5, '20 minutes left: 5 rubies');
+  const rubies = p.rubies;
+  assert.equal(M.forgeRush(p, t0).rank, 2);
+  assert.equal(p.rubies, rubies - 5);
+  assert.ok(Math.abs(M.workshopBonus(p).archer - 0.14) < 1e-9);
+});
+
+test('a rewarded ad takes 15 minutes off a forge job', () => {
+  const p = M.newProfile(); p.coins = 1000; p.diyas = { 1: 3, 2: 1 }; p.workshop = { mage: 1 };
+  M.forgeStart(p, 'mage', 0);
+  M.forgeAdCut(p, 0);
+  assert.equal(M.forgeLeft(p, 0), 5 * 60000);
+});
+
+test('special towers unlock with rubies or a big pile of coins', () => {
+  const p = M.newProfile();
+  p.coins = 6000;
+  assert.equal(M.buyRoyalTower(p, 'falconer', 'coins'), true);
+  assert.equal(p.coins, 0);
+  assert.equal(M.buyRoyalTower(p, 'fountain', 'coins'), false);
 });
 
 test('workshop bonus makes towers stronger in battle', () => {
@@ -158,7 +182,7 @@ test('every map challenge can be won by the test bot', () => {
     for (const ch of list) {
       let wins = 0;
       for (let seed = 1; seed <= 6; seed++) {
-        const g = new Game(LEVELS[lvl], { seed, rules: ch.rules });
+        const g = new Game(LEVELS[lvl], { seed, rules: ch.rules, specials: ['falconer', 'alchemist', 'elephant'], bonus: Number(lvl) >= 4 ? { archer: 0.25, barracks: 0.25, mage: 0.25, cannon: 0.25, royal: 0.25, hero: 0.25, spells: 0.1 } : {} });
         if (playLevel(g, { useAbilities: true }) === 'won') wins++;
       }
       assert.ok(wins >= 1, `level ${lvl} challenge ${ch.id} won ${wins}/6`);
