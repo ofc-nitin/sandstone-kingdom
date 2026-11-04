@@ -58,7 +58,9 @@ Playwright and Chromium are preinstalled at `/opt/node-tools` (the scripts load 
 
 Published previews (private links that belong to the user; republish them if the old session's
 files are gone, after building the HTML again):
-- Playtest: https://claude.ai/artifact/PiGUipAjmQzhdo7GijjEWC (a page that loads `game/src` and `fonts`)
+- Playtest: https://claude.ai/artifact/4LeodETPEg6LMz11nH81me. Build it with
+  `node tools/playtest-page.mjs <out.html>` (fonts inlined), then publish that file with root `game/`
+  and the paths the script prints as `files`. (The older link PiGUipAjmQzhdo7GijjEWC is gone.)
 - PRD: https://claude.ai/artifact/Hc7ZyYLruHNtZZpnENKhmU (`node tools/prd-doc.mjs --artifact <file>`)
 
 ## Where we are (end of session, 2026-11-04)
