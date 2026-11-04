@@ -34,7 +34,7 @@ const ENEMY_ART = {
   banditKing: { box: [-56, -118, 112, 128], draw: rider((s) => banditKing(s, 0, 0, 1)) },
 };
 const SOLDIER_ART = { spearman: SPEAR, knight: KNIGHT, holyKnight: { ...HOLY, aura: false } };
-const TOWER_ART = { archerTower, barracks, mageTower, cannonTower, falconer, fountain, alchemist, elephantStable };
+export const TOWER_ART = { archerTower, barracks, mageTower, cannonTower, falconer, fountain, alchemist, elephantStable };
 const BASE_TOWERS = ['archerTower', 'barracks', 'mageTower', 'cannonTower'];
 export const ROYAL_STAGES = 4; // looks across a special tower's 8 levels: levels 1-2, 3-4, 5-6, 7-8
 export const stageOf = (tower) => (tower.def.royal ? Math.min(ROYAL_STAGES - 1, Math.floor(tower.tier / 2)) : tower.tier);
@@ -51,7 +51,7 @@ function chhatri(t, x, y, k = 1) {
 // Each upgrade changes the building so it is obvious at a glance:
 //  stage 0 small with a wooden palisade, 1 taller with gold studs and pennants,
 //  2 grand on a marble plinth with domed pavilions, banners, a halo and a crest; 3 (special only) adds a sacred aura.
-function dressTower(s, fn, stage, o = {}) {
+export function dressTower(s, fn, stage, o = {}) {
   const sc = [0.84, 0.93, 1, 1.04][stage];
   const back = g(s);
   if (stage >= 2) {

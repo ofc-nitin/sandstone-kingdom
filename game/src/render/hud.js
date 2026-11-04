@@ -161,10 +161,12 @@ export class Hud {
       lanes.forEach((lane) => {
         const path = game.paths[lane];
         let d = 30;
-        for (; d < path.length * 0.5; d += 6) { const q = view.toScreen(path.at(d).x, path.at(d).y); if (q.x > L + br * 1.6 && q.x < R - br * 1.6 && q.y > T + ph + br * 1.6 && q.y < B - br * 1.6) break; }
+        // keep clear of the lives plaque and the power-up column on the left
+        const minX = L + 70 * u, minY = T + ph + br * 1.6 + 36 * u;
+        for (; d < path.length * 0.5; d += 6) { const q = view.toScreen(path.at(d).x, path.at(d).y); if (q.x > minX && q.x < R - br * 1.6 && q.y > minY && q.y < B - br * 1.6) break; }
         const ent = path.at(d);
         let p = view.toScreen(ent.x, ent.y);
-        p = { x: Math.max(L + br * 1.6, Math.min(R - br * 1.6, p.x)), y: Math.max(T + ph + br * 1.6, Math.min(B - br * 1.6, p.y)) };
+        p = { x: Math.max(minX, Math.min(R - br * 1.6, p.x)), y: Math.max(minY, Math.min(B - br * 1.6, p.y)) };
         const pulse = 1 + Math.sin(this.time * 5 + lane) * 0.06;
         if (game.nextWaveTimer !== null) {
           ctx.beginPath(); ctx.arc(p.x, p.y, br * 1.18, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - game.nextWaveTimer / 16));

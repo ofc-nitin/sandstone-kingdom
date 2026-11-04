@@ -402,7 +402,7 @@ function frame(now) {
       ctx.fillStyle = vg; ctx.fillRect(0, 0, view.cssW, view.cssH);
     }
     const step = currentLevel.tutorial && battle.brief.mode === 'story' && currentLevel.tutorial[tutorialStep];
-    hud.draw(ctx, view, game, assets, { speed, livesFlash, tutorial: step, hasNext: !!LEVELS[game.level.id + 1], challenge: battle.brief.challenge, canAd: app.rewardedLeft() > 0 });
+    if (!window.__sk.hideHud) hud.draw(ctx, view, game, assets, { speed, livesFlash, tutorial: step, hasNext: !!LEVELS[game.level.id + 1], challenge: battle.brief.challenge, canAd: app.rewardedLeft() > 0 });
   } else screens.draw(ctx, view, screen, dt);
   drawToasts(dt);
 }
