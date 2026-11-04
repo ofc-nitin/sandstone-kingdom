@@ -5,6 +5,7 @@ import { UNIT_SCALE } from './assets.js';
 import { TOWERS, ENEMIES, SELL_REFUND, SPELLS, HEROES, POWERUP_ORDER, POWERUPS } from '../engine/data.js';
 
 const OUT = '#3a2414';
+const HERO_SKILL_BTN = { sunKnight: 'btn:sunStrike', archerQueen: 'btn:arrowRain', sage: 'btn:holyFire', vikram: 'btn:swords' };
 const FONT = 'Martel, Georgia, serif';
 const TITLE = '"Rozha One", Georgia, serif';
 const GEM = {
@@ -126,6 +127,7 @@ export class Hud {
     const cy = T + ph / 2;
     blit(ctx, assets.get('ui:heart'), L + 20 * u, cy, u);
     text(ctx, String(game.lives), L + 36 * u, cy + 6 * u, 16 * u, { align: 'left', fill: info.livesFlash > 0 ? '#ff8a7a' : '#fff4dc' });
+    this.livesAt = { x: L + 20 * u, y: cy }; this.goldAt = { x: L + 92 * u, y: cy };
     blit(ctx, assets.get('ui:coin'), L + 92 * u, cy, u);
     text(ctx, String(game.gold), L + 108 * u, cy + 6 * u, 16 * u, { align: 'left' });
     blit(ctx, assets.get('ui:wave'), L + 176 * u, cy, u);
@@ -154,6 +156,20 @@ export class Hud {
     this.tap(R - br * 3.4, T + br, br * 1.15, 0, () => this.actions.speed(), true);
     text(ctx, info.speed === 2 ? '×2' : '×1', R - br * 3.4, T + br * 2.5, 11 * u, { sw: 2.4 * u });
 
+    // ---- a boss on the field gets a named health bar across the top
+    const boss = game.enemies.find((e) => e.def.boss && !e.dead);
+    if (boss) {
+      const bw = Math.min(260 * u, (R - L) * 0.36), bx = (L + R) / 2 - bw / 2, by = T + 22 * u, k = Math.max(0, boss.hp / boss.maxHp);
+      this.bossShown = (this.bossShown ?? k) + (k - (this.bossShown ?? k)) * 0.06; // the lost chunk drains away behind
+      text(ctx, boss.def.name, (L + R) / 2, by - 6 * u, 13 * u, { font: TITLE, weight: 400, sw: 3 * u, fill: '#ffd66b' });
+      ctx.fillStyle = OUT; ctx.beginPath(); ctx.roundRect(bx - 3 * u, by - 3 * u, bw + 6 * u, 14 * u, 7 * u); ctx.fill();
+      ctx.fillStyle = '#4a140c'; ctx.beginPath(); ctx.roundRect(bx, by, bw, 8 * u, 4 * u); ctx.fill();
+      ctx.fillStyle = '#ffe0a0'; ctx.beginPath(); ctx.roundRect(bx, by, bw * Math.max(k, this.bossShown), 8 * u, 4 * u); ctx.fill();
+      const gr = ctx.createLinearGradient(0, by, 0, by + 8 * u); gr.addColorStop(0, '#ff6a4a'); gr.addColorStop(1, '#b0200e');
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.roundRect(bx, by, Math.max(0.01, bw * k), 8 * u, 4 * u); ctx.fill();
+      if (boss.shieldHp > 0) { ctx.fillStyle = '#8fc8ff'; ctx.fillRect(bx + 2 * u, by + 1 * u, (bw - 4 * u) * Math.min(1, boss.shieldHp / (boss.shieldMax || 1)), 2 * u); }
+    } else this.bossShown = undefined;
+
     // ---- call the next wave, placed where enemies enter
     // one marker at every entrance the next wave will come through, so players know where to look
     if (game.canCallWave && !this.modal) {
@@ -169,13 +185,16 @@ export class Hud {
         p = { x: Math.max(minX, Math.min(R - br * 1.6, p.x)), y: Math.max(minY, Math.min(B - br * 1.6, p.y)) };
         const pulse = 1 + Math.sin(this.time * 5 + lane) * 0.06;
         if (game.nextWaveTimer !== null) {
-          ctx.beginPath(); ctx.arc(p.x, p.y, br * 1.18, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - game.nextWaveTimer / 16));
+          ctx.beginPath(); ctx.arc(p.x, p.y, br * 1.18, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - game.nextWaveTimer / (game.nextWaveTotal || 16)));
           ctx.strokeStyle = '#ffd66b'; ctx.lineWidth = 4 * u; ctx.stroke();
         }
         blit(ctx, assets.get('btn:swords'), p.x, p.y, u * pulse);
-        this.tap(p.x, p.y, br * 1.3, 0, () => this.actions.callWave(), true);
-        const label = game.state === 'ready' ? 'START' : `+${Math.ceil(game.nextWaveTimer || 0)}`;
-        text(ctx, label, p.x, p.y + br + 14 * u, 12 * u, { sw: 3 * u });
+        // the battle starts with a double tap, so nobody starts it by accident; then waves can be called early with one
+        const armed = game.state === 'ready' && this.armed && this.time - this.armed < 2.5;
+        this.tap(p.x, p.y, br * 1.3, 0, () => { if (game.state === 'ready' && !armed) { this.armed = this.time; return; } this.armed = 0; this.actions.callWave(); }, true);
+        if (armed) { ctx.beginPath(); ctx.arc(p.x, p.y, br * (1.3 + 0.15 * Math.sin(this.time * 14)), 0, Math.PI * 2); ctx.strokeStyle = '#fff4c0'; ctx.lineWidth = 3 * u; ctx.stroke(); }
+        const label = game.state === 'ready' ? (armed ? 'TAP AGAIN!' : 'DOUBLE-TAP TO START') : `${Math.ceil(game.nextWaveTimer || 0)}s · call early`;
+        text(ctx, label, p.x, p.y + br + 14 * u, 11 * u, { sw: 3 * u, max: 150 * u, fill: armed ? '#ffd66b' : '#fff8e6' });
         // who is coming down this road next
         const wave = game.waves[game.waveIndex + 1] || [];
         const types = [...new Set(wave.filter((gr) => (gr.lane || 0) === lane).map((gr) => gr.type))].slice(0, 4);
@@ -188,7 +207,7 @@ export class Hud {
       });
     }
 
-    // ---- bottom-left: the hero portrait and his skill
+    // ---- bottom-left: the hero portrait and the hero's skill
     const pie = (x, y, r, frac) => { if (frac <= 0) return; ctx.fillStyle = 'rgba(20,10,4,0.62)'; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * frac); ctx.closePath(); ctx.fill(); };
     const h = game.hero;
     if (h) {
@@ -196,12 +215,12 @@ export class Hud {
       ctx.beginPath(); ctx.arc(hx, hy, hr + 3 * u, 0, Math.PI * 2); ctx.fillStyle = OUT; ctx.fill();
       ctx.beginPath(); ctx.arc(hx, hy, hr + 1.5 * u, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (h.dead ? 0 : h.hp / h.maxHp)); ctx.strokeStyle = '#ffd25a'; ctx.lineWidth = 3 * u; ctx.stroke();
       blit(ctx, assets.get('btn:grey'), hx, hy, u * 1.16);
-      blit(ctx, assets.get('ui:heroFace'), hx, hy, u * 1.06);
+      blit(ctx, assets.get('ui:heroFace:' + h.hero), hx, hy, u * 1.06);
       if (h.dead) { pie(hx, hy, hr, 1); text(ctx, String(Math.ceil(h.respawnT)), hx, hy + 6 * u, 16 * u); }
       if (this.heroSelected) { ctx.beginPath(); ctx.arc(hx, hy, hr + 5 * u, 0, Math.PI * 2); ctx.strokeStyle = '#fff4dc'; ctx.lineWidth = 2 * u; ctx.setLineDash([4 * u, 3 * u]); ctx.stroke(); ctx.setLineDash([]); }
       this.tap(hx, hy, hr * 1.1, 0, () => { if (!h.dead) { this.heroSelected = !this.heroSelected; this.targeting = null; this.menu = null; } }, true);
       const sx = hx + hr + 30 * u, sy = hy + 4 * u, sk = HEROES[h.hero].skill;
-      blit(ctx, assets.get('btn:sunStrike'), sx, sy, u * 0.9);
+      blit(ctx, assets.get(HERO_SKILL_BTN[h.hero] || 'btn:sunStrike'), sx, sy, u * 0.9);
       pie(sx, sy, 18 * u, h.skillCd / sk.cooldown);
       if (h.skillCd > 0) text(ctx, String(Math.ceil(h.skillCd)), sx, sy + 5 * u, 13 * u);
       this.tap(sx, sy, 20 * u, 0, () => this.actions.heroSkill(), true);
@@ -217,7 +236,7 @@ export class Hud {
       this.tap(x, y, sr * 1.1, 0, () => { if (sp.cd <= 0 && game.state !== 'ready') { this.targeting = this.targeting === name ? null : name; this.heroSelected = false; this.menu = null; } }, true);
     });
     if ((this.targeting || this.heroSelected) && !this.modal) {
-      const msg = this.targeting ? `Tap the battlefield to cast ${SPELLS[this.targeting].name}` : 'Tap the road to send the Sun Knight';
+      const msg = this.targeting ? `Tap the battlefield to cast ${SPELLS[this.targeting].name}` : `Tap the road to send ${game.hero ? game.hero.def.name : 'your hero'}`;
       text(ctx, msg, cssW / 2, B - 64 * u, 14 * u, { sw: 3.4 * u, max: cssW - 60 * u });
     }
 
@@ -358,7 +377,8 @@ export class Hud {
       let rx = x + w / 2 - ((r.coins ? 70 : 0) + (r.rubies ? 70 : 0)) * u / 2;
       if (r.coins) { blit(ctx, assets.get('ui:coin'), rx + 12 * u, ry, u); text(ctx, `+${r.coins * (m.doubled ? 2 : 1)}`, rx + 26 * u, ry + 5 * u, 15 * u, { align: 'left' }); rx += 70 * u; }
       if (r.rubies) { blit(ctx, assets.get('ui:ruby'), rx + 12 * u, ry, u); text(ctx, `+${r.rubies}`, rx + 26 * u, ry + 5 * u, 15 * u, { align: 'left' }); }
-      if (r.gift) text(ctx, `New special tower: ${TOWERS[r.gift].name}!`, x + w / 2, ry + 24 * u, 12 * u, { fill: '#2f8f3c', stroke: false, max: w - 40 * u });
+      if (r.heroGift) text(ctx, `${HEROES[r.heroGift].name} joins your army!`, x + w / 2, ry + 24 * u, 12 * u, { fill: '#2f8f3c', stroke: false, max: w - 40 * u });
+      else if (r.gift) text(ctx, `New special tower: ${TOWERS[r.gift].name}!`, x + w / 2, ry + 24 * u, 12 * u, { fill: '#2f8f3c', stroke: false, max: w - 40 * u });
       else if (r.achievements && r.achievements.length) text(ctx, `Achievement: ${r.achievements[0].name}${r.achievements.length > 1 ? ` +${r.achievements.length - 1}` : ''}`, x + w / 2, ry + 24 * u, 11 * u, { fill: '#7a160a', stroke: false, max: w - 40 * u });
       // optional rewarded ads: double the coins, or one revive
       if (won && r.coins && !m.doubled && info.canAd) { const bw2 = 170 * u; gemButton(ctx, x + w / 2 - bw2 / 2, y + h - 92 * u, bw2, 30 * u, 'DOUBLE COINS (AD)', 'purple', u); this.tap(x + w / 2 - bw2 / 2, y + h - 92 * u, bw2, 30 * u, () => this.actions.double()); }

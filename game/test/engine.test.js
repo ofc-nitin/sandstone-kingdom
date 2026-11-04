@@ -383,3 +383,35 @@ test('summary reports what happened in the battle', () => {
   assert.ok(Object.values(s.kills).reduce((a, b) => a + b, 0) > 20);
   assert.ok(s.towerTypes.length >= 1);
 });
+
+test('ranged heroes shoot from where they stand and never block', () => {
+  const g = new Game(tinyLevel({ hero: undefined }), { hero: 'archerQueen' });
+  const h = g.hero; h.home = { x: 150, y: 70 }; h.x = 150; h.y = 70;
+  const e = g.spawnEnemy('barbarian', 0, 140); e.stun = 99;
+  run(g, 2);
+  assert.ok(e.hp < e.maxHp, 'shot');
+  assert.equal(e.blocker, null, 'not blocked');
+});
+
+test('hero skills: volley slows a crowd, blessing heals soldiers, war cry stuns', () => {
+  const lvl = tinyLevel({ hero: undefined, gold: 1000 });
+  const q = new Game(lvl, { hero: 'archerQueen' }); q.callWave();
+  const qa = q.spawnEnemy('bandit', 0, q.paths[0].nearest(q.hero.x, q.hero.y).d);
+  assert.equal(q.heroSkill(), true);
+  assert.ok(qa.slowT > 0);
+  const sg = new Game(lvl, { hero: 'sage' }); sg.build(0, 'barracks');
+  const sol = sg.soldiers.find((x) => !x.hero); sol.hp = 1; sol.x = sg.hero.x; sol.y = sg.hero.y;
+  sg.heroSkill();
+  assert.equal(sol.hp, sol.maxHp);
+  const v = new Game(lvl, { hero: 'vikram' });
+  const ve = v.spawnEnemy('brute', 0, v.paths[0].nearest(v.hero.x, v.hero.y).d);
+  v.heroSkill();
+  assert.ok(ve.stun >= 2);
+});
+
+test('no hero in the tutorial and Level 1; none when the player has none', () => {
+  assert.equal(new Game(LEVELS[0]).hero, null);
+  assert.equal(new Game(LEVELS[1]).hero, null);
+  assert.equal(new Game(LEVELS[2], { hero: null }).hero, null);
+  assert.equal(new Game(LEVELS[2], { hero: 'sage' }).hero.hero, 'sage');
+});

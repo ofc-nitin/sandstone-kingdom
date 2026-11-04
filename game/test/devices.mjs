@@ -36,13 +36,13 @@ for (const d of DEVICES) {
   await p.screenshot({ path: `${out}/${d.name}-0-menu.png` });
   // every menu screen: all buttons on screen
   const offMenu = [];
-  for (const [name, args] of [['menu'], ['map', { mode: 'story' }], ['briefing', { mode: 'story', level: 4 }], ['shop'], ['daily'], ['quests'], ['workshop'], ['achievements'], ['ranks'], ['settings']]) {
+  for (const [name, args] of [['menu'], ['map', { mode: 'story' }], ['briefing', { mode: 'story', level: 4 }], ['bazaar'], ['treasury'], ['heroes'], ['daily'], ['quests'], ['workshop'], ['achievements'], ['ranks'], ['settings']]) {
     await p.evaluate(([n, a]) => window.__sk.go(n, a), [name, args]);
     await p.waitForFunction((n) => window.__sk.screen === n, name, { timeout: 120000 });
     await p.waitForTimeout(120);
     const bad = await p.evaluate(([W, H]) => window.__sk.screens.targets.filter((t) => t.w < W - 2 && t.fn).map((t) => (t.round ? { x: t.x - t.w, y: t.y - t.w, w: t.w * 2, h: t.w * 2 } : t)).filter((t) => t.x < -1 || t.y < -1 || t.x + t.w > W + 1 || t.y + t.h > H + 1).length, [d.width, d.height]);
     if (bad && name !== 'map') offMenu.push(`${name}:${bad}`);
-    if (['map', 'briefing', 'shop'].includes(name)) await p.screenshot({ path: `${out}/${d.name}-1-${name}.png` });
+    if (['map', 'briefing', 'bazaar', 'treasury', 'heroes'].includes(name)) await p.screenshot({ path: `${out}/${d.name}-1-${name}.png` });
   }
 
   // a battle in progress with every tower type

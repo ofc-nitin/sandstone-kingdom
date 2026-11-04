@@ -5,9 +5,9 @@ Generated from `game/src/engine/levels.js` by `node tools/levels-doc.mjs`, so th
 | # | Level | Start gold | Lives | Enemy HP | Waves | Spots (open / locked / special) | Spells | New enemy |
 |---|---|---|---|---|---|---|---|---|
 | 0 | Training Grounds | 170 | 15 | ×0.80 | 3 | 5 / 1 / 0 | 0 | Bandit |
-| 1 | Village at the Pass | 230 | 20 | ×1.00 | 6 | 6 / 2 / 0 | 1 | Wolf Rider |
-| 2 | The Stepwell Road | 280 | 20 | ×1.32 | 7 | 7 / 2 / 0 | 2 | Bandit Archer, Saboteur |
-| 3 | Banyan Crossing | 340 | 20 | ×1.18 | 8 | 6 / 4 / 1 | 2 | Barbarian, War Drummer |
+| 1 | Village at the Pass | 230 | 20 | ×1.15 | 6 | 6 / 2 / 0 | 1 | Wolf Rider |
+| 2 | The Stepwell Road | 280 | 20 | ×1.50 | 7 | 7 / 2 / 0 | 2 | Bandit Archer, Saboteur |
+| 3 | Banyan Crossing | 340 | 20 | ×1.28 | 8 | 6 / 4 / 1 | 2 | Barbarian, War Drummer |
 | 4 | The Old Watchtower | 400 | 20 | ×1.02 | 9 | 6 / 5 / 2 | 3 | Armored Brute, Shield Bearer |
 | 5 | The Bandit King's Camp | 440 | 20 | ×0.98 | 10 | 6 / 6 / 3 | 3 | The Bandit King |
 
@@ -27,7 +27,7 @@ Generated from `game/src/engine/levels.js` by `node tools/levels-doc.mjs`, so th
 | 2 | 6 × Bandit |
 | 3 | 8 × Bandit |
 
-**Tutorial steps:** 1. Tap a build spot and choose the Archer Tower. 2. Ready! Tap the swords to call the first wave of bandits. 3. Tap your tower and upgrade it to Marksmen. 4. Rubble blocks the spot by the fort. Tap it and pay gold to clear it. 5. Build Barracks there: soldiers block the road. 6. Call waves early with the swords to earn bonus gold.
+**Tutorial steps:** 1. Tap a build spot and choose the Archer Tower. 2. Ready! Double-tap the swords to start the battle. 3. Tap your tower and upgrade it to Marksmen. 4. Rubble blocks the spot by the fort. Tap it and pay gold to clear it. 5. Build Barracks there: soldiers block the road. 6. A timer counts down to each wave. Tap the swords to call it early for bonus gold.
 
 ## Level 1: Village at the Pass
 
@@ -35,9 +35,9 @@ Generated from `game/src/engine/levels.js` by `node tools/levels-doc.mjs`, so th
 
 **Why we fight:** Bandits just raided the village market and ran off with the festival lamps. The whole village is counting on you. Time to lock in.
 
-**Roads:** 1 · **Hero:** Sun Knight · **Spells:** Arrow Rain
+**Roads:** 1 · **Hero:** none (tutorial) · **Spells:** Arrow Rain
 
-**Locked spots:** rubble (40 gold), rubble (55 gold)
+**Locked spots:** rubble (55 gold), rubble (40 gold)
 
 | Wave | Enemies |
 |---|---|
@@ -52,7 +52,7 @@ Generated from `game/src/engine/levels.js` by `node tools/levels-doc.mjs`, so th
 
 - **Bowmen Only**: Win using only Archer Towers · 15 rubies
 - **No Magic Words**: Win without casting spells · 15 rubies
-- **Iron Fort**: Win with a single life · 20 rubies
+- **Iron Fort**: Win with three lives · 20 rubies
 
 ## Level 2: The Stepwell Road
 
@@ -62,7 +62,7 @@ Generated from `game/src/engine/levels.js` by `node tools/levels-doc.mjs`, so th
 
 **Roads:** 1 · **Hero:** Sun Knight · **Spells:** Arrow Rain, Reinforcements
 
-**Locked spots:** rubble (40 gold), rubble (55 gold)
+**Locked spots:** rubble (55 gold), rubble (40 gold)
 
 | Wave | Enemies |
 |---|---|
@@ -88,7 +88,7 @@ Generated from `game/src/engine/levels.js` by `node tools/levels-doc.mjs`, so th
 
 **Roads:** 2 · **Hero:** Sun Knight · **Spells:** Arrow Rain, Reinforcements
 
-**Locked spots:** opens at wave 2, rubble (40 gold), rubble (55 gold), rubble (70 gold)
+**Locked spots:** opens at wave 2, rubble (55 gold), rubble (40 gold), rubble (70 gold)
 
 | Wave | Enemies |
 |---|---|
@@ -115,7 +115,7 @@ Generated from `game/src/engine/levels.js` by `node tools/levels-doc.mjs`, so th
 
 **Roads:** 2 · **Hero:** Sun Knight · **Spells:** Arrow Rain, Reinforcements, Holy Fire
 
-**Locked spots:** rubble (40 gold), rubble (55 gold), opens at wave 4, opens at wave 2, rubble (70 gold)
+**Locked spots:** rubble (70 gold), opens at wave 2, opens at wave 4, rubble (55 gold), rubble (40 gold)
 
 | Wave | Enemies |
 |---|---|
@@ -143,7 +143,7 @@ Generated from `game/src/engine/levels.js` by `node tools/levels-doc.mjs`, so th
 
 **Roads:** 3 · **Hero:** Sun Knight · **Spells:** Arrow Rain, Reinforcements, Holy Fire
 
-**Locked spots:** rubble (40 gold), opens at wave 4, rubble (55 gold), opens at wave 6, rubble (70 gold), opens at wave 2
+**Locked spots:** opens at wave 2, rubble (40 gold), opens at wave 4, opens at wave 6, rubble (55 gold), rubble (70 gold)
 
 | Wave | Enemies |
 |---|---|

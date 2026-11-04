@@ -25,7 +25,7 @@ export class Game {
   // opts.specials: up to 3 special (royal) towers taken into this battle; they stand only on
   // special spots, and special spots take only them. opts.endless: waves never stop.
   // opts.powerups: how many of each power-up the player can use (one each per level).
-  constructor(level, { seed = 1, seen = {}, rules = null, specials = null, special = null, endless = false, powerups = {}, bonus = {} } = {}) {
+  constructor(level, { seed = 1, seen = {}, rules = null, specials = null, special = null, hero, endless = false, powerups = {}, bonus = {} } = {}) {
     this.level = level;
     this.rules = rules || {};
     this.bonus = bonus || {}; // Royal Workshop: { archer: 0.16, barracks: 0.24, spells: 0.08, hero: 0.1, ... }
@@ -66,7 +66,8 @@ export class Game {
     this.spells = {};
     if (!this.rules.noSpells) for (const name of level.spells ?? SPELL_ORDER) this.spells[name] = { cd: 0 };
     this.hero = null;
-    if (level.hero !== false && !this.rules.noHero) this.spawnHero(level.hero || 'sunKnight');
+    // opts.hero: the hero chosen in the briefing; null means the player has no hero yet
+    if (level.hero !== false && !this.rules.noHero && hero !== null) this.spawnHero(hero || level.hero || 'sunKnight');
   }
 
   // ---------------------------------------------------------------- hero
@@ -97,10 +98,22 @@ export class Game {
     const sk = h.def.skill;
     h.skillCd = sk.cooldown;
     this.stats.heroSkills++;
-    for (const e of this.enemies) {
-      if (e.dead || Math.hypot(e.x - h.x, e.y - h.y) > sk.radius) continue;
-      this.damage(e, sk.dmg, 'magic');
-      e.stun = Math.max(e.stun || 0, sk.stun);
+    const near = this.enemies.filter((e) => !e.dead && e.portalT <= 0 && Math.hypot(e.x - h.x, e.y - h.y) <= sk.radius);
+    if (sk.type === 'volley') {
+      // the nearest enemies each take an arrow and are slowed
+      near.sort((a, b) => Math.hypot(a.x - h.x, a.y - h.y) - Math.hypot(b.x - h.x, b.y - h.y)).slice(0, sk.targets).forEach((e) => {
+        this.damage(e, sk.dmg * this.mul('hero'), 'physical');
+        e.slowAmt = Math.max(e.slowT > 0 ? e.slowAmt : 0, sk.slow); e.slowT = sk.slowTime;
+        this.emit({ type: 'enemyShot', x: h.x, y: h.y - 22, tx: e.x, ty: e.y - 14 });
+      });
+    } else if (sk.type === 'bless') {
+      for (const e of near) this.damage(e, sk.dmg * this.mul('hero'), 'magic');
+      for (const s2 of this.soldiers) if (!s2.dead && Math.hypot(s2.x - h.x, s2.y - h.y) <= sk.radius) s2.hp = s2.maxHp;
+    } else if (sk.type === 'warcry') {
+      for (const e of near) { this.damage(e, sk.dmg * this.mul('hero'), 'physical'); e.stun = Math.max(e.stun || 0, sk.stun); }
+      for (const s2 of this.soldiers) if (!s2.dead && Math.hypot(s2.x - h.x, s2.y - h.y) <= sk.radius * 1.4) s2.hp = Math.min(s2.maxHp + sk.shield, s2.hp + sk.shield);
+    } else {
+      for (const e of near) { this.damage(e, sk.dmg * this.mul('hero'), 'magic'); e.stun = Math.max(e.stun || 0, sk.stun); }
     }
     this.emit({ type: 'heroSkill', x: h.x, y: h.y, r: sk.radius });
     return true;
@@ -261,7 +274,7 @@ export class Game {
     if (!this.canCallWave) return 0;
     let bonus = 0;
     if (this.state === 'playing' && this.nextWaveTimer !== null) {
-      bonus = Math.ceil(this.nextWaveTimer) * EARLY_CALL_GOLD_PER_SECOND;
+      bonus = Math.ceil(Math.min(this.nextWaveTimer, WAVE_GAP)) * EARLY_CALL_GOLD_PER_SECOND;
       this.gold += bonus;
       this.stats.earlyCalls++;
       if (this.endless) this.score += bonus * 5;
@@ -295,6 +308,12 @@ export class Game {
       for (let i = 0; i < gr.count; i++) this.spawnQueue.push({ t: this.time + (gr.delay || 0) + i * (gr.every ?? 1.2), type: gr.type, lane: gr.lane || 0, wave: this.waveIndex });
     }
     this.spawnQueue.sort((a, b) => a.t - b.t);
+    // the clock to the next wave starts now and keeps running: this wave's marching time plus a breather
+    if (this.waveIndex < this.waveCount - 1) {
+      const lastSpawn = this.spawnQueue.length ? this.spawnQueue[this.spawnQueue.length - 1].t - this.time : 0;
+      this.nextWaveTotal = Math.max(0, lastSpawn) + WAVE_GAP;
+      this.nextWaveTimer = this.nextWaveTotal;
+    }
     for (const plot of this.plots) {
       if (plot.lock && plot.lock.wave && this.waveIndex + 1 >= plot.lock.wave) {
         plot.lock = null;
@@ -389,7 +408,7 @@ export class Game {
       this.stats.kills[e.type] = (this.stats.kills[e.type] || 0) + 1;
       if (this.endless) this.score += e.def.gold * 10;
       if (e.blocker) e.blocker.target = null;
-      this.emit({ type: 'kill', x: e.x, y: e.y, gold: e.def.gold, enemy: e.type, art: e.def.art, flip: Math.cos(e.angle) < -0.2, boss: !!e.def.boss });
+      this.emit({ type: 'kill', id: e.id, x: e.x, y: e.y, gold: e.def.gold, enemy: e.type, art: e.def.art, flip: Math.cos(e.angle) < -0.2, boss: !!e.def.boss });
     }
   }
 
@@ -401,9 +420,6 @@ export class Game {
     while (this.spawnQueue.length && this.spawnQueue[0].t <= this.time) {
       const s = this.spawnQueue.shift();
       this.spawnEnemy(s.type, s.lane);
-    }
-    if (this.state === 'playing' && this.nextWaveTimer === null && !this.spawnQueue.length && this.waveIndex < this.waveCount - 1) {
-      this.nextWaveTimer = WAVE_GAP;
     }
     if (this.nextWaveTimer !== null) {
       this.nextWaveTimer -= dt;
@@ -518,6 +534,24 @@ export class Game {
         continue;
       }
       if (s.hero && s.skillCd > 0) s.skillCd -= dt;
+      if (s.hero && s.def.ranged) {
+        // ranged heroes walk to where they were sent and shoot from there; they never block the road
+        const dx = s.home.x - s.x, dy = s.home.y - s.y, dist = Math.hypot(dx, dy);
+        if (dist > 0.5) { const step = Math.min(dist, s.def.speed * dt); s.x += (dx / dist) * step; s.y += (dy / dist) * step; s.facing = dx >= 0 ? 1 : -1; s.target = null; continue; }
+        s.atkCd -= dt;
+        let target = null, progress = -1;
+        for (const e of this.enemies) {
+          if (e.dead || e.portalT > 0 || Math.hypot(e.x - s.x, e.y - s.y) > s.def.ranged.range) continue;
+          const pr = e.d / this.paths[e.lane].length;
+          if (pr > progress) { progress = pr; target = e; }
+        }
+        s.target = target;
+        if (target) {
+          s.facing = target.x >= s.x ? 1 : -1;
+          if (s.atkCd <= 0) { s.atkCd = s.def.rate; this.projectiles.push({ kind: s.def.ranged.kind, x: s.x, y: s.y - 22, target, dmg: this.roll(s.def.dmg) * this.mul('hero'), speed: s.def.ranged.kind === 'magic' ? 260 : 340 }); }
+        } else if (s.hp < s.maxHp) s.hp = Math.min(s.maxHp, s.hp + s.def.regen * dt);
+        continue;
+      }
       const leash = s.hero ? s.def.leash : SOLDIER_LEASH;
       if (s.target && (s.target.dead || (s.target.blocker && s.target.blocker !== s) || Math.hypot(s.target.x - s.home.x, s.target.y - s.home.y) > leash)) this.releaseSoldier(s);
       if (!s.target) {
@@ -598,7 +632,9 @@ export class Game {
       if (!target) continue;
       t.cd = st.rate;
       t.aim = Math.atan2(target.y - t.y, target.x - t.x);
-      const sx = t.x, sy = t.y - (t.def.kind === 'shell' ? 26 : 44);
+      // cannonballs leave from the muzzle of the turned barrel; arrows and spells from the top
+      let sx = t.x, sy = t.y - (t.def.kind === 'flask' ? 30 : 44);
+      if (t.def.kind === 'shell') { sx = t.x - 5 + Math.cos(t.aim) * 27; sy = t.y - 22 + Math.sin(t.aim) * 27; }
       const dmg = this.roll(st.dmg) * this.mul(t.def.royal ? 'royal' : t.type);
       if (t.def.kind === 'shell' || t.def.kind === 'flask') {
         const flight = Math.max(0.5, Math.hypot(target.x - sx, target.y - sy) / 170);
@@ -653,6 +689,7 @@ export class Game {
       if (dist <= Math.max(step, HIT_RADIUS)) {
         p.done = true;
         this.damage(e, p.dmg, p.kind === 'magic' ? 'magic' : 'physical');
+        if (p.kind === 'arrow') this.emit({ type: 'arrowHit', x: e.x, y: e.y });
         if (p.mark && !e.dead) e.mark = { mul: p.mark.mul, t: p.mark.t };
       }
       else { p.x += (dx / dist) * step; p.y += (dy / dist) * step; }

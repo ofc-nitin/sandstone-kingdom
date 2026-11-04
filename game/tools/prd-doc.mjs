@@ -140,7 +140,7 @@ console.log('levels:', levels.length);
 const screens = [];
 const SCREENS = [['Main menu (live, animated)', 'menu'], ['Daily reward pop-up', 'menu-daily'], ['World map: story', 'map', { mode: 'story' }], ['World map: challenges', 'map', { mode: 'challenge' }], ['Challenge list', 'challenges'],
   ['Battle briefing: story', 'briefing', { mode: 'story', level: 5 }], ['Battle briefing: challenge', 'briefing', { mode: 'challenge', level: 2, ch: 2 }], ['Battle briefing: endless', 'briefing', { mode: 'endless', level: 5 }],
-  ['Shop: offers', 'shop', { tab: 'offers' }], ['Shop: rubies', 'shop', { tab: 'rubies' }], ['Shop: special towers', 'shop', { tab: 'royal' }], ['Shop: power-ups', 'shop', { tab: 'power' }],
+  ['Royal Treasury (real-money shop)', 'treasury'], ['Royal Bazaar: special towers', 'bazaar', { tab: 'royal' }], ['Royal Bazaar: heroes', 'bazaar', { tab: 'heroes' }], ['Royal Bazaar: power-ups', 'bazaar', { tab: 'power' }], ['Royal Bazaar: free chest', 'bazaar', { tab: 'free' }], ['Heroes', 'heroes'],
   ['Daily reward', 'daily'], ['Daily quests', 'quests'], ['Royal Forge', 'workshop'], ['Achievements', 'achievements'], ['Rankings', 'ranks'], ['Settings', 'settings']];
 for (const [title, name, args = {}] of SCREENS) {
   await p.evaluate(async ([n, a]) => {

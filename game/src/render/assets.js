@@ -2,7 +2,7 @@
 /* global person, wolfRider, banditKing, archerTower, barracks, mageTower, cannonTower, falconer, fountain, alchemist, elephantStable, elephant, falcon, specialPlot, fortGate, plot,
    banyan, palm, rock, marigold, pond, peacock, tent, campfire, cart, stepwell, shrine, haystack, pots, fence,
    tuft, coinIcon, rubyIcon, icon, roundBtn, button, panel, ribbon, royalChest, el, g, outlined, shadow, moss, rnd,
-   BANDIT, BARBARIAN, BRUTE, SPEAR, KNIGHT, HOLY, SUN, ARCHER, MAGE, OUT, DRUMMER, SHIELD_BEARER, SABOTEUR, logo, menuScene, menuLayer, MENU_HEROES, MENU_SUN, mapScene, MAP_W */
+   BANDIT, BARBARIAN, BRUTE, SPEAR, KNIGHT, HOLY, SUN, ARCHER, MAGE, OUT, DRUMMER, SHIELD_BEARER, SABOTEUR, RANI_MEERA, SAGE_HERO, VIKRAM_HERO, CANNONEER, FALCONER_MAN, ALCHEMIST_MAN, cannonBarrel, logo, bazaarScene, treasuryScene, menuScene, menuLayer, MENU_HEROES, MENU_SUN, mapScene, MAP_W */
 import { rasterize } from './raster.js';
 import { WORLD_W, WORLD_H } from './view.js';
 
@@ -33,9 +33,21 @@ const ENEMY_ART = {
   saboteur: { box: PERSON_BOX, draw: humanoid(SABOTEUR) },
   banditKing: { box: [-56, -118, 112, 128], draw: rider((s) => banditKing(s, 0, 0, 1)) },
 };
+export const HERO_LOOK = { sunKnight: SUN, archerQueen: RANI_MEERA, sage: SAGE_HERO, vikram: VIKRAM_HERO };
 const SOLDIER_ART = { spearman: SPEAR, knight: KNIGHT, holyKnight: { ...HOLY, aura: false } };
 export const TOWER_ART = { archerTower, barracks, mageTower, cannonTower, falconer, fountain, alchemist, elephantStable };
 const BASE_TOWERS = ['archerTower', 'barracks', 'mageTower', 'cannonTower'];
+// The crew on each tower is drawn separately so it can turn toward its target; positions are
+// in the tower's art units (before the stage scale). The cannon barrel turns on its trunnion.
+export const CREW = {
+  archerTower: [{ key: 'archer', x: -7, y: -47 }, { key: 'archer', x: 7, y: -47 }],
+  mageTower: [{ key: 'mage', x: -15, y: -1 }],
+  cannonTower: [{ key: 'barrel', x: -5, y: -22, barrel: true }, { key: 'cannoneer', x: -22, y: -14 }],
+  falconer: [{ key: 'falconer', x: -2, y: -45 }],
+  alchemist: [{ key: 'alchemist', x: -14, y: 0 }],
+};
+const CREW_LOOK = { archer: { ...ARCHER, s: 0.62 }, mage: { ...MAGE, s: 0.6 }, cannoneer: CANNONEER, falconer: FALCONER_MAN, alchemist: ALCHEMIST_MAN };
+export const STAGE_SCALE = [0.84, 0.93, 1, 1.04];
 export const ROYAL_STAGES = 4; // looks across a special tower's 8 levels: levels 1-2, 3-4, 5-6, 7-8
 export const stageOf = (tower) => (tower.def.royal ? Math.min(ROYAL_STAGES - 1, Math.floor(tower.tier / 2)) : tower.tier);
 
@@ -52,7 +64,7 @@ function chhatri(t, x, y, k = 1) {
 //  stage 0 small with a wooden palisade, 1 taller with gold studs and pennants,
 //  2 grand on a marble plinth with domed pavilions, banners, a halo and a crest; 3 (special only) adds a sacred aura.
 export function dressTower(s, fn, stage, o = {}) {
-  const sc = [0.84, 0.93, 1, 1.04][stage];
+  const sc = STAGE_SCALE[stage];
   const back = g(s);
   if (stage >= 2) {
     const halo = el('ellipse', { cx: 0, cy: -4, rx: 40, ry: 14, fill: 'url(#holy)', opacity: stage >= 3 ? 1 : 0.75 }, back);
@@ -110,18 +122,23 @@ export class Assets {
       const sfx = f === 'idle' ? '' : ':' + f;
       for (const [name, a] of Object.entries(ENEMY_ART)) add('enemy:' + name + sfx, (s) => a.draw(s, f), a.box, UNIT_SCALE);
       for (const [name, o] of Object.entries(SOLDIER_ART)) add('soldier:' + name + sfx, (s) => humanoid(o)(s, f), PERSON_BOX, UNIT_SCALE);
-      add('hero:sunKnight' + sfx, (s) => humanoid({ ...SUN, s: 1.15 })(s, f), [-36, -80, 76, 90], UNIT_SCALE);
+      for (const [id, look] of Object.entries(HERO_LOOK)) add('hero:' + id + sfx, (s) => humanoid({ ...look, s: 1.15 })(s, f), [-36, -84, 76, 94], UNIT_SCALE);
     }
     for (const f of ['idle', 'w1']) add('beast:elephant' + (f === 'idle' ? '' : ':' + f), (s) => rider((q) => { elephant(q, 0, 0, 0.62, false, false); person(q, 4, -24, { ...SPEAR, s: 0.5, shield: null }); })(s, f), [-40, -72, 80, 80], UNIT_SCALE);
-    add('ui:heroFace', (s) => { el('circle', { cx: 0, cy: -2, r: 22, fill: 'url(#holy)' }, s); person(s, 0, 30, { ...SUN, s: 1.6, weapon: null, shield: null, aura: false, cape: null }); }, [-24, -26, 48, 48], view.u * 1.1, true);
+    for (const [id, look] of Object.entries(HERO_LOOK)) add('ui:heroFace:' + id, (s) => { el('circle', { cx: 0, cy: -2, r: 22, fill: 'url(#holy)' }, s); person(s, 0, 30, { ...look, s: 1.6, weapon: null, shield: null, aura: false, cape: null, quiver: false }); }, [-24, -26, 48, 48], view.u * 1.1, true);
+    for (const [id, look] of Object.entries(HERO_LOOK)) add('card:hero:' + id, (s) => person(s, 0, 0, { ...look, s: 1.5 }), [-50, -110, 100, 120], view.u * 1.6, true);
     for (const [name, fn] of Object.entries(TOWER_ART)) {
       const stages = BASE_TOWERS.includes(name) ? 3 : ROYAL_STAGES;
       for (let t = 0; t < stages; t++) {
-        add(`tower:${name}:${t}`, (s) => dressTower(s, fn, t), TOWER_BOX, TOWER_SCALE);
-        // archers loose their arrows: a second frame shown for a moment after each shot
-        if (name === 'archerTower') add(`tower:${name}:${t}:fire`, (s) => dressTower(s, fn, t, { loose: true }), TOWER_BOX, TOWER_SCALE);
+        add(`tower:${name}:${t}`, (s) => dressTower(s, fn, t, { noCrew: !!CREW[name] }), TOWER_BOX, TOWER_SCALE);
       }
     }
+    // tower crews: an idle pose and a firing pose (archers loose, mages and alchemists swing)
+    for (const [key, look] of Object.entries(CREW_LOOK)) {
+      add('crew:' + key, (s) => person(s, 0, 0, look), PERSON_BOX, TOWER_SCALE);
+      add('crew:' + key + ':fire', (s) => person(s, 0, 0, { ...look, ...(look.weapon === 'bow' ? { loose: true } : { swing: 1 }) }), PERSON_BOX, TOWER_SCALE);
+    }
+    add('crew:barrel', (s) => cannonBarrel(s, 0, 0, 1), [-10, -7, 42, 14], TOWER_SCALE);
     add('plot:specialLocked', (s) => { specialPlot(s, 0, 0); el('ellipse', { cx: 0, cy: -1, rx: 24, ry: 10, fill: '#2a1a10', opacity: 0.45 }, s); icon.lock(s, 0, -2, 1.1); }, [-34, -30, 68, 46], 1, true);
     add('plot:open', (s) => plot(s, 0, 0), [-32, -28, 64, 44], 1);
     add('plot:rubble', rubble, [-32, -30, 64, 46], 1);
@@ -153,7 +170,7 @@ export class Assets {
       ['sunStrike', 'purple', (q, a, b) => { for (let i = 0; i < 8; i++) { const t = (i / 8) * Math.PI * 2; el('path', { d: `M${a + Math.cos(t) * 5} ${b + Math.sin(t) * 5} L${a + Math.cos(t) * 10} ${b + Math.sin(t) * 10}`, stroke: '#ffe28a', 'stroke-width': 2 }, q); } el('circle', { cx: a, cy: b, r: 4, fill: '#ffe28a' }, q); }],
     ]) add('btn:' + name, (s) => roundBtn(s, 0, 0, 22, color, drawIcon), [-26, -26, 52, 54], ui, true);
     for (const [name, fn] of Object.entries(TOWER_ART)) add('icon:' + name, (s) => fn(s, 0, 0, 1), TOWER_BOX, ui * 0.36, true);
-    for (const name of ['falconer', 'fountain', 'alchemist', 'elephantStable']) add('card:' + name, (s) => TOWER_ART[name](s, 0, 0, 1), TOWER_BOX, ui * 0.5, true);
+    for (const name of ['falconer', 'fountain', 'alchemist', 'elephantStable']) add('card:' + name, (s) => TOWER_ART[name](s, 0, 0, 1), TOWER_BOX, ui, true);
     add('chest', (s) => royalChest(s, 0, 0, 1), [-44, -82, 88, 90], ui, true);
     // menu icons and power-ups
     for (const [name, color, drawIcon] of [
@@ -172,6 +189,7 @@ export class Assets {
       ['gold', 'gold', (q, a, b) => coinIcon(q, a, b, 8)],
       ['lives', 'red', (q, a, b) => outlined(q, 'path', { d: `M${a} ${b + 8} C${a - 12} ${b - 1} ${a - 9} ${b - 10} ${a} ${b - 4} C${a + 9} ${b - 10} ${a + 12} ${b - 1} ${a} ${b + 8} Z`, fill: '#ff8a7a' }, 1)],
       ['play', 'green', (q, a, b) => icon.play(q, a + 1, b, 1.1)],
+      ['heroes', 'gold', (q, a, b) => icon.helmet(q, a, b + 2, 1.2)],
       ['ad', 'purple', (q, a, b) => { outlined(q, 'rect', { x: a - 9, y: b - 6, width: 18, height: 12, rx: 2, fill: '#fff4dc' }, 1); el('path', { d: `M${a - 2} ${b - 3} L${a + 3} ${b} L${a - 2} ${b + 3} Z`, fill: '#6a3fc0' }, q); }],
     ]) add('btn:' + name, (s) => roundBtn(s, 0, 0, 22, color, drawIcon), [-26, -26, 52, 54], ui, true);
     add('ui:logo', (s) => logo(s, 0, 0, 1), [-112, -78, 224, 128], ui, true);
@@ -198,6 +216,16 @@ export class Assets {
     this.menuLive = { sc, x0: box[0], y0: box[1], sky, land, sun: MENU_SUN, heroes: MENU_HEROES.map((hr, i) => ({ ...hr, sprite: heroes[i] })) };
   }
 
+  // The two shop scenes, cover-fit like the menu.
+  async buildShops(view) {
+    const key = `${view.cssW}x${view.cssH}@${view.dpr}`;
+    if (this.shopKey === key) return;
+    this.shopKey = key;
+    const sc = Math.max(view.cssW / WORLD_W, view.cssH / WORLD_H), w = view.cssW / sc, h = view.cssH / sc, box = [(WORLD_W - w) / 2, (WORLD_H - h) / 2, w, h];
+    const [bazaar, treasury] = await Promise.all([rasterize((s) => bazaarScene(s), box, sc * view.dpr, { ui: true }), rasterize((s) => treasuryScene(s), box, sc * view.dpr, { ui: true })]);
+    this.shopBg = { bazaar, treasury };
+  }
+
   // The world map is wide (six regions), so it is painted in chunks the height of the screen.
   async buildMap(view) {
     const key = `${view.cssW}x${view.cssH}@${view.dpr}`;
@@ -217,6 +245,13 @@ export class Assets {
 
 // ---------------------------------------------------------------- background
 const SCENERY = { banyan, palm, rock, marigold, pond, peacock, tent, campfire, cart, stepwell, shrine, haystack, pots };
+
+// The scenery pieces that survive the clear-of-road rule and get live effects on top (fire, ripples).
+export function liveScenery(level, paths) {
+  const nearRoad = (x, y, r) => paths.some((p) => p.nearest(x, y).dist < r);
+  const nearPlot = (x, y, r) => level.plots.some((p) => Math.hypot(p.x - x, p.y - y) < r);
+  return level.scenery.filter(([k, x, y]) => (k === 'campfire' || k === 'pond') && !nearRoad(x, y, 30) && !nearPlot(x, y, 38)).map(([kind, x, y, s]) => ({ kind, x, y, s: s ?? 1 }));
+}
 
 export function paintBackground(svg, level, paths, [bx, by, bw, bh]) {
   const nearRoad = (x, y, r) => paths.some((p) => p.nearest(x, y).dist < r);

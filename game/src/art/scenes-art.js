@@ -152,3 +152,94 @@ function mapRoad() {
   for (let i = 1; i < N.length; i++) { const [x0, y0] = N[i - 1], [x1, y1] = N[i]; road += ` Q${(x0 + x1) / 2} ${(y0 + y1) / 2 + (i % 2 ? -18 : 18)} ${x1} ${y1}`; }
   return road + ` Q${N.at(-1)[0] + 30} 240 1790 236`;
 }
+
+// The Royal Bazaar: a market street at dusk, striped awnings, lanterns, marigold garlands,
+// sacks of spices, pots and rugs. Backdrop for the game shop.
+function bazaarScene(svg) {
+  seed = 23;
+  const d = svg.querySelector('defs');
+  const sky = el('linearGradient', { id: 'bzSky', x1: 0, y1: 0, x2: 0, y2: 1 }, d);
+  [[0, '#3b2a5a'], [0.45, '#c8603a'], [1, '#f2b25a']].forEach(([o, c]) => el('stop', { offset: o, 'stop-color': c }, sky));
+  el('rect', { x: 0, y: 0, width: 844, height: 390, fill: 'url(#bzSky)' }, svg);
+  // distant domes and minarets
+  for (const [x, w, h] of [[60, 70, 120], [210, 90, 150], [420, 120, 170], [640, 90, 140], [790, 70, 115]]) {
+    el('rect', { x: x - w / 2, y: 300 - h, width: w, height: h, fill: '#7a3a3a', opacity: 0.55 }, svg);
+    el('path', { d: `M${x - w / 2 + 6} ${300 - h} Q${x} ${300 - h - w * 0.8} ${x + w / 2 - 6} ${300 - h} Z`, fill: '#7a3a3a', opacity: 0.55 }, svg);
+  }
+  // sandstone facades with arched jharokha windows
+  for (let i = 0; i < 6; i++) {
+    const x = -20 + i * 150, h = 170 + (i % 3) * 22;
+    outlined(svg, 'rect', { x, y: 320 - h, width: 150, height: h, fill: i % 2 ? '#d89a5a' : '#e8b47a' }, 1.4);
+    for (let k = 0; k < 2; k++) {
+      const wx = x + 30 + k * 60, wy = 320 - h + 34;
+      outlined(svg, 'path', { d: `M${wx - 16} ${wy + 40} V${wy + 10} Q${wx} ${wy - 12} ${wx + 16} ${wy + 10} V${wy + 40} Z`, fill: '#5a2a1a' }, 1.2);
+      const glow = el('path', { d: `M${wx - 12} ${wy + 38} V${wy + 12} Q${wx} ${wy - 6} ${wx + 12} ${wy + 12} V${wy + 38} Z`, fill: '#ffcf6a', opacity: 0.85 }, svg);
+      void glow;
+      outlined(svg, 'rect', { x: wx - 20, y: wy + 40, width: 40, height: 5, fill: '#c98c4c' }, 0.8);
+    }
+    for (let k = 0; k < 9; k++) el('path', { d: `M${x + 6 + k * 16} ${320 - h} l8 -8 l8 8`, fill: '#c98c4c', stroke: OUT, 'stroke-width': 0.8 }, svg);
+  }
+  // marigold garlands strung across the street
+  for (let row = 0; row < 2; row++) {
+    const y0 = 70 + row * 34;
+    el('path', { d: `M0 ${y0} Q211 ${y0 + 40} 422 ${y0} Q633 ${y0 + 40} 844 ${y0}`, stroke: '#5a3a22', 'stroke-width': 1.2, fill: 'none' }, svg);
+    for (let x = 0; x <= 844; x += 14) { const t = (x % 422) / 422, y = y0 + 40 * 4 * t * (1 - t) * 0.5 + 2; el('circle', { cx: x, cy: y, r: 4, fill: x % 28 ? '#f0912a' : '#ffd23a', stroke: OUT, 'stroke-width': 0.6 }, svg); }
+  }
+  // hanging lanterns
+  for (const [x, y] of [[110, 150], [300, 135], [540, 140], [740, 150]]) {
+    el('path', { d: `M${x} ${y - 30} V${y - 10}`, stroke: OUT, 'stroke-width': 1.2 }, svg);
+    el('circle', { cx: x, cy: y, r: 26, fill: 'url(#glow)', opacity: 0.7 }, svg);
+    outlined(svg, 'path', { d: `M${x - 9} ${y - 10} H${x + 9} L${x + 12} ${y + 8} Q${x} ${y + 16} ${x - 12} ${y + 8} Z`, fill: '#e0a21c' }, 1.1);
+    el('path', { d: `M${x - 6} ${y - 6} V${y + 8} M${x} ${y - 7} V${y + 10} M${x + 6} ${y - 6} V${y + 8}`, stroke: '#7a4a12', 'stroke-width': 0.8 }, svg);
+  }
+  // market stalls with striped awnings
+  const stall = (x, w, c1, c2) => {
+    outlined(svg, 'rect', { x: x - w / 2, y: 250, width: w, height: 80, fill: '#8a5a32' }, 1.2);
+    const n = 6;
+    for (let i = 0; i < n; i++) outlined(svg, 'path', { d: `M${x - w / 2 - 8 + i * (w + 16) / n} 236 h${(w + 16) / n} l-4 22 h${-(w + 16) / n + 8} Z`, fill: i % 2 ? c1 : c2 }, 0.8);
+    for (let i = 0; i <= n; i++) el('path', { d: `M${x - w / 2 - 8 + i * (w + 16) / n - 4} 258 q${(w + 16) / n / 2} 8 ${(w + 16) / n} 0`, stroke: OUT, 'stroke-width': 0.8, fill: i % 2 ? c2 : c1 }, svg);
+    outlined(svg, 'rect', { x: x - w / 2 - 6, y: 300, width: w + 12, height: 10, fill: 'url(#wood)' }, 1);
+  };
+  stall(140, 170, '#c8361d', '#fff4dc'); stall(420, 180, '#2f7a3d', '#ffd23a'); stall(700, 170, '#3f4fa8', '#fff4dc');
+  // spice mounds, pots and rolled rugs on the counters
+  for (const [x, c] of [[90, '#e0a21c'], [118, '#c8361d'], [146, '#7a3a1a'], [174, '#f0d060'], [380, '#2f8f3c'], [410, '#e2541d'], [440, '#ffd23a']]) { outlined(svg, 'path', { d: `M${x - 12} 300 Q${x} 280 ${x + 12} 300 Z`, fill: c }, 0.9); }
+  pots(svg, 470, 300); pots(svg, 650, 300); pots(svg, 740, 300);
+  for (const [x, c] of [[680, '#c8361d'], [705, '#3f4fa8'], [730, '#2f7a3d']]) outlined(svg, 'rect', { x: x - 9, y: 262, width: 18, height: 38, rx: 6, fill: c }, 1);
+  // the cobbled street
+  el('rect', { x: 0, y: 320, width: 844, height: 70, fill: '#b88a5a' }, svg);
+  for (let i = 0; i < 90; i++) el('ellipse', { cx: rnd() * 844, cy: 326 + rnd() * 62, rx: 6 + rnd() * 8, ry: 3, fill: '#a07448', opacity: 0.8 }, svg);
+  cart(svg, 300, 372); peacock(svg, 800, 380, 0.9);
+  person(svg, 560, 380, { tunic: '#f4efe2', trim: '#c8361d', headColor: '#f0912a', s: 1.8, moustache: true });
+  el('rect', { x: 0, y: 0, width: 844, height: 390, fill: 'url(#vignette)' }, svg);
+}
+
+// The Royal Treasury: a torchlit vault with gold, jewels and an open royal chest.
+// Backdrop for the real-money shop.
+function treasuryScene(svg) {
+  seed = 31;
+  const d = svg.querySelector('defs');
+  const wall = el('linearGradient', { id: 'tvWall', x1: 0, y1: 0, x2: 0, y2: 1 }, d);
+  [[0, '#2a1a2a'], [0.6, '#4a2a2a'], [1, '#6a3a22']].forEach(([o, c]) => el('stop', { offset: o, 'stop-color': c }, wall));
+  el('rect', { x: 0, y: 0, width: 844, height: 390, fill: 'url(#tvWall)' }, svg);
+  // stone blocks
+  for (let y = 0; y < 300; y += 26) for (let x = (y / 26) % 2 ? -30 : 0; x < 844; x += 60) el('rect', { x, y, width: 58, height: 24, fill: '#3a2430', opacity: 0.5, stroke: '#1e1018', 'stroke-width': 1 }, svg);
+  // arches and pillars
+  for (const x of [130, 422, 714]) {
+    outlined(svg, 'path', { d: `M${x - 110} 300 V140 Q${x} 30 ${x + 110} 140 V300 Z`, fill: '#1e1018' }, 2);
+    const gl = el('path', { d: `M${x - 96} 300 V146 Q${x} 50 ${x + 96} 146 V300 Z`, fill: 'url(#holy)', opacity: 0.35 }, svg); void gl;
+  }
+  for (const x of [276, 568]) { outlined(svg, 'rect', { x: x - 18, y: 80, width: 36, height: 230, fill: 'url(#sandV)' }, 1.6); outlined(svg, 'rect', { x: x - 26, y: 70, width: 52, height: 14, fill: 'url(#gold)' }, 1.2); outlined(svg, 'rect', { x: x - 26, y: 300, width: 52, height: 12, fill: 'url(#gold)' }, 1.2); torch(svg, x, 150); }
+  // light rays from above
+  for (let i = 0; i < 6; i++) el('path', { d: `M${360 + i * 22} 0 L${300 + i * 40} 390 L${330 + i * 40} 390 Z`, fill: '#ffe8a0', opacity: 0.05 }, svg);
+  // the floor and heaps of gold coins
+  el('rect', { x: 0, y: 300, width: 844, height: 90, fill: '#3a2414' }, svg);
+  const heap = (cx, cy, w, h) => {
+    el('path', { d: `M${cx - w} ${cy} Q${cx} ${cy - h * 2} ${cx + w} ${cy} Z`, fill: '#c88a12', stroke: OUT, 'stroke-width': 1.4 }, svg);
+    for (let i = 0; i < w * 0.9; i++) { const a = rnd(), x = cx - w + a * w * 2, top = cy - h * 2 * (1 - Math.pow(Math.abs(a - 0.5) * 2, 2)) * 0.5; coinIcon(svg, x, top + rnd() * (cy - top), 4 + rnd() * 3); }
+  };
+  heap(140, 340, 110, 40); heap(700, 345, 120, 44); heap(420, 375, 80, 22);
+  royalChest(svg, 422, 330, 1.25);
+  for (let i = 0; i < 14; i++) rubyIcon(svg, 40 + rnd() * 760, 320 + rnd() * 60, 5 + rnd() * 4);
+  for (let i = 0; i < 30; i++) el('circle', { cx: rnd() * 844, cy: rnd() * 300, r: 1 + rnd() * 1.5, fill: '#fff4c0', opacity: 0.4 + rnd() * 0.4 }, svg);
+  el('rect', { x: 0, y: 0, width: 844, height: 390, fill: 'url(#vignette)' }, svg);
+}

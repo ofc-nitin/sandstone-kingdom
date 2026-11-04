@@ -1,7 +1,7 @@
 // Draws the battlefield: background, build spots, towers, soldiers, enemies, shots, effects and
 // the little things that make it feel alive (cloud shadows, birds, butterflies, petals).
 import { blit } from './raster.js';
-import { UNIT_SCALE, stageOf } from './assets.js';
+import { UNIT_SCALE, stageOf, CREW, STAGE_SCALE, liveScenery } from './assets.js';
 
 const WALK = ['w1', 'idle', 'w2', 'idle'];
 const frameKey = (base, f, assets) => (f === 'idle' || !assets.get(base + ':' + f) ? base : base + ':' + f);
@@ -14,15 +14,23 @@ export class WorldRenderer {
     this.flash = new Map(); // enemy id -> seconds of white hit flash left
     this.towerFx = new Map(); // tower id -> { born, up, fire }
     this.ambient = null;
+    this.arc = new WeakMap(); // arrow -> where it left the bow, for its curved flight
+    this.steps = new Map(); // heavy walker id -> seconds to the next dust puff
+    this.hudAt = null; // world points of the gold and lives counters, set by the HUD
   }
 
   // Turn game events into short-lived visual effects.
   onEvent(e) {
     const fx = (o) => this.effects.push({ t: 0, ...o });
-    const tfx = (t) => { let o = this.towerFx.get(t.id); if (!o) this.towerFx.set(t.id, (o = { born: 9, up: 9, fire: 9 })); return o; };
+    const gate = this.gate || { x: 0, y: 0 };
+    const tfx = (t) => { let o = this.towerFx.get(t.id); if (!o) this.towerFx.set(t.id, (o = { born: 9, up: 9, fire: 9, angle: 0, target: 0 })); return o; };
     if (e.type === 'hit') { fx({ kind: e.kind === 'magic' ? 'magicHit' : 'spark', x: e.x, y: e.y, life: 0.25 }); if (e.id) this.flash.set(e.id, 0.1); }
     if (e.type === 'kill') {
+      if (e.id) this.steps.delete(e.id);
       fx({ kind: 'coin', x: e.x, y: e.y - 30, text: `+${e.gold}`, life: 0.9 });
+      // a few coins hop up and fly to the gold counter
+      const n = Math.min(5, 1 + Math.floor(e.gold / 8));
+      for (let i = 0; i < n; i++) fx({ kind: 'coinFly', x: e.x, y: e.y - 14, dx: (Math.random() - 0.5) * 30, delay: i * 0.06, life: 0.95 + i * 0.06 });
       fx({ kind: 'fall', x: e.x, y: e.y, art: e.art, flip: e.flip, boss: e.boss, life: e.boss ? 1.4 : 0.75 });
     }
     if (e.type === 'banish') fx({ kind: 'poof', x: e.x, y: e.y - 8, life: 0.45 });
@@ -38,8 +46,12 @@ export class WorldRenderer {
       fx({ kind: 'ring', x: e.tower.x, y: e.tower.y, r: 40, life: 0.6 });
       fx({ kind: 'levelUp', x: e.tower.x, y: e.tower.y - 80, text: e.tower.def.royal ? `LEVEL ${e.tower.tier + 1}` : 'UPGRADED!', life: 1.2 });
     }
-    if (e.type === 'fire') { tfx(e.tower).fire = 0; if (e.tower.def.kind === 'shell') fx({ kind: 'muzzle', x: e.tower.x + 14, y: e.tower.y - 34, life: 0.35 }); if (e.tower.def.kind === 'magic') fx({ kind: 'cast', x: e.tower.x, y: e.tower.y - 74, life: 0.3 }); }
+    if (e.type === 'fire') { const o = tfx(e.tower); o.fire = 0; if (e.tower.aim !== undefined) o.target = e.tower.aim; if (e.tower.def.kind === 'shell') { const ta = e.tower.aim || 0; fx({ kind: 'muzzle', x: e.tower.x - 5 + Math.cos(ta) * 29, y: e.tower.y - 22 + Math.sin(ta) * 29, life: 0.35 }); } if (e.tower.def.kind === 'magic') fx({ kind: 'cast', x: e.tower.x, y: e.tower.y - 74, life: 0.3 }); }
     if (e.type === 'bossArrives') this.shake = 0.5;
+    if (e.type === 'leak') { this.leak = 0; this.shake = Math.max(this.shake, 0.18); fx({ kind: 'heartFly', x: gate.x, y: gate.y - 40, life: 0.9 }); fx({ kind: 'debris', x: gate.x, y: gate.y - 20, life: 0.8, seed: Math.random() * 9 }); }
+    if (e.type === 'sold') { fx({ kind: 'crumble', x: e.tower.x, y: e.tower.y, life: 0.9, seed: Math.random() * 9 }); fx({ kind: 'coin', x: e.tower.x, y: e.tower.y - 50, text: `+${e.refund}`, life: 1.1 }); this.towerFx.delete(e.tower.id); }
+    if (e.type === 'built') fx({ kind: 'cost', x: e.tower.x, y: e.tower.y - 56, text: `-${e.tower.spent || e.tower.def.tiers[0].cost}`, life: 1 });
+    if (e.type === 'arrowHit' && Math.random() < 0.3) fx({ kind: 'stuck', x: e.x + (Math.random() - 0.5) * 18, y: e.y + 12 + Math.random() * 6, a: -0.6 - Math.random() * 0.8, life: 3 });
     if (e.type === 'volley') fx({ kind: 'volley', x: e.x, y: e.y, r: e.r, life: 0.45, seed: Math.random() * 100 });
     if (e.type === 'spell' && e.spell === 'holyFire') { fx({ kind: 'holy', x: e.x, y: e.y, r: e.r, life: 0.9 }); this.shake = Math.max(this.shake, 0.15); }
     if (e.type === 'spell' && e.spell === 'reinforcements') fx({ kind: 'dust', x: e.x, y: e.y, life: 0.7 });
@@ -60,8 +72,14 @@ export class WorldRenderer {
     for (const f of this.effects) f.t += dt;
     this.effects = this.effects.filter((f) => f.t < f.life);
     for (const [id, v] of this.flash) { if (v - dt <= 0) this.flash.delete(id); else this.flash.set(id, v - dt); }
-    for (const o of this.towerFx.values()) { o.born += dt; o.up += dt; o.fire += dt; }
+    for (const o of this.towerFx.values()) {
+      o.born += dt; o.up += dt; o.fire += dt;
+      // crews and barrels swing round toward the last target, quickly but not instantly
+      let d = o.target - o.angle; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2;
+      o.angle += d * Math.min(1, dt * 12);
+    }
     this.shake = Math.max(0, this.shake - dt);
+    if (this.leak !== undefined) this.leak += dt;
     if (this.ambient) this.updateAmbient(dt);
   }
 
@@ -73,8 +91,9 @@ export class WorldRenderer {
       birds: [], birdT: r(4, 10),
       butterflies: Array.from({ length: 5 }, () => ({ x: r(40, 800), y: r(60, 360), a: r(0, 6), c: ['#ffd25a', '#ff9fc0', '#9fdcff', '#ffffff'][Math.floor(r(0, 4))] })),
       petals: Array.from({ length: 14 }, () => ({ x: r(-40, 880), y: r(-40, 400), s: r(0.6, 1.2), a: r(0, 6) })),
+      live: liveScenery(game.level, game.paths),
+      embers: [], ripples: [],
     };
-    void game;
   }
   updateAmbient(dt) {
     const A = this.ambient;
@@ -88,6 +107,13 @@ export class WorldRenderer {
     for (const b of A.birds) { b.x += b.v * dt; b.f += dt * 9; }
     A.birds = A.birds.filter((b) => b.x > -120 && b.x < 980);
     for (const b of A.butterflies) { b.a += dt; b.x += Math.cos(b.a * 0.7) * 14 * dt; b.y += Math.sin(b.a * 1.3) * 9 * dt; }
+    for (const it of A.live) {
+      if (it.kind === 'campfire' && Math.random() < dt * 5) A.embers.push({ x: it.x + (Math.random() - 0.5) * 6 * it.s, y: it.y - 10 * it.s, vx: (Math.random() - 0.5) * 10, vy: -18 - Math.random() * 16, t: 0, life: 0.8 + Math.random() * 0.8 });
+      if (it.kind === 'pond' && Math.random() < dt * 0.9) A.ripples.push({ x: it.x + (Math.random() - 0.5) * 50 * it.s, y: it.y + (Math.random() - 0.5) * 14 * it.s, t: 0, life: 1.8, s: it.s });
+    }
+    for (const m of A.embers) { m.t += dt; m.x += (m.vx + Math.sin(m.t * 6) * 6) * dt; m.y += m.vy * dt; }
+    for (const q of A.ripples) q.t += dt;
+    A.embers = A.embers.filter((m) => m.t < m.life); A.ripples = A.ripples.filter((q) => q.t < q.life);
     for (const p of A.petals) { p.a += dt; p.x += (10 + Math.sin(p.a) * 8) * dt; p.y += 14 * dt * p.s; if (p.y > 410 || p.x > 900) { p.y = -20; p.x = Math.random() * 860 - 40; } }
   }
   drawAmbientGround(ctx) {
@@ -96,6 +122,20 @@ export class WorldRenderer {
     // soft cloud shadows drifting over the battlefield
     ctx.fillStyle = 'rgba(20,40,10,0.08)';
     for (const c of A.clouds) { ctx.beginPath(); ctx.ellipse(c.x, c.y, c.rx, c.ry, 0, 0, Math.PI * 2); ctx.fill(); }
+    // ponds: rings spreading where a fish or a drop broke the surface, and a slow glint
+    ctx.lineWidth = 0.8;
+    for (const q of A.ripples) { const k = q.t / q.life; ctx.strokeStyle = `rgba(235,250,255,${0.7 * (1 - k)})`; ctx.beginPath(); ctx.ellipse(q.x, q.y, (2 + 9 * k) * q.s, (0.8 + 3.4 * k) * q.s, 0, 0, Math.PI * 2); ctx.stroke(); }
+    for (const it of A.live) if (it.kind === 'pond') {
+      const g = (Math.sin(this.clock * 0.9 + it.x) + 1) / 2;
+      ctx.fillStyle = `rgba(255,255,255,${0.12 + 0.2 * g})`; ctx.beginPath(); ctx.ellipse(it.x - 10 * it.s + g * 12 * it.s, it.y - 3 * it.s, 7 * it.s, 1.4 * it.s, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    // campfires: warm light on the grass that breathes with the flame
+    for (const it of A.live) if (it.kind === 'campfire') {
+      const fl = 0.8 + 0.2 * Math.sin(this.clock * 13 + it.x) * Math.sin(this.clock * 7.3);
+      const r = 34 * it.s * fl, gr = ctx.createRadialGradient(it.x, it.y - 4, 0, it.x, it.y - 4, r);
+      gr.addColorStop(0, 'rgba(255,190,90,0.35)'); gr.addColorStop(1, 'rgba(255,150,60,0)');
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(it.x, it.y - 2, r, r * 0.6, 0, 0, Math.PI * 2); ctx.fill();
+    }
   }
   drawAmbientAir(ctx) {
     const A = this.ambient;
@@ -105,6 +145,13 @@ export class WorldRenderer {
       ctx.fillStyle = b.c;
       ctx.beginPath(); ctx.ellipse(b.x - flap / 2, b.y, flap, 2.2, -0.4, 0, Math.PI * 2); ctx.ellipse(b.x + flap / 2, b.y, flap, 2.2, 0.4, 0, Math.PI * 2); ctx.fill();
     }
+    for (const it of A.live) if (it.kind === 'campfire') {
+      // a living flame over the painted one: it leans, stretches and flickers
+      const t = this.clock * 9 + it.x, h = (14 + Math.sin(t) * 2.5 + Math.sin(t * 2.3) * 1.5) * it.s, lean = Math.sin(t * 0.6) * 2 * it.s;
+      ctx.fillStyle = 'rgba(255,120,30,0.9)'; ctx.beginPath(); ctx.moveTo(it.x - 5 * it.s, it.y - 1 * it.s); ctx.quadraticCurveTo(it.x - 6 * it.s, it.y - h * 0.6, it.x + lean, it.y - h - 2 * it.s); ctx.quadraticCurveTo(it.x + 6 * it.s, it.y - h * 0.6, it.x + 5 * it.s, it.y - 1 * it.s); ctx.fill();
+      ctx.fillStyle = 'rgba(255,230,140,0.95)'; ctx.beginPath(); ctx.moveTo(it.x - 2.4 * it.s, it.y - 1 * it.s); ctx.quadraticCurveTo(it.x - 2.5 * it.s, it.y - h * 0.45, it.x + lean * 0.6, it.y - h * 0.7); ctx.quadraticCurveTo(it.x + 2.5 * it.s, it.y - h * 0.45, it.x + 2.4 * it.s, it.y - 1 * it.s); ctx.fill();
+    }
+    for (const m of A.embers) { ctx.fillStyle = `rgba(255,${180 - m.t * 80},60,${1 - m.t / m.life})`; ctx.fillRect(m.x - 0.8, m.y - 0.8, 1.6, 1.6); }
     ctx.fillStyle = 'rgba(255,190,210,0.85)';
     for (const p of A.petals) { ctx.beginPath(); ctx.ellipse(p.x, p.y, 2.4 * p.s, 1.2 * p.s, p.a, 0, Math.PI * 2); ctx.fill(); }
     ctx.strokeStyle = '#3a2a2a'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
@@ -123,7 +170,17 @@ export class WorldRenderer {
     if (this.shake > 0) { sx = (Math.random() - 0.5) * 6 * this.shake; sy = (Math.random() - 0.5) * 6 * this.shake; }
     ctx.setTransform(dpr * s, 0, 0, dpr * s, dpr * (ox + sx), dpr * (oy + sy));
     if (!this.ambient) this.initAmbient(game);
+    this.gate = game.level.gate;
+    // where the HUD counters sit, in world units, so coins and hearts can fly to them
+    const toWorld = (q) => (q ? { x: (q.x - ox) / s, y: (q.y - oy) / s } : null);
+    this.hudAt = { gold: toWorld(ui.goldAt), lives: toWorld(ui.livesAt) };
     this.drawAmbientGround(ctx);
+    for (const f of this.effects) if (f.kind === 'stuck') {
+      // a spent arrow in the dirt, fading out
+      ctx.save(); ctx.globalAlpha = Math.min(1, (1 - f.t / f.life) * 3); ctx.translate(f.x, f.y); ctx.rotate(f.a);
+      ctx.strokeStyle = '#7a4a22'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-8, 0); ctx.stroke();
+      ctx.strokeStyle = '#f2ead8'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(-11, 0); ctx.stroke(); ctx.restore();
+    }
     for (const f of this.effects) if (f.kind === 'scorch') { ctx.fillStyle = `rgba(40,24,12,${0.25 * (1 - f.t / f.life)})`; ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r * 0.7, f.r * 0.35, 0, 0, Math.PI * 2); ctx.fill(); }
 
     // portals: swirling rings where enemies vanish and reappear
@@ -182,10 +239,16 @@ export class WorldRenderer {
     }
     for (const b of game.beasts) {
       const f = Math.floor(this.clock * 6) % 2 ? 'w1' : 'idle';
+      if (Math.random() < 0.12) this.effects.push({ t: 0, kind: 'step', x: b.x + (Math.random() - 0.5) * 14, y: b.y + 2, r: 1.5, life: 0.6 });
       actors.push({ y: b.y, draw: () => blit(ctx, assets.get(frameKey('beast:elephant', f, assets)), b.x, b.y, UNIT_SCALE, Math.cos(b.angle) > 0) });
     }
     for (const e of game.enemies) {
       if (e.portalT > 0) continue;
+      if ((e.def.boss || e.def.armor >= 0.5) && !e.def.flying && e.stun <= 0 && !(e.blocker && e.blocker.target === e)) {
+        // heavy feet kick up dust
+        const next = this.steps.get(e.id) ?? this.clock;
+        if (this.clock >= next) { this.steps.set(e.id, this.clock + (e.def.boss ? 0.42 : 0.55)); this.effects.push({ t: 0, kind: 'step', x: e.x + (Math.random() - 0.5) * 6, y: e.y + 1, r: e.def.boss ? 1.6 : 1, life: 0.6 }); if (e.def.boss) this.shake = Math.max(this.shake, 0.03); }
+      }
       const base = 'enemy:' + e.def.art;
       const fighting = (e.blocker && e.blocker.target === e) || (e.def.ranged && e.atkCd > 0 && e.atkCd < e.def.ranged.rate);
       const f = e.stun > 0 ? 'idle' : fighting ? (e.atkCd > (e.def.atk || 1) * 0.5 ? 'a2' : 'a1') : WALK[Math.floor(e.walk * (5 + e.def.speed / 8)) % 4];
@@ -214,13 +277,25 @@ export class WorldRenderer {
     }
     for (const f of this.effects) if (f.kind === 'fall') actors.push({ y: f.y - 0.1, draw: () => this.drawFall(ctx, f, assets) });
     const gate = assets.get('gate');
-    if (gate) actors.push({ y: game.level.gate.y, draw: () => blit(ctx, gate, game.level.gate.x, game.level.gate.y, game.level.gate.s) });
+    if (gate) actors.push({ y: game.level.gate.y, draw: () => {
+      const G = game.level.gate, hit = this.leak !== undefined && this.leak < 0.35;
+      const jolt = hit ? Math.sin(this.leak * 60) * 2 * (1 - this.leak / 0.35) : 0;
+      blit(ctx, gate, G.x + jolt, G.y, G.s);
+      if (hit) { ctx.save(); ctx.globalAlpha = 0.55 * (1 - this.leak / 0.35); ctx.filter = 'brightness(0.6) sepia(1) saturate(6) hue-rotate(-35deg)'; blit(ctx, gate, G.x + jolt, G.y, G.s); ctx.restore(); }
+      this.fortDamage(ctx, G, game.lives / game.maxLives);
+    } });
     actors.sort((a, b) => a.y - b.y).forEach((a) => a.draw());
 
     // projectiles
     for (const p of game.projectiles) {
       if (p.kind === 'arrow') {
-        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle || 0);
+        // arrows fly in a shallow arc over the straight homing line, with a shadow on the ground
+        let st = this.arc.get(p); if (!st) this.arc.set(p, (st = { x: p.x, y: p.y }));
+        const done = Math.hypot(p.x - st.x, p.y - st.y), left = p.target ? Math.hypot(p.target.x - p.x, p.target.y - 14 - p.y) : 0, total = done + left || 1;
+        const k = done / total, amp = Math.min(26, total * 0.2), lift = Math.sin(k * Math.PI) * amp;
+        const a0 = p.angle || 0, slope = (amp * Math.PI / total) * Math.cos(k * Math.PI), ang = Math.atan2(Math.sin(a0) - slope, Math.cos(a0));
+        ctx.fillStyle = 'rgba(30,20,8,0.18)'; ctx.beginPath(); ctx.ellipse(p.x, p.y + 14, 4, 1.2, a0, 0, Math.PI * 2); ctx.fill();
+        ctx.save(); ctx.translate(p.x, p.y - lift); ctx.rotate(ang);
         ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-16, 0); ctx.lineTo(-8, 0); ctx.stroke();
         ctx.strokeStyle = '#7a4a22'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(4, 0); ctx.stroke();
         ctx.fillStyle = '#e8ecf2'; ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(3, -2.4); ctx.lineTo(3, 2.4); ctx.fill();
@@ -229,6 +304,8 @@ export class WorldRenderer {
         const fs = assets.get('proj:falcon');
         if (fs) blit(ctx, fs, p.x, p.y, 1, Math.cos(p.angle || 0) < 0);
       } else if (p.kind === 'magic') {
+        const ta = p.angle || 0;
+        for (let i = 1; i <= 4; i++) { ctx.fillStyle = `rgba(170,220,255,${0.5 - i * 0.1})`; ctx.beginPath(); ctx.arc(p.x - Math.cos(ta) * i * 5 + Math.sin(this.clock * 30 + i) * 1.5, p.y - Math.sin(ta) * i * 5, 3.4 - i * 0.6, 0, Math.PI * 2); ctx.fill(); }
         const gr = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 9);
         gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.4, 'rgba(127,208,255,0.9)'); gr.addColorStop(1, 'rgba(79,107,255,0)');
         ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p.x, p.y, 9, 0, Math.PI * 2); ctx.fill();
@@ -247,10 +324,9 @@ export class WorldRenderer {
   }
 
   drawTower(ctx, t, assets) {
-    const o = this.towerFx.get(t.id) || { born: 9, up: 9, fire: 9 };
+    const o = this.towerFx.get(t.id) || { born: 9, up: 9, fire: 9, angle: 0 };
     const stage = stageOf(t);
-    const fire = t.def.kind === 'arrow' && o.fire < 0.18 && assets.get(`tower:${t.def.art}:${stage}:fire`);
-    const sprite = assets.get(`tower:${t.def.art}:${stage}${fire ? ':fire' : ''}`);
+    const sprite = assets.get(`tower:${t.def.art}:${stage}`);
     if (!sprite) return;
     // built: rises out of the ground; upgraded: squash-and-stretch pop; cannon: recoil
     let sxk = 1, syk = 1;
@@ -260,6 +336,19 @@ export class WorldRenderer {
     ctx.save();
     ctx.translate(t.x, t.y); ctx.scale(sxk, syk);
     blit(ctx, sprite, 0, 0, 1);
+    // the crew turns to face the enemy; the cannon barrel points at it and kicks back when it fires
+    const crew = CREW[t.def.art];
+    if (crew) {
+      const sc = STAGE_SCALE[stage], a = o.angle, left = Math.cos(a) < 0, firing = o.fire < 0.22;
+      for (const c of crew) {
+        if (c.barrel) {
+          const kick = t.def.kind === 'shell' && o.fire < 0.15 ? (1 - o.fire / 0.15) * 4 : 0;
+          ctx.save(); ctx.translate(c.x * sc, c.y * sc); ctx.rotate(a); if (left) ctx.scale(1, -1);
+          blit(ctx, assets.get('crew:barrel'), -kick, 0, sc);
+          ctx.restore();
+        } else blit(ctx, assets.get('crew:' + c.key + (firing ? ':fire' : '')), c.x * sc, c.y * sc, sc, left);
+      }
+    }
     ctx.restore();
     if (t.jam > 0) {
       ctx.fillStyle = `rgba(70,60,80,${Math.min(0.7, t.jam)})`;
@@ -268,6 +357,21 @@ export class WorldRenderer {
     if (t.def.royal) {
       // level pips under a special tower: one gold pip per level
       for (let i = 0; i <= t.tier; i++) { ctx.fillStyle = '#ffd25a'; ctx.strokeStyle = '#3a2414'; ctx.lineWidth = 0.8; const px = t.x - (t.tier * 5) / 2 + i * 5; ctx.beginPath(); ctx.arc(px, t.y + 9, 1.8, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+    }
+  }
+
+  // the fort shows the battle: smoke rises once half the lives are gone, flames when few are left
+  fortDamage(ctx, G, health) {
+    if (health > 0.5) return;
+    const n = health > 0.25 ? 2 : 4, top = G.y - 62 * G.s;
+    for (let i = 0; i < n; i++) {
+      const bx = G.x + (i - (n - 1) / 2) * 16 * G.s;
+      for (let j = 0; j < 4; j++) {
+        const k = ((this.clock * 0.35 + j / 4 + i * 0.17) % 1);
+        ctx.fillStyle = `rgba(70,62,58,${0.45 * (1 - k)})`;
+        ctx.beginPath(); ctx.arc(bx + Math.sin(k * 5 + i) * 6 + k * 14, top - k * 70, 5 + k * 12, 0, Math.PI * 2); ctx.fill();
+      }
+      if (health <= 0.25) { const fl = 6 + Math.sin(this.clock * 14 + i * 2) * 2; ctx.fillStyle = 'rgba(255,130,30,0.85)'; ctx.beginPath(); ctx.ellipse(bx, top + 4, 3.5, fl, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = 'rgba(255,230,140,0.9)'; ctx.beginPath(); ctx.ellipse(bx, top + 6, 1.6, fl * 0.5, 0, 0, Math.PI * 2); ctx.fill(); }
     }
   }
 
@@ -376,6 +480,41 @@ export class WorldRenderer {
         ctx.globalAlpha = 1 - k * k; ctx.font = '900 11px Martel, serif'; ctx.textAlign = 'center';
         ctx.lineWidth = 3; ctx.strokeStyle = '#3a2414'; ctx.fillStyle = '#ffd66b';
         ctx.strokeText(f.text, f.x, f.y - k * 16); ctx.fillText(f.text, f.x, f.y - k * 16);
+      } else if (f.kind === 'coinFly' || f.kind === 'heartFly') {
+        // hop up, then swoop to the counter in the HUD
+        const to = this.hudAt && (f.kind === 'coinFly' ? this.hudAt.gold : this.hudAt.lives);
+        const tt = Math.max(0, f.t - (f.delay || 0)) / (f.life - (f.delay || 0));
+        if (!to || tt <= 0) { ctx.restore(); continue; }
+        let x, y;
+        if (tt < 0.3) { const q = tt / 0.3; x = f.x + (f.dx || 0) * q; y = f.y - Math.sin(q * Math.PI * 0.5) * 22; }
+        else { const q = (tt - 0.3) / 0.7, e2 = q * q, sx = f.x + (f.dx || 0), sy = f.y - 22; x = sx + (to.x - sx) * e2; y = sy + (to.y - sy) * e2 - Math.sin(q * Math.PI) * 30; }
+        const sc = f.kind === 'coinFly' ? 1 - tt * 0.3 : 1 + Math.sin(tt * Math.PI) * 0.4;
+        ctx.translate(x, y); ctx.scale(sc, sc);
+        if (f.kind === 'coinFly') {
+          const w = Math.abs(Math.cos(f.t * 12)) * 3.4 + 0.6; // spinning
+          ctx.fillStyle = '#e0a224'; ctx.strokeStyle = '#6a420c'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.ellipse(0, 0, w, 3.6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#ffe38a'; ctx.beginPath(); ctx.ellipse(-w * 0.2, -0.8, w * 0.45, 1.6, 0, 0, Math.PI * 2); ctx.fill();
+        } else {
+          ctx.fillStyle = '#e8452a'; ctx.strokeStyle = '#5a1a12'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(0, 5); ctx.bezierCurveTo(-8, -1, -5, -7, 0, -3); ctx.bezierCurveTo(5, -7, 8, -1, 0, 5); ctx.fill(); ctx.stroke();
+        }
+      } else if (f.kind === 'debris' || f.kind === 'crumble') {
+        // stone chips and dust: the fort gate takes a hit, or a sold tower is pulled down
+        ctx.globalAlpha = 1 - k;
+        for (let i = 0; i < 8; i++) {
+          const a = f.seed + i * 0.8, vx = Math.cos(a) * (f.kind === 'crumble' ? 22 : 30), vy = -30 - (i % 3) * 14;
+          const x = f.x + vx * f.t, y = f.y + vy * f.t + 90 * f.t * f.t;
+          ctx.fillStyle = i % 2 ? '#c9a77a' : '#8a6a48'; ctx.fillRect(x - 1.6, y - 1.6, 3.2, 3.2);
+        }
+        ctx.fillStyle = '#efe4c8'; ctx.globalAlpha = (1 - k) * 0.7;
+        for (let i = 0; i < 6; i++) { const a = i * 1.05; ctx.beginPath(); ctx.arc(f.x + Math.cos(a) * 18 * k, f.y + 6 + Math.sin(a) * 6 * k, 5 + 6 * k, 0, Math.PI * 2); ctx.fill(); }
+      } else if (f.kind === 'cost') {
+        ctx.globalAlpha = 1 - k * k; ctx.font = '900 10px Martel, serif'; ctx.textAlign = 'center';
+        ctx.lineWidth = 3; ctx.strokeStyle = '#3a2414'; ctx.fillStyle = '#ffb08a';
+        ctx.strokeText(f.text, f.x, f.y - k * 12); ctx.fillText(f.text, f.x, f.y - k * 12);
+      } else if (f.kind === 'step') {
+        ctx.globalAlpha = (1 - k) * 0.55; ctx.fillStyle = '#e6d6b0';
+        for (const side of [-1, 1]) { ctx.beginPath(); ctx.arc(f.x + side * (3 + 5 * k) * f.r, f.y - 2 * k, (1.6 + 2.4 * k) * f.r, 0, Math.PI * 2); ctx.fill(); }
       } else if (f.kind === 'poof' || f.kind === 'dust' || f.kind === 'smoke') {
         ctx.globalAlpha = (1 - k) * 0.8; ctx.fillStyle = f.kind === 'smoke' ? '#5a4a6a' : '#efe4c8';
         for (let i = 0; i < 5; i++) { const a = i * 1.26; ctx.beginPath(); ctx.arc(f.x + Math.cos(a) * 10 * k, f.y + Math.sin(a) * 4 * k, 4 + 4 * k, 0, Math.PI * 2); ctx.fill(); }

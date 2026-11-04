@@ -521,6 +521,22 @@ const MAGE = { tunic: '#3f4fa8', trim: '#ffd23a', head: 'hood', headColor: '#3f4
 const BANDIT = { tunic: '#4a3c55', trim: '#2d2a33', head: 'mask', headColor: '#2d2a33', weapon: 'sword', skin: '#c98758', angry: true, legs: '#2d2a33' };
 const BARBARIAN = { tunic: '#8a5a32', trim: '#e9dcc0', head: 'horns', weapon: 'axe', skin: '#d99766', big: 1.35, cape: '#6b4a2e', beard: '#c0502a', fur: '#e9dcc0', angry: true };
 const SHAMAN = { tunic: '#3d6b3a', trim: '#b8e05a', head: 'hood', headColor: '#2f4f2d', weapon: 'staff', orb: 'url(#glowG)', angry: true, beard: '#d9d4c8' };
+const CANNONEER = { tunic: '#f4efe2', trim: '#c8361d', headColor: '#c8361d', s: 0.55, moustache: true };
+const FALCONER_MAN = { tunic: '#2f5fc8', trim: '#ffd23a', headColor: '#ffd23a', s: 0.62, moustache: true, legs: '#6b4a2e' };
+const ALCHEMIST_MAN = { tunic: '#2f6a3c', trim: '#e0a21c', head: 'hood', headColor: '#2f6a3c', s: 0.58, weapon: 'staff', orb: 'url(#glowG)', beard: '#e8e2d4' };
+// the cannon barrel on its own, pointing right from its trunnion, so it can turn to aim
+function cannonBarrel(p, x, y, s = 1) {
+  const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` });
+  outlined(t, 'path', { d: 'M-5 -4.2 L27 -3.2 L27 3.2 L-5 4.2 Q-8 0 -5 -4.2 Z', fill: 'url(#bronze)' }, 1.6);
+  el('path', { d: 'M-4 -2.6 L26 -2', stroke: '#fff2b8', 'stroke-width': 1, opacity: 0.8 }, t);
+  for (const bx of [4, 12, 20]) outlined(t, 'path', { d: `M${bx} -3.8 V3.8`, fill: 'none' }, 1.4);
+  outlined(t, 'ellipse', { cx: 27, cy: 0, rx: 1.8, ry: 3.4, fill: '#3a2414' }, 1);
+  outlined(t, 'circle', { cx: -6.5, cy: 0, r: 2, fill: 'url(#bronze)' }, 0.8);
+  return t;
+}
+const RANI_MEERA = { tunic: '#c8361d', trim: '#ffd23a', head: 'turban', headColor: '#ffd23a', weapon: 'bow', quiver: true, crown: true, cape: '#7a1f1f', legs: '#5a1f1f', skin: '#c98758' };
+const SAGE_HERO = { tunic: '#f4efe2', trim: '#e0a21c', head: 'hood', headColor: '#e8dcc0', weapon: 'staff', beard: '#f2efe8', orb: 'url(#glow)', aura: true };
+const VIKRAM_HERO = { tunic: '#3a2f4a', trim: '#e0a21c', head: 'helmet', headColor: '#e0a21c', weapon: 'sword', shield: '#3a2f4a', emblem: 'sun', armor: 'url(#darksteel)', cape: '#5a2fa8', moustache: true, big: 1.2, crown: true, visor: true };
 const DRUMMER = { tunic: '#7a1f1f', trim: '#e0a21c', head: 'turban', headColor: '#2d2a33', weapon: 'stick', drum: true, skin: '#c98758', angry: true, legs: '#2d2a33', beard: '#2a1e18' };
 const SHIELD_BEARER = { tunic: '#3a3d45', trim: '#5f8fd0', head: 'helmet', headColor: '#3f6fc0', weapon: 'spear', towerShield: '#2f4f86', armor: 'url(#darksteel)', angry: true, visor: true, big: 1.15 };
 const SABOTEUR = { tunic: '#2d2a33', trim: '#6a3fc0', head: 'hood', headColor: '#1f1a2e', weapon: 'bomb', skin: '#b8784a', angry: true, legs: '#1f1a2e' };
@@ -628,8 +644,8 @@ function archerTower(p, x, y, s = 1, o = {}) {
   outlined(t, 'rect', { x: -21, y: -46, width: 42, height: 6, rx: 1.5, fill: 'url(#sandV)' }, 1.6);
   for (let i = -19; i <= 15; i += 6.8) outlined(t, 'path', { d: `M${i} -46 V-50 Q${i + 2.2} -53 ${i + 4.4} -50 V-46 Z`, fill: 'url(#sandTop)' }, 1.1);
   banner(t, -16.5, -38, 7, 16, 'url(#green)', 'sun');
-  person(t, -7, -47, { ...ARCHER, s: 0.62, loose: o.loose });
-  person(t, 7, -47, { ...ARCHER, s: 0.62, loose: o.loose });
+  // o.noCrew leaves the crew off: the game draws them separately so they can turn to aim
+  if (!o.noCrew) { person(t, -7, -47, { ...ARCHER, s: 0.62, loose: o.loose }); person(t, 7, -47, { ...ARCHER, s: 0.62, loose: o.loose }); }
   flag(t, 18, -52, 18, 'url(#green)');
   return t;
 }
@@ -667,7 +683,7 @@ function barracks(p, x, y, s = 1) {
   outlined(t, 'path', { d: 'M-30 3 Q-32 -2 -29 -4 H-25 Q-22 -2 -24 3 Z', fill: '#c8763a' }, 0.9);
   return t;
 }
-function mageTower(p, x, y, s = 1) {
+function mageTower(p, x, y, s = 1, o = {}) {
   const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` });
   base(t, 22);
   const mc = el('ellipse', { cx: 0, cy: -1, rx: 20, ry: 7, fill: 'none', stroke: '#8fd8ff', 'stroke-width': 1.2, 'stroke-dasharray': '3 2', filter: 'url(#bloom)', opacity: 0.9 }, t);
@@ -694,10 +710,10 @@ function mageTower(p, x, y, s = 1) {
     const c = outlined(t, 'path', { d: `M${a} ${b - 4} l2.4 4 l-2.4 4 l-2.4 -4 Z`, fill: '#9fdcff' }, 0.6);
     el('animateTransform', { attributeName: 'transform', type: 'translate', values: '0 0;0 -2.4;0 0', dur: `${1.6 + i * 0.3}s`, repeatCount: 'indefinite' }, c);
   });
-  person(t, -15, -1, { ...MAGE, s: 0.6 });
+  if (!o.noCrew) person(t, -15, -1, { ...MAGE, s: 0.6 });
   return t;
 }
-function cannonTower(p, x, y, s = 1) {
+function cannonTower(p, x, y, s = 1, o = {}) {
   const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` });
   base(t, 27);
   outlined(t, 'path', { d: 'M-22 0 V-14 L-14 -20 H14 L22 -14 V0 Q0 6 -22 0 Z', fill: 'url(#sand)' }, 1.8);
@@ -707,19 +723,23 @@ function cannonTower(p, x, y, s = 1) {
   ao(t, -22, 0, 44);
   [[-18, -18], [-12, -20]].forEach(([a, b]) => { outlined(t, 'rect', { x: a - 3, y: b - 7, width: 6, height: 8, rx: 2, fill: 'url(#wood)' }, 0.8); el('path', { d: `M${a - 3} ${b - 5} h6 M${a - 3} ${b - 1} h6`, stroke: '#4c505b', 'stroke-width': 0.8 }, t); });
   outlined(t, 'path', { d: 'M-8 -18 L12 -24 L14 -18 L-6 -14 Z', fill: 'url(#wood)' }, 1.1);
-  outlined(t, 'path', { d: 'M-10 -24 L18 -36 L21.4 -30 L-6.4 -17 Z', fill: 'url(#bronze)' }, 1.6);
-  el('path', { d: 'M-8 -22 L18 -34', stroke: '#fff2b8', 'stroke-width': 1, opacity: 0.8 }, t);
-  outlined(t, 'ellipse', { cx: 19.8, cy: -33, rx: 2.4, ry: 3.6, fill: '#3a2414', transform: 'rotate(-24 19.8 -33)' }, 1);
-  [[-2, -25], [6, -29], [12, -32]].forEach(([a, b]) => outlined(t, 'path', { d: `M${a} ${b} l2 4`, fill: 'none' }, 1.6));
+  if (!o.noCrew) {
+    outlined(t, 'path', { d: 'M-10 -24 L18 -36 L21.4 -30 L-6.4 -17 Z', fill: 'url(#bronze)' }, 1.6);
+    el('path', { d: 'M-8 -22 L18 -34', stroke: '#fff2b8', 'stroke-width': 1, opacity: 0.8 }, t);
+    outlined(t, 'ellipse', { cx: 19.8, cy: -33, rx: 2.4, ry: 3.6, fill: '#3a2414', transform: 'rotate(-24 19.8 -33)' }, 1);
+    [[-2, -25], [6, -29], [12, -32]].forEach(([a, b]) => outlined(t, 'path', { d: `M${a} ${b} l2 4`, fill: 'none' }, 1.6));
+  }
   outlined(t, 'circle', { cx: -4, cy: -15, r: 6, fill: 'none' }, 2);
   el('circle', { cx: -4, cy: -15, r: 6, fill: 'none', stroke: '#8a5a32', 'stroke-width': 1.4 }, t);
   el('path', { d: 'M-4 -21 V-9 M-10 -15 H2', stroke: '#5a3a22', 'stroke-width': 1 }, t);
   outlined(t, 'circle', { cx: -4, cy: -15, r: 1.4, fill: '#e0a21c' }, 0.5);
   for (let i = -18; i <= 14; i += 8) outlined(t, 'path', { d: `M${i} -13 v-4 q2 -2.4 4 0 v4 Z`, fill: 'url(#sandTop)' }, 0.8);
   [[12, -14], [16, -14], [14, -17]].forEach(([a, b]) => { outlined(t, 'circle', { cx: a, cy: b, r: 2.4, fill: '#3a3d45' }, 0.7); el('circle', { cx: a - 0.7, cy: b - 0.8, r: 0.7, fill: '#9aa0aa' }, t); });
-  person(t, -22, -14, { tunic: '#f4efe2', trim: '#c8361d', headColor: '#c8361d', s: 0.55, moustache: true });
-  el('path', { d: 'M-18 -22 L-10 -30', stroke: '#6e4524', 'stroke-width': 1 }, t);
-  spark(t, -10, -30, 3);
+  if (!o.noCrew) {
+    person(t, -22, -14, CANNONEER);
+    el('path', { d: 'M-18 -22 L-10 -30', stroke: '#6e4524', 'stroke-width': 1 }, t);
+    spark(t, -10, -30, 3);
+  }
   flag(t, 24, -2, 28, 'url(#red)');
   return t;
 }
@@ -736,7 +756,7 @@ function falcon(p, x, y, s = 1, up = true) {
   outlined(t, 'path', { d: 'M7.2 -3 l2.4 0.8 l-2 1.2 Z', fill: '#ffd23a' }, 0.4);
   return t;
 }
-function falconer(p, x, y, s = 1) {
+function falconer(p, x, y, s = 1, o = {}) {
   const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` });
   base(t, 24);
   outlined(t, 'path', { d: 'M-16 0 L-13 -40 H13 L16 0 Q0 6 -16 0 Z', fill: 'url(#sand)' }, 1.8);
@@ -755,7 +775,7 @@ function falconer(p, x, y, s = 1) {
   el('path', { d: 'M-10 -66 Q-2 -78 4 -78', stroke: '#ffffff', 'stroke-width': 1, fill: 'none' }, t);
   outlined(t, 'path', { d: 'M-19 -62 H19 L17 -59 H-17 Z', fill: 'url(#gold)' }, 0.9);
   el('circle', { cx: 0, cy: -84, r: 2, fill: '#ffd23a', stroke: OUT, 'stroke-width': 0.6 }, t);
-  person(t, -2, -45, { tunic: '#2f5fc8', trim: '#ffd23a', headColor: '#ffd23a', s: 0.62, moustache: true, legs: '#6b4a2e' });
+  if (!o.noCrew) person(t, -2, -45, FALCONER_MAN);
   outlined(t, 'path', { d: 'M3 -54 h7', fill: 'none' }, 1.6);
   falcon(t, 10, -58, 0.42, true);
   const fly = falcon(t, 0, 0, 0.55, false);
@@ -795,7 +815,7 @@ function fountain(p, x, y, s = 1) {
   return t;
 }
 // Alchemist's Workshop: a squat tower with a green tiled dome, a bubbling cauldron and flasks
-function alchemist(p, x, y, s = 1) {
+function alchemist(p, x, y, s = 1, o = {}) {
   const t = g(p, { transform: `translate(${x} ${y}) scale(${s})` });
   base(t, 26);
   outlined(t, 'path', { d: 'M-18 0 L-16 -30 H16 L18 0 Q0 6 -18 0 Z', fill: 'url(#sand)' }, 1.8);
@@ -818,7 +838,7 @@ function alchemist(p, x, y, s = 1) {
   outlined(t, 'path', { d: 'M14 -6 Q14 2 22 2 Q30 2 30 -6 Z', fill: '#2e2f36' }, 1.1);
   outlined(t, 'ellipse', { cx: 22, cy: -6, rx: 8, ry: 2.2, fill: '#7ef06a' }, 0.8);
   for (const [bx, by, r] of [[19, -9, 1.6], [24, -11, 1.2], [21, -14, 2.2], [25, -18, 2.8]]) { const b = el('circle', { cx: bx, cy: by, r, fill: '#9cf58a', opacity: 0.7 }, t); anim(b, { attributeName: 'cy', values: `${by};${by - 6};${by}`, dur: `${1.4 + r * 0.3}s` }); }
-  person(t, -14, 0, { tunic: '#2f6a3c', trim: '#e0a21c', head: 'hood', headColor: '#2f6a3c', s: 0.58, weapon: 'staff', orb: 'url(#glowG)', beard: '#e8e2d4' });
+  if (!o.noCrew) person(t, -14, 0, ALCHEMIST_MAN);
   banner(t, -16.5, -30, 6, 13, 'url(#green)', 'lotus');
   return t;
 }

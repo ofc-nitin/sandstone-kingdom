@@ -101,12 +101,33 @@ export const SELL_REFUND = 0.6;
 
 // The hero fights on the road like a strong soldier; the player can move him anywhere
 // along the road, and his skill hits everything around him.
+// Heroes join from Level 2. Melee heroes hold the road; ranged heroes shoot from where they stand.
+// unlock: 'story' (free when the story reaches them), coins/rubies in the Bazaar, or 'iap' only.
 export const HEROES = {
   sunKnight: {
-    name: 'The Sun Knight', art: 'sunKnight', hp: 300, dmg: [11, 17], rate: 0.85, armor: 0.3, speed: 62, respawn: 14, regen: 5, leash: 62,
-    skill: { name: 'Sun Strike', cooldown: 18, radius: 48, dmg: 70, stun: 1.4 },
+    name: 'The Sun Knight', title: 'Defender of Suryagarh', art: 'sunKnight', hp: 300, dmg: [11, 17], rate: 0.85, armor: 0.3, speed: 62, respawn: 14, regen: 5, leash: 62,
+    skill: { type: 'strike', name: 'Sun Strike', cooldown: 18, radius: 48, dmg: 70, stun: 1.4 },
+    unlock: { story: 1 }, bio: 'The fort\'s champion. Tough, holds the road, and his Sun Strike stuns everyone around him.',
+  },
+  archerQueen: {
+    name: 'Rani Meera', title: 'Archer Queen of the Hills', art: 'archerQueen', hp: 210, dmg: [10, 15], rate: 0.7, armor: 0.1, speed: 70, respawn: 12, regen: 6, leash: 0,
+    ranged: { range: 92, kind: 'arrow' },
+    skill: { type: 'volley', name: 'Hail of Arrows', cooldown: 16, radius: 80, dmg: 48, targets: 7, slow: 0.4, slowTime: 3 },
+    unlock: { coins: 3500, rubies: 300 }, bio: 'Shoots from range and never blocks the road. Hail of Arrows hits up to 7 enemies and slows them.',
+  },
+  sage: {
+    name: 'Guru Agastya', title: 'Sage of the Stepwell', art: 'sage', hp: 230, dmg: [12, 18], rate: 1.1, armor: 0.05, speed: 56, respawn: 13, regen: 8, leash: 0,
+    ranged: { range: 78, kind: 'magic' },
+    skill: { type: 'bless', name: 'Blessing of Waters', cooldown: 20, radius: 74, dmg: 55, heal: 1 },
+    unlock: { rubies: 450 }, bio: 'Magic goes through armour. His Blessing fully heals your soldiers nearby and burns the enemies around him.',
+  },
+  vikram: {
+    name: 'Maharaja Vikram', title: 'The Iron King', art: 'vikram', hp: 480, dmg: [16, 24], rate: 0.95, armor: 0.45, speed: 58, respawn: 12, regen: 7, leash: 70,
+    skill: { type: 'warcry', name: 'Royal War Cry', cooldown: 20, radius: 64, dmg: 40, stun: 2.2, shield: 80 },
+    unlock: { iap: 'hero_vikram' }, bio: 'The heaviest hero. His War Cry stuns every enemy nearby and puts a shield on your soldiers.',
   },
 };
+export const HERO_ORDER = ['sunKnight', 'archerQueen', 'sage', 'vikram'];
 
 // Spells: tap the button, then tap the battlefield.
 export const SPELLS = {

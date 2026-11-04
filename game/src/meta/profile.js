@@ -2,7 +2,7 @@
 // daily quests, map challenges, achievements, the Royal Workshop, shop grants, ad rules and
 // cloud-save merging. Pure functions over a plain object, so it is easy to test and to save.
 import { LEVELS } from '../engine/levels.js';
-import { ROYAL_TOWERS, POWERUPS, ENEMIES } from '../engine/data.js';
+import { ROYAL_TOWERS, POWERUPS, ENEMIES, HEROES } from '../engine/data.js';
 
 export const SAVE_VERSION = 2;
 const DAY = 86400000;
@@ -26,7 +26,7 @@ export function newProfile(now = Date.now()) {
     stats: { wins: 0, kills: 0, played: 0, bossWins: 0, endlessBest: {}, endlessScore: {}, adsWatched: 0, peacock: 0, spells: 0, flawless: 0 },
     ads: { lastInterstitial: 0, rewardKey: null, rewardCount: 0 },
     settings: { music: 0.6, sfx: 0.9, haptics: true, textSize: 1, battery: false, quality: 'high', colorblind: false, notifications: false, lang: 'en' },
-    introSeen: false, starterOffered: false, consent: null, lastSpecials: [], forgeJob: null,
+    introSeen: false, starterOffered: false, consent: null, lastSpecials: [], forgeJob: null, heroes: {}, lastHero: null,
   };
 }
 
@@ -36,7 +36,8 @@ export function migrate(raw, now = Date.now()) {
   if (!raw || typeof raw !== 'object') return p;
   const out = { ...p, ...raw };
   for (const k of ['stats', 'ads', 'settings', 'daily', 'quests', 'powerups']) out[k] = { ...p[k], ...(raw[k] || {}) };
-  for (const k of ['diyas', 'seen', 'challenges', 'owned', 'purchases', 'workshop', 'achievements']) out[k] = { ...(raw[k] || {}) };
+  for (const k of ['diyas', 'seen', 'challenges', 'owned', 'purchases', 'workshop', 'achievements', 'heroes']) out[k] = { ...(raw[k] || {}) };
+  if ((out.diyas[1] || 0) > 0) out.heroes.sunKnight = true; // older saves: the Sun Knight has already joined
   out.v = SAVE_VERSION;
   return out;
 }
@@ -48,6 +49,7 @@ export const bossBeaten = (p, region = 1) => (p.diyas[region * 5] || 0) > 0;
 export const endlessUnlocked = (p) => bossBeaten(p, 1);
 
 function give(p, r, mult = 1) {
+  if (r.hero) p.heroes[r.hero] = true;
   if (r.coins) p.coins += Math.round(r.coins * mult);
   if (r.rubies) p.rubies += Math.round(r.rubies * mult);
   if (r.powerups) for (const [k, n] of Object.entries(r.powerups)) p.powerups[k] = (p.powerups[k] || 0) + n;
@@ -156,7 +158,7 @@ export const CHALLENGES = {
   1: [
     { id: 'archers', name: 'Bowmen Only', desc: 'Win using only Archer Towers', rules: { towers: ['archer'] }, rubies: 15 },
     { id: 'nospell', name: 'No Magic Words', desc: 'Win without casting spells', rules: { noSpells: true }, rubies: 15 },
-    { id: 'iron', name: 'Iron Fort', desc: 'Win with a single life', rules: { lives: 1 }, rubies: 20 },
+    { id: 'iron', name: 'Iron Fort', desc: 'Win with three lives', rules: { lives: 3 }, rubies: 20 },
   ],
   2: [
     { id: 'nohero', name: 'Without the Knight', desc: 'Win without the Sun Knight', rules: { noHero: true }, rubies: 20 },
@@ -260,6 +262,8 @@ export function recordBattle(p, summary, { challenge = null } = {}) {
     } else {
       // story reward: the first special tower joins after the Stepwell Road
       if (summary.level === STORY_GIFT.level && !p.owned[STORY_GIFT.tower] && !(p.diyas[summary.level] > 0)) { p.owned[STORY_GIFT.tower] = true; out.gift = STORY_GIFT.tower; }
+      // the first hero joins the story after Level 1
+      for (const [id, h] of Object.entries(HEROES)) if (h.unlock.story === summary.level && !p.heroes[id]) { p.heroes[id] = true; out.heroGift = id; }
       const before = p.diyas[summary.level] || 0;
       if (summary.diyas > before) { out.newDiyas = summary.diyas - before; p.diyas[summary.level] = summary.diyas; }
     }
@@ -340,6 +344,16 @@ export function workshopBonus(p) {
 }
 
 // ---------------------------------------------------------------- spending rubies and coins
+// Heroes: story heroes join for free; others are bought with coins or rubies; one only with real money.
+export const ownedHeroes = (p) => Object.keys(HEROES).filter((h) => p.heroes && p.heroes[h]);
+export function buyHero(p, id, currency) {
+  const h = HEROES[id];
+  if (!h || p.heroes[id] || !h.unlock[currency] || !['coins', 'rubies'].includes(currency) || p[currency] < h.unlock[currency]) return false;
+  p[currency] -= h.unlock[currency];
+  p.heroes[id] = true;
+  return true;
+}
+
 // Special towers unlock with rubies, or with a big pile of coins.
 export function buyRoyalTower(p, id, currency = 'rubies') {
   const t = ROYAL_TOWERS[id];
@@ -371,6 +385,7 @@ export const PRODUCTS = [
   { id: 'rubies_1900', type: 'consumable', name: 'Ruby Vault', grant: { rubies: 1900 }, inr: 449, usd: 11.99, bonus: 300 },
   { id: 'rubies_5000', type: 'consumable', name: 'Ruby Treasury', grant: { rubies: 5000 }, inr: 999, usd: 24.99, bonus: 1000 },
   { id: 'remove_ads', type: 'once', name: 'Remove Ads', grant: { removeAds: true }, inr: 99, usd: 2.99 },
+  { id: 'hero_vikram', type: 'once', name: 'Maharaja Vikram', grant: { hero: 'vikram', rubies: 100 }, inr: 149, usd: 3.99, tag: 'Hero' },
 ];
 export const product = (id) => PRODUCTS.find((x) => x.id === id);
 
@@ -395,9 +410,10 @@ export function restoreOwned(p, ids) {
   for (const id of ids) {
     const pr = product(id);
     if (!pr || pr.type !== 'once') continue;
-    if (p.purchases[id] && (id !== 'remove_ads' || p.removeAds)) continue;
+    if (p.purchases[id] && (id !== 'remove_ads' || p.removeAds) && (!pr.grant.hero || p.heroes[pr.grant.hero])) continue;
+    if (pr.grant.hero) { p.heroes[pr.grant.hero] = true; if (p.purchases[id]) { n++; continue; } }
     p.purchases[id] = 1;
-    if (id === 'remove_ads') p.removeAds = true; else give(p, pr.grant);
+    if (id === 'remove_ads') p.removeAds = true; else if (pr.grant.hero && p.heroes[pr.grant.hero]) { /* already granted */ } else give(p, pr.grant);
     n++;
   }
   return n;
@@ -448,7 +464,7 @@ export function mergeProfiles(local, cloud) {
   const other = base === a ? b : a;
   const out = migrate(JSON.parse(JSON.stringify(base)));
   for (const [k, v] of Object.entries(other.diyas)) out.diyas[k] = Math.max(out.diyas[k] || 0, v);
-  for (const key of ['seen', 'challenges', 'owned', 'achievements', 'purchaseTokens']) out[key] = { ...(other[key] || {}), ...(out[key] || {}) };
+  for (const key of ['seen', 'challenges', 'owned', 'achievements', 'purchaseTokens', 'heroes']) out[key] = { ...(other[key] || {}), ...(out[key] || {}) };
   for (const [k, v] of Object.entries(other.purchases || {})) out.purchases[k] = Math.max(out.purchases[k] || 0, v);
   for (const [k, v] of Object.entries(other.workshop || {})) out.workshop[k] = Math.max(out.workshop[k] || 0, v);
   out.removeAds = a.removeAds || b.removeAds;

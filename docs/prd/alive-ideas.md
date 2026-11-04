@@ -39,7 +39,9 @@ This list covers what is now in the game (**done**) and what comes next, in orde
 | Cloud shadows drifting over the battlefield, birds crossing, butterflies, spring petals | **done** |
 | A live main menu: turning sun rays, drifting clouds, birds, flickering gate torches, breathing heroes, a sword glint, petals | **done** |
 | Portals that swirl where enemies vanish and reappear | **done** |
-| Animated water (stepwell, pond), swaying trees and flags, chimney smoke from the village | next |
+| Live campfires (a flame that leans and flickers, rising embers, warm light on the grass) and ponds (ripple rings, a slow glint) | **done** |
+| The fort shows the battle: smoke once half the lives are gone, flames when few are left; it jolts and flashes red on every leak | **done** |
+| Swaying trees and flags, chimney smoke from the village | next |
 | Weather per region: sandstorms (towers see less), monsoon rain (slower enemies), night with torches (Deccan), fog (Sundarbans), snow (Himalayas) | next, with each region |
 | Villagers and animals reacting: villagers run into houses when a wave starts, cows wander, the peacock dances when you win | next |
 | A day-to-dusk light shift across a level's waves | later |
@@ -51,5 +53,23 @@ This list covers what is now in the game (**done**) and what comes next, in orde
 | Battle briefing with a short, casual story line before every level | **done** |
 | A short comic-style cutscene before each boss (3–4 panels drawn from the game art) | next |
 | The Royal Sage pops in with a one-line hint when a new enemy appears or the player struggles (for example after losing twice) | next |
-| A boss health bar across the top with the boss's name; boss phases (the Bandit King calls more bandits under half health) | next |
+| A boss health bar across the top with the boss's name, the lost chunk draining away behind | **done** |
+| Boss phases (the Bandit King calls more bandits under half health) | next |
 | End-of-region celebration: fireworks over the fort and the region's season changing on the map | next |
+
+## Small details that sell the battle
+
+| Idea | Status |
+|---|---|
+| Towers and their crews turn to face what they shoot; the cannon barrel aims and kicks back | **done** |
+| Arrows fly in a shallow arc with a shadow on the ground; some glance off and stay stuck in the dirt for a few seconds | **done** |
+| Mage bolts leave a short sparkling trail | **done** |
+| Coins hop out of a defeated enemy and fly, spinning, to the gold counter | **done** |
+| A heart flies from the fort to the lives counter when an enemy gets through, with stone chips off the gate | **done** |
+| Building shows what it cost (a red “-70” over the tower); selling pulls the tower down in a puff of stone and dust and shows the refund | **done** |
+| Heavy feet raise dust: armoured brutes, the boss (with a faint ground shake) and the war elephants | **done** |
+| Enemies flash white when hit; the fallen tip over and fade | **done** |
+| Soldiers raise a small dust cloud when they run to a new rally point | next |
+| Wounded enemies limp (slower walk cycle) under a quarter of their health | next |
+| Banners on towers ripple in the wind direction of the cloud shadows | later |
+

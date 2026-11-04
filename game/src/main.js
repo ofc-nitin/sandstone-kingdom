@@ -148,8 +148,9 @@ let resizeTimer = 0;
 window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(layout, 150); });
 
 // ---------------------------------------------------------------- screens
-const MENU_MUSIC = new Set(['menu', 'map', 'shop', 'daily', 'quests', 'workshop', 'achievements', 'ranks', 'settings', 'briefing']);
+const MENU_MUSIC = new Set(['menu', 'map', 'treasury', 'heroes', 'bazaar', 'daily', 'quests', 'workshop', 'achievements', 'ranks', 'settings', 'briefing']);
 async function go(name, params = {}) {
+  if (name === 'shop') name = 'bazaar'; // older name
   if (screen !== 'loading' && screen !== name && screen !== 'battle') history.push(screen);
   if (history.length > 12) history.shift();
   screens.modal = null;
@@ -162,6 +163,7 @@ async function go(name, params = {}) {
   if (prev === 'battle' || !assets.menuBg) { currentLevel = LEVELS[1]; }
   await layout();
   if (name === 'map') await assets.buildMap(view);
+  if (name === 'bazaar' || name === 'treasury') await assets.buildShops(view);
   screen = name;
   if (MENU_MUSIC.has(name)) sound.playMusic('menu');
   platform.ads.banner(name === 'map' && !store.profile.removeAds && M.levelsWon(store.profile) >= 3);
@@ -182,6 +184,7 @@ async function startBattle(b) {
   const p = store.profile, lv = LEVELS[b.level];
   if (!lv) return go('map', { mode: 'story' });
   const specials = b.specials || (b.special ? [b.special] : []);
+  if (b.hero) p.lastHero = b.hero;
   if (specials.length) { p.lastSpecials = specials.filter((t) => p.owned[t]); store.save(); }
   screen = 'loading-battle';
   currentLevel = lv;
@@ -190,6 +193,7 @@ async function startBattle(b) {
   const endless = b.mode === 'endless';
   game = new Game(lv, {
     seed: (Date.now() % 100000) + 1, seen: p.seen, rules: b.challenge ? b.challenge.rules : null, specials,
+    hero: b.hero !== undefined ? b.hero : (M.ownedHeroes(p)[0] || null),
     endless, powerups: p.powerups, bonus: M.workshopBonus(p),
   });
   battle = { brief: { ...b }, finished: false, lost: false, result: null };

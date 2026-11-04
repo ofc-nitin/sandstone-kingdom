@@ -5,7 +5,7 @@
 import { blit } from '../render/raster.js';
 import { text, wrap, gemButton, woodPanel } from '../render/hud.js';
 import { LEVELS } from '../engine/levels.js';
-import { ENEMIES, TOWERS, ROYAL_TOWERS, POWERUPS, POWERUP_ORDER, SPECIAL_LOADOUT } from '../engine/data.js';
+import { ENEMIES, TOWERS, ROYAL_TOWERS, POWERUPS, POWERUP_ORDER, SPECIAL_LOADOUT, HEROES, HERO_ORDER } from '../engine/data.js';
 import * as M from '../meta/profile.js';
 import { LINKS, APP_VERSION } from '../platform/config.js';
 
@@ -115,7 +115,8 @@ export class Screens {
     const w2 = 92 * u, w1 = 104 * u;
     this.pill(ctx, R - w2, T, 'ruby', this.p.rubies, u, 92);
     this.pill(ctx, R - w2 - w1 - 8 * u, T, 'coin', this.p.coins, u, 104);
-    if (onShop) this.tap(R - w2 - w1 - 8 * u, T, w1 + w2 + 8 * u, 24 * u, () => this.app.go('shop'));
+    // coins open the Bazaar, rubies the Treasury
+    if (onShop) { this.tap(R - w2 - w1 - 8 * u, T, w1, 24 * u, () => this.app.go('bazaar')); this.tap(R - w2, T, w2, 24 * u, () => this.app.go('treasury')); }
   }
   backButton(ctx, f, fn) { this.round(ctx, 'back', f.L + 20 * f.u, f.T + 20 * f.u, 0.9, fn || (() => this.app.back()), f.u); }
   backdrop(ctx, view, dark = 0.55) {
@@ -165,13 +166,15 @@ export class Screens {
     this.btn(ctx, bx, by, bw, bh, 'ENDLESS', 'purple', () => (endless ? a.go('briefing', { mode: 'endless', level: 5 }) : a.toast('Defeat the Bandit King to unlock Endless mode')), u, true);
     if (!endless) this.lockOn(ctx, bx + bw - 20 * u, by + bh / 2, u);
     by += bh + gap;
-    this.btn(ctx, bx, by, bw, bh, 'SHOP', 'blue', () => a.go('shop'), u);
+    const hw = (bw - 8 * u) / 2;
+    this.btn(ctx, bx, by, hw, bh, 'BAZAAR', 'blue', () => a.go('bazaar'), u);
+    this.btn(ctx, bx + hw + 8 * u, by, hw, bh, 'TREASURY', 'green', () => a.go('treasury'), u);
     // the corner buttons
     const daily = M.dailyStatus(p).canClaim ? 1 : 0;
     M.refreshQuests(p);
     const quests = M.questsReady(p);
     const row = [['settings', 'Settings', () => a.go('settings')], ['trophy', 'Awards', () => a.go('achievements')], ['ranks', 'Ranks', () => a.go('ranks')],
-      ['daily', 'Daily', () => a.go('daily'), daily], ['quests', 'Quests', () => a.go('quests'), quests], ['workshop', 'Forge', () => a.go('workshop')]];
+      ['daily', 'Daily', () => a.go('daily'), daily], ['quests', 'Quests', () => a.go('quests'), quests], ['workshop', 'Forge', () => a.go('workshop')], ['heroes', 'Heroes', () => a.go('heroes')]];
     // the round buttons sit in a wooden dock at the bottom right, clear of the heroes
     const k = 0.78, step = 48 * u, dw = step * row.length + 12 * u, dh = 64 * u, dx = R - dw, dy = B - dh;
     ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 8 * u; ctx.shadowOffsetY = 3 * u;
@@ -293,7 +296,7 @@ export class Screens {
         const n = M.CHALLENGES[i].filter((c) => p.challenges[M.challengeKey(i, c.id)]).length;
         text(ctx, done ? `${n}/3` : 'locked', x, y - r - 5 * u, 10 * u, { sw: 2.6 * u, fill: n === 3 ? '#ffd66b' : '#fff4dc' });
       }
-      if (now) blit(ctx, a.assets.get('hero:sunKnight'), x + r + 4 * u, y + 6 * u, ms * 0.55);
+      if (now) blit(ctx, a.assets.get('hero:' + (p.lastHero || 'sunKnight')), x + r + 4 * u, y + 6 * u, ms * 0.55);
       if (exists && (challenge ? (i > 0) : true)) this.tap(x - r - 6 * u, y - r - 12 * u, 2 * r + 12 * u, 2 * r + 24 * u, () => this.openNode(i));
     });
     // fixed UI
@@ -331,7 +334,11 @@ export class Screens {
     let specials = (p.lastSpecials || []).filter((t) => owned.includes(t));
     if (!specials.length) specials = owned.slice(0, SPECIAL_LOADOUT);
     if (!lv.plots.some((pl) => pl.royal)) specials = [];
-    this.brief = { ...params, specials: specials.slice(0, SPECIAL_LOADOUT), trial: null };
+    // the hero used last time is chosen again; levels before the hero joins have none
+    const heroes = M.ownedHeroes(p);
+    let hero = heroes.includes(p.lastHero) ? p.lastHero : heroes[0] || null;
+    if (lv.hero === false || (params.challenge && params.challenge.rules.noHero)) hero = null;
+    this.brief = { ...params, specials: specials.slice(0, SPECIAL_LOADOUT), trial: null, hero };
   }
 
   draw_briefing(ctx, view, f) {
@@ -375,6 +382,24 @@ export class Screens {
       if (spr) blit(ctx, spr, cx, ey, u * (def.boss ? 0.45 : 0.85));
       if (!p.seen[t]) { ctx.fillStyle = '#d83a1e'; ctx.beginPath(); ctx.roundRect(cx - 14 * u, ey + 2 * u, 28 * u, 12 * u, 6 * u); ctx.fill(); text(ctx, 'NEW', cx, ey + 11.4 * u, 9 * u, { sw: 2 * u }); }
     });
+    // ---- the hero for this battle
+    const hy = ey + 26 * u;
+    head('Hero', x1, hy);
+    const heroes = M.ownedHeroes(p);
+    if (lv.hero === false) text(ctx, 'Heroes join the fight from Level 2.', x1, hy + 18 * u, 11 * u, { align: 'left', weight: 700, fill: INK, stroke: false, max: colW });
+    else if (b.challenge && b.challenge.rules.noHero) text(ctx, 'This challenge is fought without a hero.', x1, hy + 18 * u, 11 * u, { align: 'left', weight: 700, fill: INK, stroke: false, max: colW });
+    else {
+      const hw = Math.min(64 * u, (colW - 60 * u) / HERO_ORDER.length);
+      HERO_ORDER.forEach((id, i) => {
+        const own = heroes.includes(id), sel = b.hero === id, hx = x1 + i * (hw + 6 * u), hyy = hy + 8 * u, hh = 56 * u;
+        card(ctx, hx, hyy, hw, hh, u, { glow: sel, dim: !own });
+        blit(ctx, a.assets.get('ui:heroFace:' + id), hx + hw / 2, hyy + 24 * u, u * 0.72);
+        if (!own) blit(ctx, a.assets.get('ui:lock'), hx + hw - 12 * u, hyy + 14 * u, u * 0.55);
+        text(ctx, HEROES[id].name.replace('The ', ''), hx + hw / 2, hyy + hh - 8 * u, 8.5 * u, { weight: 900, fill: INK, stroke: false, max: hw - 6 * u });
+        this.tap(hx, hyy, hw, hh, () => { if (own) b.hero = id; else a.go('heroes'); });
+      });
+      text(ctx, 'Tap a locked hero to see how to get them', x1 + HERO_ORDER.length * (hw + 6 * u) + 4 * u, hy + 40 * u, 9 * u, { align: 'left', weight: 700, fill: '#6a4a2a', stroke: false, max: colW - HERO_ORDER.length * (hw + 6 * u) - 8 * u });
+    }
     // ---- the battlefield: build spots
     let ry = c.y + 38 * u;
     head('Battlefield', x2, ry);
@@ -423,61 +448,107 @@ export class Screens {
   }
 
   // ---------------------------------------------------------------- shop
-  draw_shop(ctx, view, f) {
-    const { u, W } = f, a = this.app, p = this.p, bill = a.platform.billing;
-    this.backdrop(ctx, view);
-    this.backButton(ctx, f);
-    this.wallet(ctx, f, { onShop: false });
-    const c = this.panel(ctx, f, 'Royal Bazaar', 56);
-    const tabs = [['offers', 'Offers'], ['rubies', 'Rubies'], ['royal', 'Royal Towers'], ['power', 'Power-ups']];
-    const tw = Math.min(130 * u, (c.w - 30 * u) / tabs.length);
-    tabs.forEach(([id, label], i) => {
-      const x = c.x + i * (tw + 8 * u), on = this.shopTab === id;
-      this.btn(ctx, x, c.y - 2 * u, tw, 30 * u, label, on ? 'red' : 'grey', () => { this.shopTab = id; }, u);
-    });
-    const top = c.y + 38 * u, h = c.h - 40 * u - 26 * u;
-    const items = [];
-    const priceOf = (id) => bill.price(id) || `₹${M.product(id).inr}`;
-    if (this.shopTab === 'offers') {
-      if (!p.purchases.starter_pack) items.push({ title: 'Starter Pack', lines: ['150 rubies + 500 coins', '+ one of each power-up'], tag: 'Best value', icon: 'big:chest', btn: priceOf('starter_pack'), color: 'green', fn: () => a.buy('starter_pack') });
-      if (!p.removeAds) items.push({ title: 'Remove Ads', lines: ['No more ads between levels', 'Bonus ads stay optional'], icon: 'btn:ad', btn: priceOf('remove_ads'), color: 'green', fn: () => a.buy('remove_ads') });
-      const left = M.adChestLeft(p);
-      items.push({ title: 'Free Ruby Chest', lines: [`Watch an ad: +${M.AD_CHEST_RUBIES} rubies`, `${left} left today`], icon: 'ui:chestSmall', btn: left ? 'WATCH' : 'TOMORROW', color: 'purple', enabled: left > 0, fn: () => a.adChest() });
-    } else if (this.shopTab === 'rubies') {
-      for (const pr of M.PRODUCTS.filter((x) => x.type === 'consumable')) items.push({ title: pr.name, lines: [`${fmt(pr.grant.rubies)} rubies`, pr.bonus ? `includes ${pr.bonus} bonus` : ' '], tag: pr.tag, icon: 'ui:ruby', btn: priceOf(pr.id), color: 'green', fn: () => a.buy(pr.id) });
-    } else if (this.shopTab === 'royal') {
-      for (const [id, rt] of Object.entries(ROYAL_TOWERS)) {
-        const own = p.owned[id];
-        items.push({ title: TOWERS[id].name, lines: [`${rt.rubies} rubies or ${fmt(rt.coins)} coins`, 'Yours forever, 8 levels'], icon: 'icon:' + TOWERS[id].art, iconK: 0.9, btn: own ? 'OWNED' : 'UNLOCK', color: 'red', enabled: !own, fn: () => { this.modal = { type: 'royal', id }; } });
-      }
-    } else {
-      for (const k of POWERUP_ORDER) {
-        const d = POWERUPS[k];
-        items.push({ title: d.name, lines: [d.desc, `You have ${p.powerups[k] || 0}`], icon: 'btn:' + k, btn: `${d.coins} COINS`, color: 'gold', enabled: p.coins >= d.coins, fn: () => { if (M.buyPowerup(p, k, 'coins')) { a.save(); a.sound.play('coin'); } }, btn2: `${d.rubies} RUBIES`, fn2: () => { if (M.buyPowerup(p, k, 'rubies')) { a.save(); a.sound.play('coin'); } else a.toast('Not enough rubies'); } });
-      }
-    }
-    const n = Math.max(1, items.length), cols = Math.min(n, this.shopTab === 'rubies' ? 5 : this.shopTab === 'royal' ? 4 : 3), gap = 10 * u;
-    const cw = (c.w - gap * (cols - 1)) / cols, chh = h;
+  // A row of shop cards over a painted scene (used by the Bazaar and the Treasury).
+  shopCards(ctx, f, items, x0, top, w, h, cols) {
+    const { u } = f, a = this.app, p = this.p, gap = 10 * u, cw = (w - gap * (cols - 1)) / cols;
     items.forEach((it, i) => {
-      const x = c.x + i * (cw + gap), y = top;
-      card(ctx, x, y, cw, chh, u, { glow: !!it.tag });
-      if (it.tag) { ctx.fillStyle = '#d83a1e'; ctx.beginPath(); ctx.roundRect(x + cw / 2 - 36 * u, y - 6 * u, 72 * u, 16 * u, 8 * u); ctx.fill(); text(ctx, it.tag, x + cw / 2, y + 6 * u, 9.5 * u, { sw: 2 * u, max: 66 * u }); }
-      text(ctx, it.title, x + cw / 2, y + 26 * u, 13 * u, { font: TITLE, weight: 400, fill: RED_INK, stroke: false, max: cw - 12 * u });
-      const big = it.icon === 'big:chest', spr = a.assets.get(big ? 'chest' : it.icon.includes(':') ? it.icon : 'ui:' + it.icon) || a.assets.get('ui:chestSmall');
-      const ik = it.iconK || (big ? Math.min(1, (chh - 120 * u) / (90 * u)) : it.icon === 'ui:ruby' ? 2 + Math.min(1.4, i * 0.35) : it.icon === 'ui:chestSmall' ? 2 : 1.6);
-      if (spr) blit(ctx, spr, x + cw / 2, y + chh * 0.42 + (it.icon.startsWith('icon:') ? 22 * u : big ? chh * 0.16 : 0), u * ik);
-      it.lines.forEach((ln, k) => text(ctx, ln, x + cw / 2, y + chh - 62 * u + k * 13 * u, 10 * u, { weight: 700, fill: INK, stroke: false, max: cw - 12 * u }));
+      const x = x0 + (i % cols) * (cw + gap), y = top + Math.floor(i / cols) * (h + gap);
+      card(ctx, x, y, cw, h, u, { glow: !!it.tag });
+      if (it.tag) { ctx.fillStyle = '#d83a1e'; ctx.beginPath(); ctx.roundRect(x + cw / 2 - 38 * u, y - 7 * u, 76 * u, 16 * u, 8 * u); ctx.fill(); text(ctx, it.tag, x + cw / 2, y + 5 * u, 9.5 * u, { sw: 2 * u, max: 70 * u }); }
+      const wide = cw > h * 1.6; // short, wide card: art on the left, words on the right
+      const tx = wide ? x + cw * 0.62 : x + cw / 2, tw = wide ? cw * 0.6 : cw - 12 * u;
+      text(ctx, it.title, tx, y + 24 * u, 12.5 * u, { font: TITLE, weight: 400, fill: RED_INK, stroke: false, max: tw });
+      const spr = a.assets.get(it.icon);
+      if (spr) {
+        // art fills the room it has unless the item sets its own size
+        const [, by, bw, bh] = spr.box;
+        const top = y + (wide ? 12 : 36) * u, bottom = y + h - (wide ? 42 : 72) * u, room = wide ? cw * 0.3 : cw - 18 * u;
+        const size = it.iconK ? u * it.iconK : Math.min((bottom - top) / bh, room / bw) * (it.fill || 1);
+        const cy = it.iconK && !wide ? y + (it.iconY || h * 0.48) : bottom - (by + bh) * size - (bottom - top - bh * size) / 2;
+        blit(ctx, spr, wide ? x + cw * 0.18 + 4 * u : x + cw / 2, cy, size);
+      }
+      it.lines.forEach((ln, k) => text(ctx, ln, tx, wide ? y + 48 * u + k * 13 * u : y + h - 58 * u + k * 12 * u, 9.5 * u, { weight: 700, fill: INK, stroke: false, max: tw }));
       if (it.btn2) {
         const bw = (cw - 22 * u) / 2;
-        this.btn(ctx, x + 8 * u, y + chh - 38 * u, bw, 28 * u, it.btn, it.color, it.fn, u, it.enabled !== false);
-        this.btn(ctx, x + 14 * u + bw, y + chh - 38 * u, bw, 28 * u, it.btn2, 'red', it.fn2, u, p.rubies >= POWERUPS[POWERUP_ORDER[i]].rubies);
-      } else this.btn(ctx, x + 10 * u, y + chh - 38 * u, cw - 20 * u, 30 * u, it.btn, it.color, it.fn, u, it.enabled !== false);
+        this.btn(ctx, x + 8 * u, y + h - 36 * u, bw, 27 * u, it.btn, it.color, it.fn, u, it.enabled !== false);
+        this.btn(ctx, x + 14 * u + bw, y + h - 36 * u, bw, 27 * u, it.btn2, 'red', it.fn2, u, it.enabled2 !== false);
+      } else this.btn(ctx, x + 10 * u, y + h - 36 * u, cw - 20 * u, 28 * u, it.btn, it.color, it.fn, u, it.enabled !== false);
     });
-    // restore + the fair-play promise
-    text(ctx, 'No loot boxes. Everything shows what you get. The whole story is free to beat.', c.x, c.y + c.h - 2 * u, 9.5 * u, { align: 'left', weight: 700, sw: 2.4 * u, max: c.w - 150 * u });
-    text(ctx, 'Restore purchases', c.x + c.w, c.y + c.h - 2 * u, 10 * u, { align: 'right', fill: '#ffd66b', sw: 2.4 * u });
-    this.tap(c.x + c.w - 120 * u, c.y + c.h - 18 * u, 120 * u, 24 * u, () => a.restore());
-    void W;
+    void p;
+  }
+  shopScene(ctx, f, which) {
+    const bg = this.app.assets.shopBg && this.app.assets.shopBg[which];
+    if (bg) ctx.drawImage(bg.canvas, 0, 0, f.W, f.H); else this.backdrop(ctx, this.app.view || { cssW: f.W, cssH: f.H }, 0.5);
+  }
+
+  // ---------------------------------------------------------------- the Royal Bazaar (coins and rubies)
+  draw_bazaar(ctx, view, f) {
+    const { u, L, R, T, B, W } = f, a = this.app, p = this.p;
+    this.shopScene(ctx, f, 'bazaar');
+    this.backButton(ctx, f);
+    this.wallet(ctx, f);
+    ribbon(ctx, W / 2, T + 4 * u, 'Royal Bazaar', u);
+    const tabs = [['royal', 'Special Towers'], ['heroes', 'Heroes'], ['power', 'Power-ups'], ['free', 'Free Chest']];
+    if (!tabs.some((t) => t[0] === this.shopTab)) this.shopTab = 'royal';
+    const tw = Math.min(130 * u, (R - L - 30 * u) / tabs.length), tx = W / 2 - (tw * tabs.length + 8 * u * (tabs.length - 1)) / 2;
+    tabs.forEach(([id, label], i) => this.btn(ctx, tx + i * (tw + 8 * u), T + 42 * u, tw, 28 * u, label, this.shopTab === id ? 'red' : 'grey', () => { this.shopTab = id; }, u));
+    const top = T + 84 * u, h = B - top - 20 * u, items = [];
+    if (this.shopTab === 'royal') {
+      for (const [id, rt] of Object.entries(ROYAL_TOWERS)) {
+        const own = p.owned[id];
+        items.push({ title: TOWERS[id].name, lines: [`${rt.rubies} rubies or ${fmt(rt.coins)} coins`, 'Yours forever · 8 levels'], icon: 'card:' + TOWERS[id].art, btn: own ? 'OWNED' : 'UNLOCK', color: 'red', enabled: !own, fn: () => { this.modal = { type: 'royal', id }; } });
+      }
+    } else if (this.shopTab === 'heroes') {
+      for (const id of HERO_ORDER) {
+        const hh = HEROES[id], own = !!(p.heroes && p.heroes[id]);
+        const it = { title: hh.name, lines: [hh.skill.name, own ? 'In your army' : hh.unlock.iap ? 'Only in the Royal Treasury' : hh.unlock.story !== undefined ? `Joins after Level ${hh.unlock.story}` : ''], icon: 'card:hero:' + id };
+        if (own) Object.assign(it, { btn: 'OWNED', color: 'grey', enabled: false });
+        else if (hh.unlock.iap) Object.assign(it, { btn: 'TREASURY', color: 'green', fn: () => a.go('treasury') });
+        else if (hh.unlock.story !== undefined) Object.assign(it, { btn: 'STORY', color: 'grey', enabled: false });
+        else {
+          const cur = ['coins', 'rubies'].filter((c) => hh.unlock[c]);
+          const buy = (c) => () => { if (M.buyHero(p, id, c)) { a.reward(`${hh.name} joins your army!`); a.afterReward(); } else a.toast(`Not enough ${c}`); };
+          Object.assign(it, { btn: `${fmt(hh.unlock[cur[0]])} ${cur[0].toUpperCase()}`, color: cur[0] === 'coins' ? 'gold' : 'red', fn: buy(cur[0]), enabled: p[cur[0]] >= hh.unlock[cur[0]] });
+          if (cur[1]) Object.assign(it, { btn2: `${fmt(hh.unlock[cur[1]])} RUBIES`, fn2: buy(cur[1]), enabled2: p.rubies >= hh.unlock[cur[1]] });
+        }
+        items.push(it);
+      }
+    } else if (this.shopTab === 'power') {
+      POWERUP_ORDER.forEach((k) => {
+        const d = POWERUPS[k];
+        items.push({ title: d.name, lines: [d.desc, `You have ${p.powerups[k] || 0}`], icon: 'btn:' + k, iconK: 1.6, btn: `${d.coins} COINS`, color: 'gold', enabled: p.coins >= d.coins, fn: () => { if (M.buyPowerup(p, k, 'coins')) { a.save(); a.sound.play('coin'); } }, btn2: `${d.rubies} RUBIES`, enabled2: p.rubies >= d.rubies, fn2: () => { if (M.buyPowerup(p, k, 'rubies')) { a.save(); a.sound.play('coin'); } else a.toast('Not enough rubies'); } });
+      });
+    } else {
+      const left = M.adChestLeft(p);
+      items.push({ title: 'Free Ruby Chest', lines: [`Watch an ad: +${M.AD_CHEST_RUBIES} rubies`, `${left} left today`], icon: 'chest', btn: left ? 'WATCH' : 'TOMORROW', color: 'purple', enabled: left > 0, fn: () => a.adChest() });
+      items.push({ title: 'Royal Treasury', lines: ['Ruby packs, the Starter Pack,', 'Remove Ads and Maharaja Vikram'], icon: 'ui:ruby', iconK: 3, btn: 'OPEN', color: 'green', fn: () => a.go('treasury') });
+    }
+    const cols = Math.max(2, items.length), w = Math.min(R - L, cols * 190 * u);
+    this.shopCards(ctx, f, items, (L + R) / 2 - w / 2, top, w, h, cols);
+  }
+
+  // ---------------------------------------------------------------- the Royal Treasury (real money)
+  draw_treasury(ctx, view, f) {
+    const { u, L, R, T, B, W } = f, a = this.app, p = this.p, bill = a.platform.billing;
+    this.shopScene(ctx, f, 'treasury');
+    this.backButton(ctx, f);
+    this.wallet(ctx, f, { onShop: false });
+    ribbon(ctx, W / 2, T + 4 * u, 'Royal Treasury', u);
+    const priceOf = (id) => bill.price(id) || `₹${M.product(id).inr}`;
+    const featured = [];
+    if (!p.purchases.starter_pack) featured.push({ title: 'Starter Pack', tag: 'Best value', lines: ['150 rubies + 500 coins', '+ one of each power-up'], icon: 'chest', btn: priceOf('starter_pack'), color: 'green', fn: () => a.buy('starter_pack') });
+    if (!(p.heroes && p.heroes.vikram)) featured.push({ title: 'Maharaja Vikram', tag: 'Hero', lines: ['The Iron King joins your army', '+ 100 rubies'], icon: 'card:hero:vikram', btn: priceOf('hero_vikram'), color: 'green', fn: () => a.buy('hero_vikram') });
+    if (!p.removeAds) featured.push({ title: 'Remove Ads', lines: ['No more ads between levels', 'Bonus ads stay optional'], icon: 'btn:ad', fill: 0.7, btn: priceOf('remove_ads'), color: 'green', fn: () => a.buy('remove_ads') });
+    const packs = M.PRODUCTS.filter((x) => x.type === 'consumable').map((pr, i) => ({ title: pr.name, tag: pr.tag, lines: [`${fmt(pr.grant.rubies)} rubies`, pr.bonus ? `${pr.bonus} bonus` : ' '], icon: 'ui:ruby', iconK: 1.4 + i * 0.25, btn: priceOf(pr.id), color: 'green', fn: () => a.buy(pr.id) }));
+    const top = T + 44 * u, avail = B - top - 22 * u;
+    if (featured.length) {
+      const h1 = Math.min(130 * u, avail * 0.46), w1 = Math.min(R - L, featured.length * 250 * u);
+      this.shopCards(ctx, f, featured, (L + R) / 2 - w1 / 2, top, w1, h1, featured.length);
+      this.shopCards(ctx, f, packs, L, top + h1 + 12 * u, R - L, avail - h1 - 12 * u, packs.length);
+    } else this.shopCards(ctx, f, packs, L, top, R - L, avail, packs.length);
+    text(ctx, 'No loot boxes: everything shows what you get. The whole story is free to beat.', L, B, 9.5 * u, { align: 'left', weight: 700, sw: 2.4 * u, max: R - L - 150 * u });
+    text(ctx, 'Restore purchases', R, B, 10 * u, { align: 'right', fill: '#ffd66b', sw: 2.4 * u });
+    this.tap(R - 130 * u, B - 20 * u, 130 * u, 26 * u, () => a.restore());
   }
 
   // ---------------------------------------------------------------- daily reward calendar
@@ -597,6 +668,36 @@ export class Screens {
         if (a.rewardedLeft() > 0) this.btn(ctx, x + 14 * u + half, by, half, 26 * u, '-15 MIN AD', 'purple', async () => { if (await a.rewarded()) { const r = M.forgeAdCut(p, Date.now()); if (r) { a.reward(`${track.name} rank ${r.rank} is ready!`); a.afterReward(); } else a.save(); } }, u);
       }
     }
+  }
+
+  // ---------------------------------------------------------------- heroes
+  draw_heroes(ctx, view, f) {
+    const { u } = f, a = this.app, p = this.p;
+    this.backdrop(ctx, view);
+    this.backButton(ctx, f);
+    this.wallet(ctx, f);
+    const c = this.panel(ctx, f, 'Heroes', 56);
+    const gap = 10 * u, cw = (c.w - gap * 3) / 4, ch = c.h;
+    HERO_ORDER.forEach((id, i) => {
+      const h = HEROES[id], own = !!(p.heroes && p.heroes[id]), x = c.x + i * (cw + gap), y = c.y;
+      card(ctx, x, y, cw, ch, u, { glow: own });
+      text(ctx, h.name, x + cw / 2, y + 22 * u, 13 * u, { font: TITLE, weight: 400, fill: RED_INK, stroke: false, max: cw - 12 * u });
+      text(ctx, h.title, x + cw / 2, y + 36 * u, 9.5 * u, { weight: 700, fill: '#6a4a2a', stroke: false, max: cw - 12 * u });
+      blit(ctx, a.assets.get('card:hero:' + id), x + cw / 2, y + ch * 0.5, u * 0.62);
+      const st = `${h.hp} hp · ${h.ranged ? 'ranged' : 'melee'} · ${h.dmg[0]}–${h.dmg[1]} dmg`;
+      text(ctx, st, x + cw / 2, y + ch * 0.5 + 14 * u, 9.5 * u, { weight: 900, fill: INK, stroke: false, max: cw - 10 * u });
+      text(ctx, h.skill.name, x + cw / 2, y + ch * 0.5 + 28 * u, 10.5 * u, { font: TITLE, weight: 400, fill: RED_INK, stroke: false, max: cw - 10 * u });
+      wrap(ctx, h.bio, 9 * u, cw - 16 * u).slice(0, 4).forEach((ln, k) => text(ctx, ln, x + cw / 2, y + ch * 0.5 + 42 * u + k * 11 * u, 9 * u, { weight: 700, fill: INK, stroke: false }));
+      const by = y + ch - 34 * u, bw = cw - 16 * u;
+      if (own) text(ctx, 'IN YOUR ARMY', x + cw / 2, by + 20 * u, 11 * u, { fill: '#2f8f3c', stroke: false });
+      else if (h.unlock.story !== undefined) text(ctx, `Joins after Level ${h.unlock.story}`, x + cw / 2, by + 20 * u, 10.5 * u, { fill: RED_INK, stroke: false, max: bw });
+      else if (h.unlock.iap) this.btn(ctx, x + 8 * u, by, bw, 28 * u, a.platform.billing.price(h.unlock.iap) || `₹${M.product(h.unlock.iap).inr}`, 'green', () => a.buy(h.unlock.iap), u);
+      else {
+        const opts = ['coins', 'rubies'].filter((cur) => h.unlock[cur]);
+        const w2 = (bw - 6 * u * (opts.length - 1)) / opts.length;
+        opts.forEach((cur, k) => this.btn(ctx, x + 8 * u + k * (w2 + 6 * u), by, w2, 28 * u, `${fmt(h.unlock[cur])} ${cur === 'coins' ? 'COINS' : 'RUBIES'}`, cur === 'coins' ? 'gold' : 'red', () => { if (M.buyHero(p, id, cur)) { a.reward(`${h.name} joins your army!`); a.afterReward(); } else a.toast(`Not enough ${cur}`); }, u, p[cur] >= h.unlock[cur]));
+      }
+    });
   }
 
   // ---------------------------------------------------------------- achievements
