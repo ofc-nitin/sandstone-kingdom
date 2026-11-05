@@ -2,6 +2,8 @@
 
 The Founder asked: what else would make the game feel real and alive, "not like pictures shooting arrows"?
 This list covers what is now in the game (**done**) and what comes next, in order of value.
+The full review of what to fix, improve and add next, with an ID for every item, is in
+[game-feel-roadmap.md](game-feel-roadmap.md).
 
 ## Sound and music
 

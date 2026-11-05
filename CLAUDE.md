@@ -99,7 +99,8 @@ Done and pushed (commit `599be9c` and the handoff commit after it):
 ## Next steps (suggested order; confirm with the user)
 
 1. Have the user playtest Region 1 on a real Android phone (APK from the CI artifacts) and fix what they report.
-2. The "next" items in `docs/prd/alive-ideas.md`:
+2. Work through `docs/prd/game-feel-roadmap.md` (the full review: items with IDs and a build order;
+   the Founder picks items by ID). It includes the "next" items from `docs/prd/alive-ideas.md`:
    - boss phases
    - the sage giving hints
    - comic cutscenes before bosses
